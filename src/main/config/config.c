@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include "platform.h"
-
 #include "build_config.h"
 
 #include "common/axis.h"
@@ -28,9 +27,6 @@
 
 #include "drivers/accgyro.h"
 #include "drivers/system.h"
-#include "drivers/gpio.h"
-#include "drivers/timer.h"
-#include "drivers/pwm_rx.h"
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
@@ -53,15 +49,12 @@
 #include "io/gps.h"
 #include "flight/failsafe.h"
 #include "flight/imu.h"
-#include "flight/navigation.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
-#define BRUSHED_MOTORS_PWM_RATE 16000
-#define BRUSHLESS_MOTORS_PWM_RATE 400
 
 void setPIDController(int type); // FIXME PID code needs to be in flight_pid.c/h
 void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DConfigToUse,
@@ -80,13 +73,10 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
 #endif
 
-// use the last flash pages for storage
-static uint32_t flashWriteAddress = (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG));
+#define FLASH_WRITE_ADDR                (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG)) // use the last flash pages for storagemaster_t masterConfig;      // master config struct with data independent from profiles
+profile_t currentProfile;   // profile config struct
 
-master_t masterConfig;      // master config struct with data independent from profiles
-profile_t *currentProfile;   // profile config struct
-
-static const uint8_t EEPROM_CONF_VERSION = 75;
+static const uint8_t EEPROM_CONF_VERSION = 72;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -139,7 +129,6 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->H_level = 3.0f;
 }
 
-#ifdef GPS
 void resetGpsProfile(gpsProfile_t *gpsProfile)
 {
     gpsProfile->gps_wp_radius = 200;
@@ -150,7 +139,6 @@ void resetGpsProfile(gpsProfile_t *gpsProfile)
     gpsProfile->nav_speed_max = 300;
     gpsProfile->ap_mode = 40;
 }
-#endif
 
 void resetBarometerConfig(barometerConfig_t *barometerConfig)
 {
@@ -191,15 +179,12 @@ void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 
 void resetSerialConfig(serialConfig_t *serialConfig)
 {
-    serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
-    serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_GPS_ONLY);
-#if (SERIAL_PORT_COUNT > 2)
-    serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_UNUSED);
-    serialConfig->serial_port_scenario[3] = lookupScenarioIndex(SCENARIO_UNUSED);
-
-#if (SERIAL_PORT_COUNT > 4)
-    serialConfig->serial_port_scenario[4] = lookupScenarioIndex(SCENARIO_UNUSED);
-#endif
+    serialConfig->serial_port_1_scenario = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
+    serialConfig->serial_port_2_scenario = lookupScenarioIndex(SCENARIO_GPS_ONLY);
+    serialConfig->serial_port_3_scenario = lookupScenarioIndex(SCENARIO_UNUSED);
+    serialConfig->serial_port_4_scenario = lookupScenarioIndex(SCENARIO_UNUSED);
+#ifdef STM32F303xC
+    serialConfig->serial_port_5_scenario = lookupScenarioIndex(SCENARIO_UNUSED);
 #endif
 
     serialConfig->msp_baudrate = 115200;
@@ -210,12 +195,6 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->reboot_character = 'R';
 }
 
-
-static void setProfile(uint8_t profileIndex)
-{
-    currentProfile = &masterConfig.profile[profileIndex];
-}
-
 // Default settings
 static void resetConf(void)
 {
@@ -224,14 +203,11 @@ static void resetConf(void)
 
     // Clear all configuration
     memset(&masterConfig, 0, sizeof(master_t));
-    setProfile(0);
+    memset(&currentProfile, 0, sizeof(profile_t));
 
     masterConfig.version = EEPROM_CONF_VERSION;
     masterConfig.mixerConfiguration = MULTITYPE_QUADX;
     featureClearAll();
-#ifdef CJMCU
-    featureSet(FEATURE_RX_PPM);
-#endif
     featureSet(FEATURE_VBAT);
 
     // global settings
@@ -266,105 +242,91 @@ static void resetConf(void)
     masterConfig.rxConfig.maxcheck = 1900;
     masterConfig.rxConfig.rssi_channel = 0;
 
-    masterConfig.inputFilteringMode = INPUT_FILTERING_DISABLED;
-
     masterConfig.retarded_arm = 0;              // disable arm/disarm on roll left/right
-    masterConfig.small_angle = 25;
-
     masterConfig.airplaneConfig.flaps_speed = 0;
     masterConfig.fixedwing_althold_dir = 1;
 
     // Motor/ESC/Servo
     resetEscAndServoConfig(&masterConfig.escAndServoConfig);
     resetFlight3DConfig(&masterConfig.flight3DConfig);
-
-#ifdef BRUSHED_MOTORS
-    masterConfig.motor_pwm_rate = BRUSHED_MOTORS_PWM_RATE;
-#else
-    masterConfig.motor_pwm_rate = BRUSHLESS_MOTORS_PWM_RATE;
-#endif
+    masterConfig.motor_pwm_rate = 400;
     masterConfig.servo_pwm_rate = 50;
 
-#ifdef GPS
     // gps/nav stuff
     masterConfig.gpsConfig.provider = GPS_NMEA;
     masterConfig.gpsConfig.sbasMode = SBAS_AUTO;
-#endif
 
     resetSerialConfig(&masterConfig.serialConfig);
 
     masterConfig.looptime = 3500;
     masterConfig.emf_avoidance = 0;
 
-    currentProfile->pidController = 0;
-    resetPidProfile(&currentProfile->pidProfile);
+    currentProfile.pidController = 0;
+    resetPidProfile(&currentProfile.pidProfile);
 
-    currentProfile->controlRateConfig.rcRate8 = 90;
-    currentProfile->controlRateConfig.rcExpo8 = 65;
-    currentProfile->controlRateConfig.rollPitchRate = 0;
-    currentProfile->controlRateConfig.yawRate = 0;
-    currentProfile->dynThrPID = 0;
-    currentProfile->tpa_breakpoint = 1500;
-    currentProfile->controlRateConfig.thrMid8 = 50;
-    currentProfile->controlRateConfig.thrExpo8 = 0;
+    currentProfile.controlRateConfig.rcRate8 = 90;
+    currentProfile.controlRateConfig.rcExpo8 = 65;
+    currentProfile.controlRateConfig.rollPitchRate = 0;
+    currentProfile.controlRateConfig.yawRate = 0;
+    currentProfile.dynThrPID = 0;
+    currentProfile.tpa_breakpoint = 1500;
+    currentProfile.controlRateConfig.thrMid8 = 50;
+    currentProfile.controlRateConfig.thrExpo8 = 0;
 
     // for (i = 0; i < CHECKBOXITEMS; i++)
     //     cfg.activate[i] = 0;
 
-    resetRollAndPitchTrims(&currentProfile->accelerometerTrims);
+    resetRollAndPitchTrims(&currentProfile.accelerometerTrims);
 
-    currentProfile->mag_declination = 0;
-    currentProfile->acc_lpf_factor = 4;
-    currentProfile->accz_lpf_cutoff = 5.0f;
-    currentProfile->accDeadband.xy = 40;
-    currentProfile->accDeadband.z = 40;
+    currentProfile.mag_declination = 0;
+    currentProfile.acc_lpf_factor = 4;
+    currentProfile.accDeadband.xy = 40;
+    currentProfile.accDeadband.z = 40;
 
-    resetBarometerConfig(&currentProfile->barometerConfig);
+    resetBarometerConfig(&currentProfile.barometerConfig);
 
-    currentProfile->acc_unarmedcal = 1;
+    currentProfile.acc_unarmedcal = 1;
 
     // Radio
     parseRcChannels("AETR1234", &masterConfig.rxConfig);
-    currentProfile->deadband = 0;
-    currentProfile->yaw_deadband = 0;
-    currentProfile->alt_hold_deadband = 40;
-    currentProfile->alt_hold_fast_change = 1;
-    currentProfile->throttle_correction_value = 0;      // could 10 with althold or 40 for fpv
-    currentProfile->throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
+    currentProfile.deadband = 0;
+    currentProfile.yaw_deadband = 0;
+    currentProfile.alt_hold_deadband = 40;
+    currentProfile.alt_hold_fast_change = 1;
+    currentProfile.throttle_correction_value = 0;      // could 10 with althold or 40 for fpv
+    currentProfile.throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
 
     // Failsafe Variables
-    currentProfile->failsafeConfig.failsafe_delay = 10;              // 1sec
-    currentProfile->failsafeConfig.failsafe_off_delay = 200;         // 20sec
-    currentProfile->failsafeConfig.failsafe_throttle = 1200;         // decent default which should always be below hover throttle for people.
-    currentProfile->failsafeConfig.failsafe_min_usec = 985;          // any of first 4 channels below this value will trigger failsafe
-    currentProfile->failsafeConfig.failsafe_max_usec = 2115;         // any of first 4 channels above this value will trigger failsafe
+    currentProfile.failsafeConfig.failsafe_delay = 10;              // 1sec
+    currentProfile.failsafeConfig.failsafe_off_delay = 200;         // 20sec
+    currentProfile.failsafeConfig.failsafe_throttle = 1200;         // decent default which should always be below hover throttle for people.
+    currentProfile.failsafeConfig.failsafe_min_usec = 985;          // any of first 4 channels below this value will trigger failsafe
+    currentProfile.failsafeConfig.failsafe_max_usec = 2115;         // any of first 4 channels above this value will trigger failsafe
 
     // servos
     for (i = 0; i < 8; i++) {
-        currentProfile->servoConf[i].min = DEFAULT_SERVO_MIN;
-        currentProfile->servoConf[i].max = DEFAULT_SERVO_MAX;
-        currentProfile->servoConf[i].middle = DEFAULT_SERVO_MIDDLE;
-        currentProfile->servoConf[i].rate = servoRates[i];
-        currentProfile->servoConf[i].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
+        currentProfile.servoConf[i].min = DEFAULT_SERVO_MIN;
+        currentProfile.servoConf[i].max = DEFAULT_SERVO_MAX;
+        currentProfile.servoConf[i].middle = DEFAULT_SERVO_MIDDLE;
+        currentProfile.servoConf[i].rate = servoRates[i];
+        currentProfile.servoConf[i].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
     }
 
-    currentProfile->mixerConfig.yaw_direction = 1;
-    currentProfile->mixerConfig.tri_unarmed_servo = 1;
+    currentProfile.mixerConfig.yaw_direction = 1;
+    currentProfile.mixerConfig.tri_unarmed_servo = 1;
 
     // gimbal
-    currentProfile->gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
+    currentProfile.gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
 
-#ifdef GPS
-    resetGpsProfile(&currentProfile->gpsProfile);
-#endif
+    resetGpsProfile(&currentProfile.gpsProfile);
 
     // custom mixer. clear by defaults.
     for (i = 0; i < MAX_SUPPORTED_MOTORS; i++)
         masterConfig.customMixer[i].throttle = 0.0f;
 
-    // copy first profile into remaining profile
-    for (i = 1; i < 3; i++)
-        memcpy(&masterConfig.profile[i], currentProfile, sizeof(profile_t));
+    // copy default config into all 3 profiles
+    for (i = 0; i < 3; i++)
+        memcpy(&masterConfig.profile[i], &currentProfile, sizeof(profile_t));
 }
 
 static uint8_t calculateChecksum(const uint8_t *data, uint32_t length)
@@ -379,7 +341,7 @@ static uint8_t calculateChecksum(const uint8_t *data, uint32_t length)
 
 static bool isEEPROMContentValid(void)
 {
-    const master_t *temp = (const master_t *) flashWriteAddress;
+    const master_t *temp = (const master_t *) FLASH_WRITE_ADDR;
     uint8_t checksum = 0;
 
     // check version number
@@ -403,43 +365,38 @@ void activateConfig(void)
 {
     static imuRuntimeConfig_t imuRuntimeConfig;
 
-    generatePitchCurve(&currentProfile->controlRateConfig);
-    generateThrottleCurve(&currentProfile->controlRateConfig, &masterConfig.escAndServoConfig);
+    generatePitchCurve(&currentProfile.controlRateConfig);
+    generateThrottleCurve(&currentProfile.controlRateConfig, &masterConfig.escAndServoConfig);
 
     useGyroConfig(&masterConfig.gyroConfig);
-#ifdef TELEMETRY
     useTelemetryConfig(&masterConfig.telemetryConfig);
-#endif
-    setPIDController(currentProfile->pidController);
-#ifdef GPS
-    gpsUseProfile(&currentProfile->gpsProfile);
-    gpsUsePIDs(&currentProfile->pidProfile);
-#endif
-    useFailsafeConfig(&currentProfile->failsafeConfig);
+    setPIDController(currentProfile.pidController);
+    gpsUseProfile(&currentProfile.gpsProfile);
+    gpsUsePIDs(&currentProfile.pidProfile);
+    useFailsafeConfig(&currentProfile.failsafeConfig);
     setAccelerationTrims(&masterConfig.accZero);
     mixerUseConfigs(
-            currentProfile->servoConf,
+            currentProfile.servoConf,
             &masterConfig.flight3DConfig,
             &masterConfig.escAndServoConfig,
-            &currentProfile->mixerConfig,
+            &currentProfile.mixerConfig,
             &masterConfig.airplaneConfig,
             &masterConfig.rxConfig,
-            &currentProfile->gimbalConfig
+            &currentProfile.gimbalConfig
             );
 
     imuRuntimeConfig.gyro_cmpf_factor = masterConfig.gyro_cmpf_factor;
     imuRuntimeConfig.gyro_cmpfm_factor = masterConfig.gyro_cmpfm_factor;
-    imuRuntimeConfig.acc_lpf_factor = currentProfile->acc_lpf_factor;
-    imuRuntimeConfig.acc_unarmedcal = currentProfile->acc_unarmedcal;;
-    imuRuntimeConfig.small_angle = masterConfig.small_angle;
+    imuRuntimeConfig.acc_lpf_factor = currentProfile.acc_lpf_factor;
+    imuRuntimeConfig.acc_unarmedcal = currentProfile.acc_unarmedcal;;
 
-    configureImu(&imuRuntimeConfig, &currentProfile->pidProfile, &currentProfile->barometerConfig, &currentProfile->accDeadband);
 
-    calculateThrottleAngleScale(currentProfile->throttle_correction_angle);
-    calculateAccZLowPassFilterRCTimeConstant(currentProfile->accz_lpf_cutoff);
+    configureImu(&imuRuntimeConfig, &currentProfile.pidProfile, &currentProfile.barometerConfig, &currentProfile.accDeadband);
+
+    calculateThrottleAngleScale(currentProfile.throttle_correction_angle);
 
 #ifdef BARO
-    useBarometerConfig(&currentProfile->barometerConfig);
+    useBarometerConfig(&currentProfile.barometerConfig);
 #endif
 }
 
@@ -464,42 +421,36 @@ void validateAndFixConfig(void)
         featureClear(FEATURE_RX_PPM);
     }
 
-    if (feature(FEATURE_CURRENT_METER)) {
-#if defined(STM32F10X_MD)
+    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+#if defined(STM32F103_MD)
         // rssi adc needs the same ports
         featureClear(FEATURE_RSSI_ADC);
         // current meter needs the same ports
         featureClear(FEATURE_CURRENT_METER);
+#ifdef SONAR
+        // sonar needs a free PWM port
+        featureClear(FEATURE_SONAR);
+#endif
 #endif
 
-#if defined(STM32F10X_MD) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
+#if defined(STM32F103_MD) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
         // led strip needs the same ports
         featureClear(FEATURE_LED_STRIP);
 #endif
+
 
         // software serial needs free PWM ports
         featureClear(FEATURE_SOFTSERIAL);
     }
 
 
-#if defined(STM32F10X_MD)
+#if defined(STM32F103_MD)
     // led strip needs the same timer as softserial
     if (feature(FEATURE_SOFTSERIAL)) {
         featureClear(FEATURE_LED_STRIP);
     }
 #endif
 
-#if defined(NAZE) && defined(SONAR)
-    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER)) {
-        featureClear(FEATURE_CURRENT_METER);
-    }
-#endif
-
-#if defined(OLIMEXINO) && defined(SONAR)
-    if (feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER)) {
-        featureClear(FEATURE_CURRENT_METER);
-    }
-#endif
 
     useRxConfig(&masterConfig.rxConfig);
 
@@ -511,19 +462,6 @@ void validateAndFixConfig(void)
     }
 }
 
-void initEEPROM(void)
-{
-#if defined(STM32F10X_MD)
-
-#define FLASH_SIZE_REGISTER 0x1FFFF7E0
-
-    const uint32_t flashSize = *((uint32_t *)FLASH_SIZE_REGISTER) & 0xFFFF;
-
-    // calculate write address based on contents of Flash size register. Use last 2 kbytes for storage
-    flashWriteAddress = 0x08000000 + (FLASH_PAGE_SIZE * (flashSize - 2));
-#endif
-}
-
 void readEEPROM(void)
 {
     // Sanity check
@@ -531,12 +469,11 @@ void readEEPROM(void)
         failureMode(10);
 
     // Read flash
-    memcpy(&masterConfig, (char *) flashWriteAddress, sizeof(master_t));
+    memcpy(&masterConfig, (char *) FLASH_WRITE_ADDR, sizeof(master_t));
     // Copy current profile
     if (masterConfig.current_profile_index > 2) // sanity check
         masterConfig.current_profile_index = 0;
-
-    setProfile(masterConfig.current_profile_index);
+    memcpy(&currentProfile, &masterConfig.profile[masterConfig.current_profile_index], sizeof(profile_t));
 
     validateAndFixConfig();
     activateConfig();
@@ -548,6 +485,13 @@ void readEEPROMAndNotify(void)
     readEEPROM();
     blinkLedAndSoundBeeper(15, 20, 1);
 }
+
+void copyCurrentProfileToProfileSlot(uint8_t profileSlotIndex)
+{
+    // copy current in-memory profile to stored configuration
+    memcpy(&masterConfig.profile[profileSlotIndex], &currentProfile, sizeof(profile_t));
+}
+
 
 void writeEEPROM(void)
 {
@@ -577,13 +521,13 @@ void writeEEPROM(void)
 #endif
         for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
             if (wordOffset % FLASH_PAGE_SIZE == 0) {
-                status = FLASH_ErasePage(flashWriteAddress + wordOffset);
+                status = FLASH_ErasePage(FLASH_WRITE_ADDR + wordOffset);
                 if (status != FLASH_COMPLETE) {
                     break;
                 }
             }
 
-            status = FLASH_ProgramWord(flashWriteAddress + wordOffset,
+            status = FLASH_ProgramWord(FLASH_WRITE_ADDR + wordOffset,
                     *(uint32_t *) ((char *) &masterConfig + wordOffset));
             if (status != FLASH_COMPLETE) {
                 break;
@@ -632,8 +576,9 @@ void resetEEPROM(void)
     writeEEPROM();
 }
 
-void saveConfigAndNotify(void)
+void saveAndReloadCurrentProfileToCurrentProfileSlot(void)
 {
+    copyCurrentProfileToProfileSlot(masterConfig.current_profile_index);
     writeEEPROM();
     readEEPROMAndNotify();
 }
@@ -643,7 +588,7 @@ void changeProfile(uint8_t profileIndex)
     masterConfig.current_profile_index = profileIndex;
     writeEEPROM();
     readEEPROM();
-    blinkLedAndSoundBeeper(2, 40, profileIndex + 1);
+    blinkLedAndSoundBeeper(2, 40, profileIndex);
 }
 
 bool feature(uint32_t mask)
@@ -670,4 +615,3 @@ uint32_t featureMask(void)
 {
     return masterConfig.enabledFeatures;
 }
-

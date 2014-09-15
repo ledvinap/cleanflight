@@ -34,13 +34,7 @@
 typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function pointer used to write motors
 
 typedef struct {
-#ifdef STM32F303xC
-    volatile uint32_t *ccr;
-#endif
-
-#ifdef STM32F10X_MD
-    volatile uint16_t *ccr;
-#endif
+    volatile timCCR_t *ccr;
     uint16_t period;
     pwmWriteFuncPtr pwmWritePtr;
 } pwmOutputPort_t;
@@ -100,7 +94,7 @@ static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8
 {
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
-    configTimeBase(timerHardware->tim, period, mhz);
+    timerConfigure(timerHardware, period, mhz);
     pwmGPIOConfig(timerHardware->gpio, timerHardware->pin, Mode_AF_PP);
     pwmOCConfig(timerHardware->tim, timerHardware->channel, value);
     if (timerHardware->outputEnable)

@@ -17,22 +17,11 @@
 
 #pragma once
 
-void systemInit(bool overclock);
-void delayMicroseconds(uint32_t us);
-void delay(uint32_t ms);
+void handleSPortTelemetry(void);
+void checkSPortTelemetryState(void); 
+void initSPortTelemetry(telemetryConfig_t *telemetryConfig);
+void configureSPortTelemetryPort(void);
+void freeSPortTelemetryPort(void);
 
-uint32_t micros(void);
-uint32_t millis(void);
+uint32_t getSPortTelemetryProviderBaudRate(void);
 
-// failure
-void failureMode(uint8_t mode);
-
-// bootloader/IAP
-void systemReset(bool toBootloader);
-
-void enableGPIOPowerUsageAndNoiseReductions(void);
-// current crystal frequency - 8 or 12MHz
-extern uint32_t hse_value;
-
-#define NVIC_PRIORITY_GROUPING NVIC_PriorityGroup_2
-#define NVIC_BUILD_PRIORITY(base,sub) ((((base)<<(4-(7-(NVIC_PRIORITY_GROUPING>>8))))|((sub)&(0x0f>>(7-(NVIC_PRIORITY_GROUPING>>8)))))<<4)

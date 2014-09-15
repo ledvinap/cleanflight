@@ -63,7 +63,7 @@
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
 
 #define GPS
-#define LED_STRIP
+//#define LED_STRIP
 #define TELEMETRY
 #define SOFT_SERIAL
 #define SERIAL_RX

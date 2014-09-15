@@ -21,7 +21,7 @@ TARGET		?= NAZE
 OPTIONS		?=
 
 # Debugger optons, must be empty or GDB
-DEBUG ?=
+DEBUG ?= GDB
 
 # Serial port/Device for flashing
 SERIAL_DEVICE	?= /dev/ttyUSB0
@@ -35,7 +35,7 @@ FORKNAME			 = cleanflight
 VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU
 
 # Working directories
-ROOT		 = $(dir $(lastword $(MAKEFILE_LIST)))
+ROOT		 := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 SRC_DIR		 = $(ROOT)/src/main
 OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
@@ -47,7 +47,7 @@ VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
 
 ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO))
 
-STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
+STDPERIPH_DIR		= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
 USBFS_DIR		= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
 
 USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
@@ -167,6 +167,7 @@ HIGHEND_SRC  = flight/autotune.c \
 		   telemetry/frsky.c \
 		   telemetry/hott.c \
 		   telemetry/msp.c \
+		   telemetry/sport.c \
 		   sensors/sonar.c \
 		   sensors/barometer.c
 
@@ -183,6 +184,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/barometer_ms5611.c \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/callback.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
@@ -199,6 +201,9 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
+		   drivers/timer_input.c \
+		   drivers/timer_output.c \
+		   drivers/timer_queue.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
@@ -209,6 +214,7 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/barometer_bmp085.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
+		   drivers/callback.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/light_led_stm32f10x.c \
@@ -224,6 +230,9 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
+		   drivers/timer_input.c \
+		   drivers/timer_output.c \
+		   drivers/timer_queue.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
@@ -237,6 +246,7 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/callback.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/light_led_stm32f10x.c \
 		   drivers/pwm_mapping.c \
@@ -247,6 +257,9 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
+		   drivers/timer_input.c \
+		   drivers/timer_output.c \
+		   drivers/timer_queue.c \
 		   $(COMMON_SRC)
 
 CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
@@ -255,6 +268,7 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc_stm32f10x.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
+		   drivers/callback.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
 		   drivers/light_led_stm32f10x.c \
@@ -269,6 +283,9 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
+		   drivers/timer_input.c \
+		   drivers/timer_output.c \
+		   drivers/timer_queue.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
@@ -277,6 +294,7 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/adc_stm32f30x.c \
 		   drivers/bus_i2c_stm32f30x.c \
 		   drivers/bus_spi.c \
+		   drivers/callback.c \
 		   drivers/gpio_stm32f30x.c \
 		   drivers/light_led_stm32f30x.c \
 		   drivers/light_ws2811strip.c \
@@ -291,6 +309,9 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/sound_beeper_stm32f30x.c \
 		   drivers/system_stm32f30x.c \
 		   drivers/timer.c \
+		   drivers/timer_input.c \
+		   drivers/timer_output.c \
+		   drivers/timer_queue.c \
 		   vcp/hw_config.c \
 		   vcp/stm32_it.c \
 		   vcp/usb_desc.c \
@@ -339,8 +360,8 @@ SIZE		 = arm-none-eabi-size
 #
 
 ifeq ($(DEBUG),GDB)
-OPTIMIZE	 = -O0
-LTO_FLAGS	 = $(OPTIMIZE)
+OPTIMIZE	 = -O1
+LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
 else
 OPTIMIZE	 = -Os
 LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
@@ -348,26 +369,28 @@ endif
 
 DEBUG_FLAGS	 = -ggdb3
 
-CFLAGS		 = $(ARCH_FLAGS) \
-		   $(LTO_FLAGS) \
-		   $(addprefix -D,$(OPTIONS)) \
-		   $(addprefix -I,$(INCLUDE_DIRS)) \
-		   $(DEBUG_FLAGS) \
-		   -std=gnu99 \
-		   -Wall -Wextra -Wunsafe-loop-optimizations \
-		   -ffunction-sections \
-		   -fdata-sections \
-		   $(DEVICE_FLAGS) \
-		   -DUSE_STDPERIPH_DRIVER \
-		   $(TARGET_FLAGS) \
-		   -D'__FORKNAME__="$(FORKNAME)"' \
-		   -D'__TARGET__="$(TARGET)"' \
-		   -save-temps=obj
+CFLAGS		 = $(ARCH_FLAGS) 				\
+		   $(LTO_FLAGS) 				\
+		   $(addprefix -D,$(OPTIONS)) 			\
+		   $(addprefix -I,$(INCLUDE_DIRS)) 		\
+		   $(DEBUG_FLAGS) 				\
+		   -std=gnu99 					\
+		   -W -Wall -Wextra -Wunsafe-loop-optimizations \
+		   -ffunction-sections 				\
+		   -fdata-sections 				\
+		   $(DEVICE_FLAGS) 				\
+		   -DUSE_STDPERIPH_DRIVER 			\
+		   $(TARGET_FLAGS) 				\
+		   -D'__FORKNAME__="$(FORKNAME)"' 		\
+		   -D'__TARGET__="$(TARGET)"' 			\
+		   -save-temps=obj -fverbose-asm		\
+		   -MD
 
 
 ASFLAGS		 = $(ARCH_FLAGS) \
 		   -x assembler-with-cpp \
-		   $(addprefix -I,$(INCLUDE_DIRS))
+		   $(addprefix -I,$(INCLUDE_DIRS)) \
+		  -MD
 
 LDFLAGS		 = -lm \
 		   -nostartfiles \
@@ -396,7 +419,8 @@ endif
 TARGET_HEX	 = $(BIN_DIR)/$(FORKNAME)_$(TARGET).hex
 TARGET_ELF	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).elf
 TARGET_OBJS	 = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
-TARGET_MAP   = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
+TARGET_DEPS	 = $(addsuffix .d,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
+TARGET_MAP	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 
 # List of buildable ELF files and their object dependencies.
 # It would be nice to compute these lists, but that seems to be just beyond make.
@@ -408,6 +432,7 @@ $(TARGET_ELF):  $(TARGET_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 	$(SIZE) $(TARGET_ELF) 
 
+
 # Compile
 $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -418,7 +443,8 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 $(OBJECT_DIR)/$(TARGET)/%.o: %.s
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
-	@$(CC) -c -o $@ $(ASFLAGS) $< 
+	@$(CC) -c -o $@ $(ASFLAGS) $<
+
 $(OBJECT_DIR)/$(TARGET)/%.o): %.S
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
@@ -451,3 +477,6 @@ help:
 	@echo ""
 	@echo "Valid TARGET values are: $(VALID_TARGETS)"
 	@echo ""
+
+# include auto-generated dependencies
+-include $(TARGET_DEPS)

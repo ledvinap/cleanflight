@@ -568,11 +568,11 @@ serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbac
 #endif
 #ifdef USE_SOFT_SERIAL
         case SERIAL_PORT_SOFTSERIAL1:
-            serialPort = openSoftSerial(SOFTSERIAL1, callback, baudRate, inversion);
+            serialPort = openSoftSerial(SOFTSERIAL1, callback, baudRate, mode, inversion);
             serialSetMode(serialPort, mode);
             break;
         case SERIAL_PORT_SOFTSERIAL2:
-            serialPort = openSoftSerial(SOFTSERIAL2, callback, baudRate, inversion);
+            serialPort = openSoftSerial(SOFTSERIAL2, callback, baudRate, mode, inversion);
             serialSetMode(serialPort, mode);
             break;
 #endif

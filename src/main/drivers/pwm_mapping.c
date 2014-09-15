@@ -285,7 +285,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 
 #ifdef STM32F10X_MD
         // skip softSerial ports
-        if (init->useSoftSerial && (timerIndex == PWM5 || timerIndex == PWM6 || timerIndex == PWM7 || timerIndex == PWM8))
+        if (init->useSoftSerial && (timerIndex == PWM11 || timerIndex == PWM12 || timerIndex == PWM13 || timerIndex == PWM14))
             continue;
 #endif
 

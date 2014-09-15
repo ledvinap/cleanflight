@@ -92,7 +92,7 @@ void systemInit(bool overclock)
 #endif
 
     // Configure NVIC preempt/priority groups
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);
 
 #ifdef STM32F10X_MD
     // Turn on clocks for stuff we use

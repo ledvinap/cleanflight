@@ -39,7 +39,7 @@
 #include "telemetry/frsky.h"
 #include "telemetry/hott.h"
 #include "telemetry/msp.h"
-
+#include "telemetry/sport.h"
 
 static bool isTelemetryConfigurationValid = false; // flag used to avoid repeated configuration checks
 static bool telemetryEnabled = false;
@@ -85,18 +85,20 @@ void initTelemetry()
     telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_TELEMETRY, FUNCTION_MSP);
     isTelemetryConfigurationValid = canUseTelemetryWithCurrentConfiguration();
 
-    if (isTelemetryProviderFrSky()) {
+    switch(telemetryConfig->telemetry_provider) {
+    case TELEMETRY_PROVIDER_FRSKY:
         initFrSkyTelemetry(telemetryConfig);
-    }
-
-    if (isTelemetryProviderHoTT()) {
+        break;
+    case TELEMETRY_PROVIDER_HOTT:
         initHoTTTelemetry(telemetryConfig);
-    }
-
-    if (isTelemetryProviderMSP()) {
+        break;
+    case TELEMETRY_PROVIDER_MSP:
         initMSPTelemetry(telemetryConfig);
+        break;
+    case TELEMETRY_PROVIDER_FRSKYSPORT:
+        initSPortTelemetry(telemetryConfig);
+        break;
     }
-
     checkTelemetryState();
 }
 
@@ -121,48 +123,53 @@ bool shouldChangeTelemetryStateNow(bool newState)
 
 uint32_t getTelemetryProviderBaudRate(void)
 {
-    if (isTelemetryProviderFrSky()) {
+    switch(telemetryConfig->telemetry_provider) {
+    case TELEMETRY_PROVIDER_FRSKY:
         return getFrSkyTelemetryProviderBaudRate();
-    }
-
-    if (isTelemetryProviderHoTT()) {
+    case TELEMETRY_PROVIDER_HOTT:
         return getHoTTTelemetryProviderBaudRate();
-    }
-
-    if (isTelemetryProviderMSP()) {
+    case TELEMETRY_PROVIDER_MSP:
         return getMSPTelemetryProviderBaudRate();
+    case TELEMETRY_PROVIDER_FRSKYSPORT:
+        return getSPortTelemetryProviderBaudRate();
     }
     return 0;
 }
 
 static void configureTelemetryPort(void)
 {
-    if (isTelemetryProviderFrSky()) {
+    switch(telemetryConfig->telemetry_provider) {
+    case TELEMETRY_PROVIDER_FRSKY:
         configureFrSkyTelemetryPort();
-    }
-
-    if (isTelemetryProviderHoTT()) {
+        break;
+    case TELEMETRY_PROVIDER_HOTT:
         configureHoTTTelemetryPort();
-    }
-
-    if (isTelemetryProviderMSP()) {
+        break;
+    case TELEMETRY_PROVIDER_MSP:
         configureMSPTelemetryPort();
+        break;
+    case TELEMETRY_PROVIDER_FRSKYSPORT:
+        configureSPortTelemetryPort();
+        break;
     }
 }
 
 
 void freeTelemetryPort(void)
 {
-    if (isTelemetryProviderFrSky()) {
+    switch(telemetryConfig->telemetry_provider) {
+    case TELEMETRY_PROVIDER_FRSKY:
         freeFrSkyTelemetryPort();
-    }
-
-    if (isTelemetryProviderHoTT()) {
+        break;
+    case TELEMETRY_PROVIDER_HOTT:
         freeHoTTTelemetryPort();
-    }
-
-    if (isTelemetryProviderMSP()) {
+        break;
+    case TELEMETRY_PROVIDER_MSP:
         freeMSPTelemetryPort();
+        break;
+    case TELEMETRY_PROVIDER_FRSKYSPORT:
+        freeSPortTelemetryPort();
+        break;
     }
 }
 
@@ -195,16 +202,19 @@ void handleTelemetry(void)
         return;
     }
 
-    if (isTelemetryProviderFrSky()) {
-        handleFrSkyTelemetry();
-    }
-
-    if (isTelemetryProviderHoTT()) {
+    switch(telemetryConfig->telemetry_provider) {
+    case TELEMETRY_PROVIDER_FRSKY:
+       handleFrSkyTelemetry();
+        break;
+    case TELEMETRY_PROVIDER_HOTT:
         handleHoTTTelemetry();
-    }
-
-    if (isTelemetryProviderMSP()) {
+        break;
+    case TELEMETRY_PROVIDER_MSP:
         handleMSPTelemetry();
+        break;
+    case TELEMETRY_PROVIDER_FRSKYSPORT:
+        handleSPortTelemetry();
+        break;
     }
 }
 #endif

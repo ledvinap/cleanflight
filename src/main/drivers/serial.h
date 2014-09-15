@@ -27,7 +27,17 @@ typedef enum portMode_t {
     MODE_TX = 1 << 1,
     MODE_RXTX = MODE_RX | MODE_TX,
     MODE_SBUS = 1 << 2,
+    MODE_SINGLEWIRE = 1<<3,
 } portMode_t;
+
+typedef enum portDirection_t {
+    DIRECTION_TX=1<<0,
+    DIRECTION_RX=1<<1,
+    DIRECTION_DELAYDONE=1<<2,
+    DIRECTION_DELAYTIMER=1<<3,
+
+    DIRECTION_RX_WHENTXDONE=DIRECTION_RX|DIRECTION_DELAYDONE,
+} portDirection_t;
 
 typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial drivers to return frames to app
 
@@ -66,6 +76,8 @@ struct serialPortVTable {
     bool (*isSerialTransmitBufferEmpty)(serialPort_t *instance);
 
     void (*setMode)(serialPort_t *instance, portMode_t mode);
+
+    void (*setDirection)(serialPort_t *instance, portDirection_t direction);
 };
 
 void serialWrite(serialPort_t *instance, uint8_t ch);
@@ -73,6 +85,7 @@ uint8_t serialTotalBytesWaiting(serialPort_t *instance);
 uint8_t serialRead(serialPort_t *instance);
 void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate);
 void serialSetMode(serialPort_t *instance, portMode_t mode);
+void serialSetDirection(serialPort_t *instance, portDirection_t direction);
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
 void serialPrint(serialPort_t *instance, const char *str);
 uint32_t serialGetBaudRate(serialPort_t *instance);

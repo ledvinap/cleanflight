@@ -29,6 +29,7 @@
 #include "drivers/light_led.h"
 #include "drivers/light_ws2811strip.h"
 #include "drivers/sound_beeper.h"
+#include "drivers/callback.h"
 #include "drivers/timer.h"
 #include "drivers/serial.h"
 #include "drivers/serial_softserial.h"
@@ -69,6 +70,9 @@
 extern rcReadRawDataPtr rcReadRawFunc;
 
 extern uint32_t previousTime;
+
+// TODO - lazy to pass it to makefile now
+//#define SOFTSERIAL_LOOPBACK
 
 #ifdef SOFTSERIAL_LOOPBACK
 serialPort_t *loopbackPort;
@@ -174,8 +178,11 @@ void init(void)
         compassInit();
 #endif
 
+    callbackInit();
+    
     timerInit();
-
+    timerQueue_Init();
+    
     serialInit(&masterConfig.serialConfig);
 
     memset(&pwm_params, 0, sizeof(pwm_params));
@@ -265,7 +272,7 @@ void init(void)
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);
     if (!loopbackPort->vTable) {
-        loopbackPort = openSoftSerial(0, NULL, 19200, SERIAL_NOT_INVERTED);
+        loopbackPort = openSoftSerial(0, NULL, 57600, MODE_RXTX|MODE_SINGLEWIRE, SERIAL_INVERTED);
     }
     serialPrint(loopbackPort, "LOOPBACK\r\n");
 #endif
@@ -279,7 +286,12 @@ void init(void)
 
 #ifdef SOFTSERIAL_LOOPBACK
 void processLoopback(void) {
+    static uint32_t t=0;
     if (loopbackPort) {
+        if(isSerialTransmitBufferEmpty(loopbackPort) && t<millis()) {
+            t=millis()+100;
+//            serialPrint(loopbackPort, "===============================================================\r\n");
+        }
         uint8_t bytesWaiting;
         while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {
             uint8_t b = serialRead(loopbackPort);

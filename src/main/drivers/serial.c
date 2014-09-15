@@ -65,3 +65,7 @@ void serialSetMode(serialPort_t *instance, portMode_t mode)
     instance->vTable->setMode(instance, mode);
 }
 
+void serialSetDirection(serialPort_t *instance, portDirection_t direction)
+{
+    instance->vTable->setDirection(instance, direction);
+}

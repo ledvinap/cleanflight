@@ -89,18 +89,19 @@ Note: It is perfectly possible to configure an LED to have all directions `NESWU
 
 `mmm` specifies the modes that should be applied an LED.  Modes are:
 
-* `B` - `B`attery warning.
+* `W` - `W`warnings.
 * `F` - `F`light mode & Orientation
 * `I` - `I`ndicator.
 * `A` - `A`rmed state.
+* `T` - `T`hrust state.
 
 Example:
 
 ```
-led 0 0,15:SD:IAB
-led 1 15,0:ND:IAB
-led 2 0,0:ND:IAB
-led 3 0,15:SD:IAB
+led 0 0,15:SD:IAW
+led 1 15,0:ND:IAW
+led 2 0,0:ND:IAW
+led 3 0,15:SD:IAW
 ```
 
 to erase an led, and to mark the end of the chain, use `0,0::` as the second argument, like this:
@@ -112,9 +113,12 @@ led 4 0,0::
 
 ### Modes
 
-#### Battery Warning
+#### Warning
 
-This mode simply flashes the LED RED when the battery is low if battery monitoring is enabled.
+This mode simply uses the leds to flash when warnings occur.
+
+* Battery warning flashes the LEDs between red and off when the battery is low if battery monitoring is enabled.
+* Failsafe warning flashes the LEDs between light blue and lime green when failsafe is active.
 
 #### Flight Mode & Orientation
 
@@ -139,6 +143,12 @@ This mode toggles LEDs between green and blue when disarmed and armed, respectiv
 
 Note: Armed State cannot be used with Flight Mode.
 
+#### Thrust state
+
+This mode fades the LED current LED color to the previous/next color in the HSB color space depending on throttle stick position.  When the
+throttle is in the middle position the color is unaffected, thus it can be mixed with orientation colors to indicate orientation and throttle at
+the same time.
+
 ## Positioning
 
 Cut the strip into sections as per diagrams below.  When the strips are cut ensure you reconnect each output to each input with cable where the break is made.
@@ -151,17 +161,17 @@ Orientation is when viewed with the front of the aircraft facing away from you a
 The default configuration is as follows
 ```
 led 0 2,2:ES:IA
-led 1 2,1:E:BF
+led 1 2,1:E:WF
 led 2 2,0:NE:IA
 led 3 1,0:N:F
 led 4 0,0:NW:IA
-led 5 0,1:W:BF
+led 5 0,1:W:WF
 led 6 0,2:SW:IA
-led 7 1,2:S:BF
-led 8 1,1:U:BF
-led 9 1,1:U:BF
-led 10 1,1:D:BF
-led 11 1,1:D:BF
+led 7 1,2:S:WF
+led 8 1,1:U:WF
+led 9 1,1:U:WF
+led 10 1,1:D:WF
+led 11 1,1:D:WF
 ```
 
 Which translates into the following positions:
@@ -189,21 +199,21 @@ This is the default so that if you don't want to place LEDs top and bottom in th
 
 ```
 15,15:SD:IA
-8,8:E:FB
-8,7:E:FB
+8,8:E:FW
+8,7:E:FW
 15,0:ND:IA
-7,7:N:FB
-8,7:N:FB
+7,7:N:FW
+8,7:N:FW
 0,0:ND:IA
-7,7:W:FB
-7,8:W:FB
+7,7:W:FW
+7,8:W:FW
 0,15:SD:IA
-7,8:S:FB
-8,8:S:FB
-7,7:D:FB
-8,7:D:FB
-7,7:U:FB
-8,7:U:FB
+7,8:S:FW
+8,8:S:FW
+7,7:D:FW
+8,7:D:FW
+7,7:U:FW
+8,7:U:FW
 ```
 
 Which translates into the following positions:
@@ -228,34 +238,39 @@ LEDs 15-16 should be placed facing up, in the middle
 ### Exmple 28 LED config
 
 ```
-9,9:S:FB
-10,10:S:FB
-11,11:S:IA
-11,11:E:IA
-10,10:E:F
-9,9:E:F
-10,5:S:F
-11,4:S:F
-12,3:S:IA
-12,2:N:IA
-11,1:N:F
-10,0:N:F
-7,0:N:FB
-6,0:N:FB
-5,0:N:FB
-4,0:N:FB
-2,0:N:F
-1,1:N:F
-0,2:N:IA
-0,3:W:IA
-1,4:W:F
-2,5:W:F
-2,9:W:F
-1,10:W:F
-0,11:W:IA
-0,11:S:IA
-1,10:S:FB
-2,9:S:FB
+#right rear cluster
+led 0 9,9:S:FWT
+led 1 10,10:S:FWT
+led 2 11,11:S:IA
+led 3 11,11:E:IA
+led 4 10,10:E:AT
+led 5 9,9:E:AT
+# right front cluster
+led 6 10,5:S:F
+led 7 11,4:S:F
+led 8 12,3:S:IA
+led 9 12,2:N:IA
+led 10 11,1:N:F
+led 11 10,0:N:F
+# center front cluster
+led 12 7,0:N:FW
+led 13 6,0:N:FW
+led 14 5,0:N:FW
+led 15 4,0:N:FW
+# left front cluster
+led 16 2,0:N:F
+led 17 1,1:N:F
+led 18 0,2:N:IA
+led 19 0,3:W:IA
+led 20 1,4:S:F
+led 21 2,5:S:F
+# left rear cluster
+led 22 2,9:W:AT
+led 23 1,10:W:AT
+led 24 0,11:W:IA
+led 25 0,11:S:IA
+led 26 1,10:S:FWT
+led 27 2,9:S:FWT
 ```
 
 ```

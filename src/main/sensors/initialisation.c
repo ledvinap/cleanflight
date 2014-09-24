@@ -115,6 +115,7 @@
 #ifdef EUSTM32F103RC
 #define USE_FAKE_GYRO
 #define USE_FAKE_ACC
+#define USE_GYRO_L3G4200D
 #endif
 
 #ifdef STM32F3DISCOVERY

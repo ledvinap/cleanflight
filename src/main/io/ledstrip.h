@@ -41,9 +41,10 @@ typedef enum {
     LED_DIRECTION_UP         = (1 << 4),
     LED_DIRECTION_DOWN       = (1 << 5),
     LED_FUNCTION_INDICATOR   = (1 << 6),
-    LED_FUNCTION_BATTERY     = (1 << 7),
+    LED_FUNCTION_WARNING     = (1 << 7),
     LED_FUNCTION_FLIGHT_MODE = (1 << 8),
-    LED_FUNCTION_ARM_STATE   = (1 << 9)
+    LED_FUNCTION_ARM_STATE   = (1 << 9),
+    LED_FUNCTION_THROTTLE    = (1 << 10)
 } ledFlag_e;
 
 typedef struct ledConfig_s {
@@ -53,7 +54,15 @@ typedef struct ledConfig_s {
 
 extern uint8_t ledCount;
 
+#define CONFIGURABLE_COLOR_COUNT 16
+
+
 bool parseLedStripConfig(uint8_t ledIndex, const char *config);
 void updateLedStrip(void);
+
 void applyDefaultLedStripConfig(ledConfig_t *ledConfig);
 void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSize);
+
+bool parseColor(uint8_t index, char *colorConfig);
+void applyDefaultColors(hsvColor_t *colors, uint8_t colorCount);
+

@@ -217,7 +217,6 @@ static void ppmEdgeCallback(void* self_, uint16_t capture)
 
 #define MAX_MISSED_PWM_EVENTS 10
 
-extern uint16_t debug[4];
 static void pwmOverflowCallback(void* self_, uint16_t capture)
 {
     UNUSED(capture);

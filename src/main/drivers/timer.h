@@ -47,7 +47,7 @@ typedef uint16_t timCCR_t;
 #if defined(STM32F303xC)
 typedef uint32_t timCCER_t;
 typedef uint32_t timSR_t;
-#elif defined(STM32F10X_MD)
+#elif defined(STM32F10X)
 typedef uint16_t timCCER_t;
 typedef uint16_t timSR_t;
 #else 
@@ -91,13 +91,10 @@ typedef struct timerQueueRec_s {
 #define TIMERIN_IPD               0x0400    // Configure input as pulldown
 
 typedef struct timerData_Input {
-    struct {
-        uint16_t capture;
-        uint16_t tag;
-    } queue[TIMERIN_QUEUE_LEN];
+    uint32_t queue[TIMERIN_QUEUE_LEN];
     uint8_t qhead;
     uint8_t qtail;
-    uint16_t flags;
+    uint32_t flags;
     const timerHardware_t* timHw;
     TIM_TypeDef *tim;
     callbackRec_t *callback;

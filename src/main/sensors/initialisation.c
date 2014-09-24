@@ -19,6 +19,9 @@
 #include <string.h>
 
 #include "platform.h"
+
+#include "build_config.h"
+
 #include "common/axis.h"
 
 #include "drivers/accgyro.h"
@@ -96,7 +99,7 @@
 #undef USE_GYRO_SPI_MPU6000
 #endif
 
-#if defined(OLIMEXINO)
+#if defined(OLIMEXINO) || defined(EUSTM32F103RC)
 #undef USE_GYRO_L3GD20
 #undef USE_GYRO_L3G4200D
 #undef USE_GYRO_MPU3050
@@ -107,6 +110,11 @@
 #undef USE_ACC_ADXL345
 #undef USE_ACC_SPI_MPU6000
 #undef USE_BARO_MS5611
+#endif
+
+#ifdef EUSTM32F103RC
+#define USE_FAKE_GYRO
+#define USE_FAKE_ACC
 #endif
 
 #ifdef STM32F3DISCOVERY
@@ -150,8 +158,6 @@
 #undef USE_ACC_MMA8452
 #endif
 
-extern uint16_t batteryWarningVoltage;
-extern uint8_t batteryCellCount;
 extern float magneticDeclination;
 
 extern gyro_t gyro;
@@ -160,11 +166,16 @@ extern acc_t acc;
 
 #ifdef USE_FAKE_GYRO
 static void fakeGyroInit(void) {}
-static void fakeGyroRead(int16_t *gyroData) {}
-static void fakeGyroReadTemp(int16_t *tempData) {}
+static void fakeGyroRead(int16_t *gyroData) {
+    UNUSED(gyroData);
+}
+static void fakeGyroReadTemp(int16_t *tempData) {
+    UNUSED(tempData);
+}
 
 bool fakeGyroDetect(gyro_t *gyro, uint16_t lpf)
 {
+    UNUSED(lpf);
     gyro->init = fakeGyroInit;
     gyro->read = fakeGyroRead;
     gyro->temperature = fakeGyroReadTemp;
@@ -174,7 +185,9 @@ bool fakeGyroDetect(gyro_t *gyro, uint16_t lpf)
 
 #ifdef USE_FAKE_ACC
 static void fakeAccInit(void) {}
-static void fakeAccRead(int16_t *accData) {}
+static void fakeAccRead(int16_t *accData) {
+    UNUSED(accData);
+}
 
 bool fakeAccDetect(acc_t *acc)
 {
@@ -188,11 +201,6 @@ bool fakeAccDetect(acc_t *acc)
 bool detectGyro(uint16_t gyroLpf)
 {
     gyroAlign = ALIGN_DEFAULT;
-#ifdef USE_FAKE_GYRO
-    if (fakeGyroDetect(&gyro, gyroLpf)) {
-        return true;
-    }
-#endif
 
 #ifdef USE_GYRO_MPU6050
     if (mpu6050GyroDetect(&gyro, gyroLpf)) {
@@ -232,6 +240,12 @@ bool detectGyro(uint16_t gyroLpf)
 #ifdef CC3D
         gyroAlign = CW270_DEG;
 #endif
+        return true;
+    }
+#endif
+
+#ifdef USE_FAKE_GYRO
+    if (fakeGyroDetect(&gyro, gyroLpf)) {
         return true;
     }
 #endif

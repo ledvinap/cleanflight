@@ -108,8 +108,8 @@ static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
     {SERIAL_PORT_USART2,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE},
 #if (SERIAL_PORT_COUNT > 2)
-    {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE},
-    {SERIAL_PORT_SOFTSERIAL2,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
+    {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE},
+    {SERIAL_PORT_SOFTSERIAL2,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
 #endif
 };
 #endif
@@ -251,6 +251,13 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         )) {
             continue;
         }
+
+#if (defined(NAZE) || defined(OLIMEXINO)) && defined(SONAR)
+        if (!feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {
+            continue;
+        }
+#endif
+
 #endif
 
         if (functionConstraint->requiredSerialPortFeatures != SPF_NONE) {

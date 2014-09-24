@@ -186,6 +186,11 @@ void uartSetMode(serialPort_t *instance, portMode_t mode)
 #endif
 }
 
+void uartSetDirection(serialPort_t *instance, portDirection_t direction)
+{
+    // TODO !!!
+}
+
 void uartStartTxDMA(uartPort_t *s)
 {
     s->txDMAChannel->CMAR = (uint32_t)&s->port.txBuffer[s->port.txBufferTail];
@@ -258,5 +263,6 @@ const struct serialPortVTable uartVTable[] = {
         uartSetBaudRate,
         isUartTransmitBufferEmpty,
         uartSetMode,
+        uartSetDirection,
     }
 };

@@ -44,7 +44,7 @@
 #define SOFT_SERIAL_2_TIMER_TX_HARDWARE 13 // PWM 8
 #endif
 
-#if defined(STM32F303xC) && !defined(CHEBUZZF3)
+#if defined(STM32F303) && !defined(CHEBUZZF3)
 #define SOFT_SERIAL_1_TIMER_RX_HARDWARE 8 // PWM 9
 #define SOFT_SERIAL_1_TIMER_TX_HARDWARE 9 // PWM 10
 #define SOFT_SERIAL_2_TIMER_RX_HARDWARE 10 // PWM 11
@@ -121,13 +121,13 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh, self->txTimerHardware, &self->txCallback, (inversion?TIMEROUT_INVERTED:0)|TIMEROUT_WAKEONEMPTY);
         timerOut_Release(&self->txTimerCh);
-        timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, (inversion?0:TIMERIN_FLAG_HIGH)|TIMERIN_POLARITY_TOGGLE);
+        timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, (inversion?0:TIMERIN_FLAG_HIGH)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0));
         timerIn_SetBuffering(&self->rxTimerCh, 0);
         timerQueue_Config(&self->rxTimerQueue, softSerialRxTimeoutEvent);
     } else {
         if(mode & MODE_RX) {
             callbackRegister(&self->rxCallback, softSerialRxCallback);
-            timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, (inversion?0:TIMERIN_FLAG_HIGH)|TIMERIN_POLARITY_TOGGLE);
+            timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, (inversion?0:TIMERIN_FLAG_HIGH)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0));
             timerIn_SetBuffering(&self->rxTimerCh, 0);
             timerQueue_Config(&self->rxTimerQueue, softSerialRxTimeoutEvent);
         }

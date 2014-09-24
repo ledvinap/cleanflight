@@ -52,21 +52,6 @@ void useTelemetryConfig(telemetryConfig_t *telemetryConfigToUse)
     telemetryConfig = telemetryConfigToUse;
 }
 
-bool isTelemetryProviderFrSky(void)
-{
-    return telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_FRSKY;
-}
-
-bool isTelemetryProviderHoTT(void)
-{
-    return telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_HOTT;
-}
-
-bool isTelemetryProviderMSP(void)
-{
-    return telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_MSP;
-}
-
 bool canUseTelemetryWithCurrentConfiguration(void)
 {
     if (!feature(FEATURE_TELEMETRY)) {
@@ -95,7 +80,7 @@ void initTelemetry()
     case TELEMETRY_PROVIDER_MSP:
         initMSPTelemetry(telemetryConfig);
         break;
-    case TELEMETRY_PROVIDER_FRSKYSPORT:
+    case TELEMETRY_PROVIDER_SPORT:
         initSPortTelemetry(telemetryConfig);
         break;
     }
@@ -130,7 +115,7 @@ uint32_t getTelemetryProviderBaudRate(void)
         return getHoTTTelemetryProviderBaudRate();
     case TELEMETRY_PROVIDER_MSP:
         return getMSPTelemetryProviderBaudRate();
-    case TELEMETRY_PROVIDER_FRSKYSPORT:
+    case TELEMETRY_PROVIDER_SPORT:
         return getSPortTelemetryProviderBaudRate();
     }
     return 0;
@@ -148,7 +133,7 @@ static void configureTelemetryPort(void)
     case TELEMETRY_PROVIDER_MSP:
         configureMSPTelemetryPort();
         break;
-    case TELEMETRY_PROVIDER_FRSKYSPORT:
+    case TELEMETRY_PROVIDER_SPORT:
         configureSPortTelemetryPort();
         break;
     }
@@ -167,7 +152,7 @@ void freeTelemetryPort(void)
     case TELEMETRY_PROVIDER_MSP:
         freeMSPTelemetryPort();
         break;
-    case TELEMETRY_PROVIDER_FRSKYSPORT:
+    case TELEMETRY_PROVIDER_SPORT:
         freeSPortTelemetryPort();
         break;
     }
@@ -212,7 +197,7 @@ void handleTelemetry(void)
     case TELEMETRY_PROVIDER_MSP:
         handleMSPTelemetry();
         break;
-    case TELEMETRY_PROVIDER_FRSKYSPORT:
+    case TELEMETRY_PROVIDER_SPORT:
         handleSPortTelemetry();
         break;
     }

@@ -47,6 +47,7 @@
 #include "io/gimbal.h"
 #include "io/rc_controls.h"
 #include "io/serial.h"
+#include "io/ledstrip.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
@@ -77,6 +78,7 @@ static void cliGpsPassthrough(char *cmdline);
 #endif
 static void cliHelp(char *cmdline);
 static void cliMap(char *cmdline);
+static void cliLed(char *cmdline);
 static void cliMixer(char *cmdline);
 static void cliMotor(char *cmdline);
 static void cliProfile(char *cmdline);
@@ -143,6 +145,7 @@ const clicmd_t cmdTable[] = {
     { "gpspassthrough", "passthrough gps to serial", cliGpsPassthrough },
 #endif
     { "help", "", cliHelp },
+    { "led", "configure leds", cliLed },
     { "map", "mapping of rc channel order", cliMap },
     { "mixer", "mixer name or list", cliMixer },
     { "motor", "get/set motor output value", cliMotor },
@@ -200,6 +203,7 @@ const clivalue_t valueTable[] = {
     { "servo_pwm_rate",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.servo_pwm_rate, 50, 498 },
 
     { "retarded_arm",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.retarded_arm, 0, 1 },
+    { "disarm_kill_switch",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.disarm_kill_switch, 0, 1 },
     { "small_angle",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.small_angle, 0, 180 },
 
     { "flaps_speed",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.airplaneConfig.flaps_speed, 0, 100 },
@@ -494,6 +498,37 @@ static void cliCMix(char *cmdline)
     }
 }
 
+static void cliLed(char *cmdline)
+{
+#ifndef LED_STRIP
+    UNUSED(cmdline);
+#else
+    int i;
+    uint8_t len;
+    char *ptr;
+    char ledConfigBuffer[20];
+
+    len = strlen(cmdline);
+    if (len == 0) {
+        for (i = 0; i < MAX_LED_STRIP_LENGTH; i++) {
+            generateLedConfig(i, ledConfigBuffer, sizeof(ledConfigBuffer));
+            printf("led %u %s\r\n", i, ledConfigBuffer);
+        }
+    } else {
+        ptr = cmdline;
+        i = atoi(ptr);
+        if (i < MAX_LED_STRIP_LENGTH) {
+            ptr = strchr(cmdline, ' ');
+            if (!parseLedStripConfig(i, ++ptr)) {
+                printf("Parse error\r\n", MAX_LED_STRIP_LENGTH);
+            }
+        } else {
+            printf("Invalid led index: must be < %u\r\n", MAX_LED_STRIP_LENGTH);
+        }
+    }
+#endif
+}
+
 static void dumpValues(uint8_t mask)
 {
     uint32_t i;
@@ -591,6 +626,10 @@ static void cliDump(char *cmdline)
         buf[i] = '\0';
         printf("map %s\r\n", buf);
 
+#ifdef LED_STRIP
+        printf("\r\n\r\n# led\r\n");
+        cliLed("");
+#endif
         printSectionBreak();
         dumpValues(MASTER_VALUE);
     }
@@ -1085,7 +1124,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    cliPrint("Cleanflight - " __DATE__ " / " __TIME__ " - (" __TARGET__ ")");
+    cliPrint("Cleanflight/" __TARGET__ " " __DATE__ " / " __TIME__ " (" __REVISION__ ")");
 }
 
 void cliProcess(void)

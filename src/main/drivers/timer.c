@@ -72,7 +72,7 @@
 /* some magic to use preprocessor for timer mapping */
 #define TIM_N(i) (1<<(i))
 
-#if (defined(STM32F10X_MD) || defined(NAZE)) && !defined(CC3D)
+#if (defined(STM32F10X) || defined(NAZE)) && !defined(CC3D)
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM2, GPIOA, Pin_0, TIM_Channel_1, TIM2_IRQn, 0, Mode_IPD},          // PWM1
     { TIM2, GPIOA, Pin_1, TIM_Channel_2, TIM2_IRQn, 0, Mode_IPD},          // PWM2
@@ -124,7 +124,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB)
 #endif
 
-#if (defined(STM32F303xC) || defined(STM32F3DISCOVERY)) && !(defined(CHEBUZZF3) || defined(NAZE32PRO))
+#if (defined(STM32F303) || defined(STM32F3DISCOVERY)) && !(defined(CHEBUZZF3) || defined(NAZE32PRO))
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM1, GPIOA, Pin_8, TIM_Channel_1, TIM1_CC_IRQn, 1, Mode_AF_PP_PD},             // PWM1 - PA8
     { TIM16, GPIOB, Pin_8, TIM_Channel_1, TIM1_UP_TIM16_IRQn, 0, Mode_AF_PP_PD},      // PWM2 - PB8
@@ -203,6 +203,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 };
 
 #define USED_TIMERS  TIM_N(1)|TIM_N(2)|TIM_N(3)|TIM_N(4)|TIM_N(15)|TIM_N(16)|TIM_N(17)
+
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
 #define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_TIM15 | RCC_APB2Periph_TIM16 | RCC_APB2Periph_TIM17)
@@ -472,10 +473,37 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t timerConfig[])
 {
     uint16_t capture;
     uint8_t channelIndex;
-    
-    timSR_t tim_status=tim->SR & tim->DIER;
-
-    if (tim_status & TIM_IT_Update) {
+    unsigned tim_status;
+    tim_status=tim->SR & tim->DIER;
+#if 1
+    switch(__builtin_clz(tim_status)) {
+    case __builtin_clz(TIM_IT_Update):
+        tim->SR = ~TIM_IT_Update;
+        capture = tim->ARR;
+        
+        for (channelIndex = 0; channelIndex < CC_CHANNELS_PER_TIMER; channelIndex++)
+            if (timerConfig[channelIndex].overflowCallback) 
+                timerConfig[channelIndex].overflowCallback(timerConfig[channelIndex].data, capture);
+        break;
+    case __builtin_clz(TIM_IT_CC1):
+        tim->SR = ~TIM_IT_CC1;
+        timerConfig[0].edgeCallback(timerConfig[0].data, tim->CCR1);
+        break;
+    case __builtin_clz(TIM_IT_CC2):        
+        tim->SR = ~TIM_IT_CC2;
+        timerConfig[1].edgeCallback(timerConfig[1].data, tim->CCR2);
+        break;
+    case __builtin_clz(TIM_IT_CC3):
+        tim->SR = ~TIM_IT_CC3;
+        timerConfig[2].edgeCallback(timerConfig[2].data, tim->CCR3);
+        break;
+    case __builtin_clz(TIM_IT_CC4):
+        tim->SR = ~TIM_IT_CC4;
+        timerConfig[3].edgeCallback(timerConfig[3].data, tim->CCR4);
+        break;
+    }
+#else
+    if (tim_status & (int)TIM_IT_Update) {
         tim->SR = ~TIM_IT_Update;
         capture = tim->ARR;
 
@@ -483,23 +511,23 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t timerConfig[])
             if (timerConfig[channelIndex].overflowCallback) 
                 timerConfig[channelIndex].overflowCallback(timerConfig[channelIndex].data, capture);
     }
-    if (tim_status & TIM_IT_CC1) {
+    if (tim_status & (int)TIM_IT_CC1) {
         tim->SR = ~TIM_IT_CC1;
         timerConfig[0].edgeCallback(timerConfig[0].data, tim->CCR1);
     }
-    if (tim_status & TIM_IT_CC2) {
+    if (tim_status & (int)TIM_IT_CC2) {
         tim->SR = ~TIM_IT_CC2;
         timerConfig[1].edgeCallback(timerConfig[1].data, tim->CCR2);
     }
-    if (tim_status & TIM_IT_CC3) {
+    if (tim_status & (int)TIM_IT_CC3) {
         tim->SR = ~TIM_IT_CC3;
         timerConfig[2].edgeCallback(timerConfig[2].data, tim->CCR3);
     }
-    if (tim_status & TIM_IT_CC4) {
+    if (tim_status & (int)TIM_IT_CC4) {
         tim->SR = ~TIM_IT_CC4;
         timerConfig[3].edgeCallback(timerConfig[3].data, tim->CCR4);
     }
-    
+#endif
 }
 # if 0
 #define _TIM_IRQ_HANDLER(name, i)                                      \
@@ -581,7 +609,7 @@ void timerInit(void)
 #endif
 
 
-#ifdef STM32F303xC
+#ifdef STM32F303
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource8,  GPIO_AF_6);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource8,  GPIO_AF_1);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource9,  GPIO_AF_1);

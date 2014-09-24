@@ -41,7 +41,7 @@ void timerIn_Restart(timerData_Input_t* self)
 
 void timerIn_timerCaptureEvent(void *self_, uint16_t capture) {
     timerData_Input_t* self=(timerData_Input_t*)self_;
-    // keep old tolarity for tag
+    // keep old polarity for tag
     uint16_t polarity=self->flags&TIMERIN_FLAG_HIGH;
     // toggle polarity if requested
     if(self->flags&TIMERIN_POLARITY_TOGGLE) {
@@ -55,8 +55,7 @@ void timerIn_timerCaptureEvent(void *self_, uint16_t capture) {
         return;
     }
     uint16_t tag=polarity;
-    self->queue[self->qhead].tag=tag;
-    self->queue[self->qhead].capture=capture;
+    self->queue[self->qhead]=(tag<<16)|capture;
     self->qhead=next;
     
     if(!(self->flags&TIMERIN_QUEUE_BUFFER) 
@@ -76,8 +75,7 @@ void timerIn_Flush(timerData_Input_t *self)
         uint8_t next=(self->qhead+1)%TIMERIN_QUEUE_LEN;
         if(next!=self->qtail) {
             uint16_t tag=(self->flags&TIMERIN_FLAG_HIGH)|TIMERIN_FLAG_TIMER;
-            self->queue[self->qhead].tag=tag;
-            self->queue[self->qhead].capture=capture;
+            self->queue[self->qhead]=(tag<<16)|capture;
             self->qhead=next;
         }
     }
@@ -101,8 +99,8 @@ bool timerIn_QPop(timerData_Input_t* self, uint16_t* capture, uint16_t* flags)
 {
     if(self->qhead==self->qtail)
         return false;
-    *capture=self->queue[self->qtail].capture;
-    *flags=self->queue[self->qtail].tag;
+    *capture=self->queue[self->qtail]&0xffff;
+    *flags=self->queue[self->qtail]>>16;
     self->qtail=(self->qtail+1)%TIMERIN_QUEUE_LEN;
     return true;
 }

@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "platform.h"
 
@@ -28,6 +29,7 @@
 
 #include "common/maths.h"
 #include "common/axis.h"
+#include "common/utils.h"
 
 #include "drivers/system.h"
 #include "drivers/accgyro.h"
@@ -61,39 +63,42 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 #define DATA_FRAME              0x10
 
-#define ALT_FIRST_ID            0x0100
+#define ALT_FIRST_ID            0x0100           // baro altitude, in cm
 #define ALT_LAST_ID             0x010f
-#define VARIO_FIRST_ID          0x0110
+#define VARIO_FIRST_ID          0x0110           // Z speed, in cm/s
 #define VARIO_LAST_ID           0x011f
-#define CURR_FIRST_ID           0x0200
+#define CURR_FIRST_ID           0x0200           // current, 0.1A
 #define CURR_LAST_ID            0x020f
-#define VFAS_FIRST_ID           0x0210
+#define VFAS_FIRST_ID           0x0210           // voltage, in 10mV
 #define VFAS_LAST_ID            0x021f
-#define CELLS_FIRST_ID          0x0300
+#define CELLS_FIRST_ID          0x0300           // bbbaaaCc - C - cells count, c - cell, 
+                                                 // aaa - V(c), bbb - V(c+1), 0.002V
 #define CELLS_LAST_ID           0x030f
-#define T1_FIRST_ID             0x0400
+#define T1_FIRST_ID             0x0400           // temperature in degrees C ?
 #define T1_LAST_ID              0x040f
 #define T2_FIRST_ID             0x0410
 #define T2_LAST_ID              0x041f
 #define RPM_FIRST_ID            0x0500
 #define RPM_LAST_ID             0x050f
-#define FUEL_FIRST_ID           0x0600
+#define FUEL_FIRST_ID           0x0600           // fuel level, in percent
 #define FUEL_LAST_ID            0x060f
-#define ACCX_FIRST_ID           0x0700
+#define ACCX_FIRST_ID           0x0700           // in 1/100 g
 #define ACCX_LAST_ID            0x070f
 #define ACCY_FIRST_ID           0x0710
 #define ACCY_LAST_ID            0x071f
 #define ACCZ_FIRST_ID           0x0720
 #define ACCZ_LAST_ID            0x072f
-#define GPS_LONG_LATI_FIRST_ID  0x0800
+#define GPS_LONG_LATI_FIRST_ID  0x0800           // bit 31: 0=latitude,1=longitude
+                                                 // bit 30: sign (1-negative [S,W])
+                                                 // bit 0-29: minutes*10000
 #define GPS_LONG_LATI_LAST_ID   0x080f
 #define GPS_ALT_FIRST_ID        0x0820
 #define GPS_ALT_LAST_ID         0x082f
 #define GPS_SPEED_FIRST_ID      0x0830
 #define GPS_SPEED_LAST_ID       0x083f
-#define GPS_COURS_FIRST_ID      0x0840
+#define GPS_COURS_FIRST_ID      0x0840         // heading;  in hunderds of degree
 #define GPS_COURS_LAST_ID       0x084f
-#define GPS_TIME_DATE_FIRST_ID  0x0850
+#define GPS_TIME_DATE_FIRST_ID  0x0850         // hhmmss00 or YYMMDDxx with nonzero xx
 #define GPS_TIME_DATE_LAST_ID   0x085f
 #define A3_FIRST_ID             0x0900
 #define A3_LAST_ID              0x090f
@@ -118,56 +123,104 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 #define ACC_FIRST_ID(x)        (ACCX_FIRST_ID+(i)*0x10)
 
-uint16_t pkt_id;
-uint32_t pkt_value;
-uint16_t pkt_crc;
+typedef enum  {
+    tlm_Acc=0, tlm_Vario, tlm_BaroAlt, tlm_Heading, tlm_Temp1, tlm_Current,
+    tlm_Voltage, tlm_Cells, tlm_Fuel, 
+#ifdef GPS
+    tlm_GPS, 
+#endif
+    tlm_Time
+} tlm_Id;
 
-void tx_crc_start(void)
+struct tlm_info_s {
+    uint8_t id;
+    uint16_t delta_t;  // in ms 
+};
+
+const struct tlm_info_s tlm_info[] = {
+    {tlm_Acc, 125},
+    {tlm_Vario, 125},
+    {tlm_BaroAlt, 500},
+    {tlm_Heading, 500},
+    {tlm_Temp1, 1000},
+    {tlm_Current, 1000},
+    {tlm_Voltage, 1000},
+    {tlm_Cells, 1000},
+    {tlm_Fuel, 1000},
+#ifdef GPS
+    {tlm_GPS, 1000},
+#endif
+    {tlm_Time, 5000},
+};  
+
+
+static int telemQueueInsert(uint16_t time, uint16_t data);
+static void telemQueueDeleteIdx(unsigned parent);
+
+#define TELEM_PKTQUEUE_LEN 8
+static uint8_t telemPktQueue[TELEM_PKTQUEUE_LEN][8];
+static unsigned telemPktHead, telemPktTail;
+
+static bool telemPktQueuePush(uint8_t* pkt) 
 {
-    pkt_crc=0;
+    unsigned nxt=(telemPktHead+1)%TELEM_PKTQUEUE_LEN;
+    if(nxt==telemPktTail) return false;
+    memcpy(telemPktQueue[telemPktHead], pkt, sizeof(telemPktQueue[telemPktHead]));
+    telemPktHead=nxt;
+    return true;
+}
+
+static void telemPktQueuePop(void) 
+{
+    if(telemPktHead==telemPktTail) return;
+    telemPktTail=(telemPktTail+1)%TELEM_PKTQUEUE_LEN;
+}
+
+static uint8_t* telemPktQueueHead(void)
+{
+    if(telemPktHead==telemPktTail) return NULL;
+    return telemPktQueue[telemPktTail];
+}
+
+static unsigned telemPktQueueEmpty(void)
+{
+    return telemPktHead==telemPktTail;
+}
+
+void set_crc(uint8_t* pkt)
+{
+    unsigned crc=0;
+    for(unsigned i=0;i<7;i++)
+        crc+=pkt[i];
+    while(crc&~0xff)
+        crc=(crc&0xff)+(crc>>8);
+    pkt[7]=~crc;
 }
 
 void tx_u8(uint8_t v)
 {
-    pkt_crc+=v;
+    if(v==0x7d || v==0x7e) {
+        serialWrite(sPortPort, 0x7D);
+        v ^= 0x20;
+    }
     serialWrite(sPortPort, v);
 }
 
-void tx_u16(uint16_t v)
-{
-    tx_u8((v&0x00ff)>>0);
-    tx_u8((v&0xff00)>>8);
-}
-
-void tx_u32(uint16_t v)
-{
-    tx_u8((v&0x000000ff)>>0);
-    tx_u8((v&0x0000ff00)>>8);
-    tx_u8((v&0x00ff0000)>>16);
-    tx_u8((v&0xff000000)>24);
-}
-
-void tx_crc(void)
-{
-    while(pkt_crc&0xff00)
-        pkt_crc=(pkt_crc&0xff)+(pkt_crc>>8);
-    serialWrite(sPortPort,pkt_crc);
-}
 
 void telemetrySPortSerialRxCharCallback(uint16_t data)
 {
     // TODO !!
     static uint16_t rcvd;
+    uint8_t *pkt;
     rcvd<<=8;
     rcvd|=data&0xff;
-    if(rcvd==((0x7e<<8)|DATA_ID_GPS) && pkt_id!=0) {
+    if(rcvd==((0x7e<<8)|DATA_ID_VARIO) && (pkt=telemPktQueueHead())!=NULL) {
+        delayMicroseconds(100); // TODO!
         serialSetDirection(sPortPort, DIRECTION_TX);
-        tx_crc_start();
-        tx_u8(DATA_FRAME);
-        tx_u16(pkt_id);
-        tx_u32(pkt_value);
-        tx_crc();
+        for(unsigned i=0;i<8;i++)
+            tx_u8(pkt[i]);
         serialSetDirection(sPortPort, DIRECTION_RX_WHENTXDONE);
+        telemPktQueuePop();
     }
 }
 
@@ -179,63 +232,120 @@ void telemetrySPortSerialTxDoneCallback(void)
 
 static void pushPacket(uint16_t id, uint32_t value)
 {
-    pkt_id=id;
-    pkt_value=value;
+    uint8_t pkt[8];
+    pkt[0]=0x10;
+    memcpy(pkt+1, &id, 2);
+    memcpy(pkt+3, &value, 4);
+    set_crc(pkt);
+    telemPktQueuePush(pkt);
 }
 
-static void generatePacket(void) {
-    static int idx=0;
-    switch(idx) {
-    case 0:
-        for(int i=0;i<3;i++) 
-            pushPacket(ACC_FIRST_ID(i), ((float)accSmooth[i] / acc_1G) * 1000);
-    case 1:
-        pushPacket(VARIO_FIRST_ID, vario);
-        break;
-    case 2:
-        pushPacket(ALT_FIRST_ID, BaroAlt);
-        break;
-    case 3:
-        pushPacket(GPS_COURS_FIRST_ID, heading);  // TODO - scaling is probably necessary
-        break;
-    case 4:
-        pushPacket(T1_FIRST_ID, telemTemperature1);  // TODO - maybe /10 ?
-        break;
-    }
-#if 0
-    case 5:
-        if (feature(FEATURE_VBAT)) {
-            sendVoltage();
-            break;
-        }
-    case 6:
-        if (feature(FEATURE_VBAT)) {
-            sendVoltageAmp();
-            break;
-        }
-    case 7:
-        if (feature(FEATURE_VBAT)) {
-            sendAmperage();
-            break;
-        }
-    case 8:
-        if (feature(FEATURE_VBAT)) {
-            sendFuelLevel();
-        }
-    case 9:
+static void pushPacketS(uint16_t id, int32_t value)
+{
+    pushPacket(id, (uint32_t)value);
+}
+
+static void tlm_sendCells(void)
+{
+    static uint8_t currentCellIdx=0; 
+    if(currentCellIdx>=batteryCellCount)  // do it first in case batteryCellCount was decreased
+        currentCellIdx=0;
+    uint32_t val=0;
+    val|=(batteryCellCount<<4)|currentCellIdx;
+    uint16_t cellVoltage=((int)vbat*50/batteryCellCount)&0xfff;  // scale to 10mV
+    val|=(cellVoltage)<<8;      // lower cell voltage
+    if(currentCellIdx+1<batteryCellCount)
+        val|=(cellVoltage)<<20;     // upper cell voltage if cell exists
+    pushPacket(CELLS_FIRST_ID, val);
+    currentCellIdx+=2;                    // 2 cell voltages sent
+}
+
 #ifdef GPS
+void tlm_sendGPS(void)
+{
+    // GPS_COORS is in 1e-7 degrees
+    uint32_t val;
+    val=abs(GPS_coord[LAT])*3/50;  // *60/1000
+    if(GPS_coord[LAT]<0) val|=1<<30;
+    pushPacket(GPS_LONG_LATI_FIRST_ID, val);
+    val=(abs(GPS_coord[LON])*3/50)|(1<<31);
+    if(GPS_coord[LAT]<0) val|=1<<30;
+    pushPacket(GPS_LONG_LATI_FIRST_ID, val);
+}
+#endif
+
+// generate packet for given telemetry ID
+// return 0 if packet not generated or delay in ms for next call with this id
+static int generatePacket(tlm_Id id) {
+    switch(id) {
+    case tlm_Acc:
+        for(int i=0;i<3;i++) 
+            pushPacketS(ACC_FIRST_ID(i), (int)accSmooth[i]*100/acc_1G); // convert to 8.8 fixed point
+        break;
+    case tlm_Vario:
+        pushPacketS(VARIO_FIRST_ID, vario);
+        break;
+    case tlm_BaroAlt:
+        pushPacketS(ALT_FIRST_ID, BaroAlt);
+        break;
+    case tlm_Heading:
+        pushPacketS(GPS_COURS_FIRST_ID, heading);  // TODO - scaling is probably necessary
+        break;
+    case tlm_Temp1:
+        pushPacketS(T1_FIRST_ID, telemTemperature1);  // TODO - maybe /10 ?
+        break;
+    case tlm_Current:
+        if (feature(FEATURE_VBAT))
+            pushPacketS(CURR_FIRST_ID, (amperage+5)/10); 
+        else 
+            return 0;
+        break;
+    case tlm_Voltage:
+        if (feature(FEATURE_VBAT)) 
+            pushPacket(VFAS_FIRST_ID, vbat*10); 
+        else 
+            return 0;
+        break;        
+    case tlm_Cells:
+        if (feature(FEATURE_VBAT)) 
+            tlm_sendCells();
+        else 
+            return 0;
+        break;
+    case tlm_Fuel:
+        if (feature(FEATURE_VBAT)) 
+            pushPacket(FUEL_FIRST_ID, mAhDrawn); // TODO - value should be in percent
+        else 
+            return 0;
+        break;
+#ifdef GPS
+    case tlm_GPS:
         if (sensors(SENSOR_GPS))
-            sendGPS();
+            tlm_sendGPS();
+        else 
+            return 0;
+        break;
 #endif
-    case 10:
-        sendTime();
+    case tlm_Time: {
+        unsigned seconds = millis() / 1000;
+        unsigned minutes = seconds / 60;
+        unsigned hours = minutes / 60;
+        pushPacket(GPS_TIME_DATE_FIRST_ID, ((hours&0xff)<<24)|((minutes%60)<<16)|((seconds%60)<<8));
+        }  
+        break;
     }
-#endif
+    return tlm_info[id].delta_t; // default replan time
 }
 
 void initSPortTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
     telemetryConfig = initialTelemetryConfig;
+    // enqueue all packets
+    // TODO - handle case when telemetry is not running - there is 32s overflow
+    for(unsigned i=0;i<ARRAYLEN(tlm_info); i++) {
+        telemQueueInsert(millis(), i);
+    }
+    telemPktHead=telemPktTail=0;
 }
 
 static portMode_t previousPortMode;
@@ -271,14 +381,65 @@ void configureSPortTelemetryPort(void)
     }
 }
 
+#define TELEM_HEAP_LEN ARRAYLEN(tlm_info)
+uint32_t telemHeap[TELEM_HEAP_LEN];
+unsigned telemHeapLen=0;
+
+static inline int16_t tq_cmp(uint32_t a, uint32_t b) 
+{
+    return (a-b)>>16;
+}
+
+// insert new timer into queue
+// return position where new record was inserted
+static int telemQueueInsert(uint16_t time, uint16_t data)
+{
+    uint32_t rec=(time<<16)|data;
+    unsigned parent, child;
+    child = telemHeapLen++;
+    while(child) {
+        parent=(child - 1)/2;
+        if(tq_cmp(telemHeap[parent], rec)<=0) break;
+        telemHeap[child] = telemHeap[parent];
+        child=parent;
+    }
+    telemHeap[child] = rec;
+    return child;
+}
+
+// remove element at given index from queue
+static void telemQueueDeleteIdx(unsigned parent)
+{
+    if(telemHeapLen==0) return; 
+    unsigned child;
+    uint32_t last=telemHeap[--telemHeapLen];
+    while ((child = (2*parent)+1) < telemHeapLen) {
+        if (child + 1 < telemHeapLen
+            && tq_cmp(telemHeap[child], telemHeap[child+1])>=0)
+            ++child;
+        if(tq_cmp(last, telemHeap[child])<=0) 
+            break;
+        telemHeap[parent] = telemHeap[child];
+        parent = child;
+    }
+    telemHeap[parent] = last;
+}
 
 void handleSPortTelemetry(void)
 {
-
-    if(pkt_id) 
+    if(!telemHeapLen)  // this should never happend
         return;
-
-    generatePacket(); 
+    while(telemPktQueueEmpty()) { 
+        if(tq_cmp(telemHeap[0], millis()<<16)<=0) { // time is up
+            tlm_Id id=telemHeap[0]&0xffff;
+            telemQueueDeleteIdx(0);
+            int res=generatePacket(id);
+            if(res<=0||res>=10000) {   // TODO
+                res=10000; // try 10s later
+            }
+            telemQueueInsert(millis()+res, id);
+        }
+    }
 }
 
 uint32_t getSPortTelemetryProviderBaudRate(void) {

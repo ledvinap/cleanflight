@@ -59,7 +59,8 @@ typedef struct master_t {
     rxConfig_t rxConfig;
     inputFilteringMode_e inputFilteringMode;  // Use hardware input filtering, e.g. for OrangeRX PPM/PWM receivers.
 
-    uint8_t retarded_arm;                   // allow disarsm/arm on throttle down + roll left/right
+    uint8_t retarded_arm;                   // allow disarm/arm on throttle down + roll left/right
+    uint8_t disarm_kill_switch;             // allow disarm via AUX switch regardless of throttle value
     uint8_t small_angle;
 
     airplaneConfig_t airplaneConfig;
@@ -72,6 +73,8 @@ typedef struct master_t {
     serialConfig_t serialConfig;
 
     telemetryConfig_t telemetryConfig;
+
+    ledConfig_t ledConfigs[MAX_LED_STRIP_LENGTH];
 
     profile_t profile[3];                   // 3 separate profiles
     uint8_t current_profile_index;          // currently loaded profile

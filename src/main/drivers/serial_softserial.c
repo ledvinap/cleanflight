@@ -38,8 +38,8 @@
 #include "serial_softserial.h"
 
 #if defined(STM32F10X_MD) || defined(CHEBUZZF3)
-#define SOFT_SERIAL_1_TIMER_RX_HARDWARE 10 // PWM 5
-#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 11 // PWM 6
+#define SOFT_SERIAL_1_TIMER_RX_HARDWARE 11 // PWM 5
+#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 12 // PWM 6
 #define SOFT_SERIAL_2_TIMER_RX_HARDWARE 12 // PWM 7
 #define SOFT_SERIAL_2_TIMER_TX_HARDWARE 13 // PWM 8
 #endif
@@ -119,21 +119,25 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
         self->directionTx=false;
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         callbackRegister(&self->txCallback, softSerialTxCallback);
+        timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerOut_Config(&self->txTimerCh, self->txTimerHardware, &self->txCallback, (inversion?TIMEROUT_INVERTED:0)|TIMEROUT_WAKEONEMPTY);
         timerOut_Release(&self->txTimerCh);
-        timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, (inversion?0:TIMERIN_FLAG_HIGH)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0));
+        timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, &self->rxTimerQ, 
+                       (inversion?0:TIMERIN_RISING)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0));
         timerIn_SetBuffering(&self->rxTimerCh, 0);
-        timerQueue_Config(&self->rxTimerQueue, softSerialRxTimeoutEvent);
     } else {
-        if(mode & MODE_RX) {
-            callbackRegister(&self->rxCallback, softSerialRxCallback);
-            timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, (inversion?0:TIMERIN_FLAG_HIGH)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0));
-            timerIn_SetBuffering(&self->rxTimerCh, 0);
-            timerQueue_Config(&self->rxTimerQueue, softSerialRxTimeoutEvent);
-        }
         if(mode & MODE_TX) {
+            timerOut_Config(&self->txTimerCh, self->txTimerHardware, &self->txCallback, (inversion?0:TIMEROUT_INVERTED)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
             callbackRegister(&self->txCallback, softSerialTxCallback);
-            timerOut_Config(&self->txTimerCh, self->txTimerHardware, &self->txCallback, (inversion?TIMEROUT_INVERTED:0));
+            delay(1); // TODO - only for testing
+        }
+        if(mode & MODE_RX) {
+            timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
+            callbackRegister(&self->rxCallback, softSerialRxCallback);
+            timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, &self->rxTimerQ, 
+                           (inversion?TIMERIN_RISING:0)|TIMERIN_POLARITY_TOGGLE|TIMERIN_QUEUE_DUALTIMER|(inversion?TIMERIN_IPD:0)|TIMERIN_QUEUE_BUFFER);
+            self->rxTimerCh.timeout=((self->bitTime*RX_TOTAL_BITS)>>8)+50; // 50 us after stopbit
+            callbackTrigger(&self->rxCallback);                           // setup timeouts correctly
         }
     }
     return &self->port;
@@ -177,31 +181,31 @@ void softSerialTryTx(softSerial_t* self) {
         byteToSend<<=1;                 // add startbit
         byteToSend|=1<<(TX_BITS+1);     // add stopbit
     
-        int bitPos=0;
+        // we need to enque odxd number of intervals
+        // there is toggle on start of each interval, first interval starts in idle state
+        unsigned bitPos=0;
         uint16_t lastEdgePos=0;
         while(byteToSend) {
-            uint16_t flags=(byteToSend&1)?TIMEROUT_FLAG_ACTIVE:0;
-            int bitcnt=(byteToSend&1)?__builtin_ctz(~byteToSend):__builtin_ctz(byteToSend);
+            unsigned bitcnt=(byteToSend&1)?__builtin_ctz(~byteToSend):__builtin_ctz(byteToSend);
             byteToSend>>=bitcnt;
             bitPos+=bitcnt;
             uint16_t edgePos=(bitPos*self->bitTime)>>8;
-            if(!byteToSend)
-                flags|=TIMEROUT_FLAG_WAKE;  // set wake flag for last interval
-            timerOut_QPush(&self->txTimerCh, edgePos-lastEdgePos, flags);
+            timerOut_QPush(&self->txTimerCh, edgePos-lastEdgePos, 0);
             lastEdgePos=edgePos;
         }
         timerOut_QCommit(&self->txTimerCh);   // this will start transmission if necessary
     }
 }
+#define STARTBIT_MASK 0x0001
+#define STOPBIT_MASK ((0xffff<<(RX_BITS+1))&0xffff)   // check event 'virtual' stopbits, useful to signal errors
 
-#define STOPBIT_MASK (0x8000)
-void srStoreByte(softSerial_t *self) {
-    // check stopbits. Startbit must be correct by desing
-    if((self->rxInternalBuffer & STOPBIT_MASK) != STOPBIT_MASK) {
+void srStoreByte(softSerial_t *self, uint16_t shiftRegister) {
+    if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK)) != (0|STOPBIT_MASK)) {
         self->receiveErrors++;
         return;
     }
-    uint8_t byte=self->rxInternalBuffer>>(sizeof(self->rxInternalBuffer)*8-RX_TOTAL_BITS + 1); // shift startbit out!
+    // TODO - check parity if in sbus mode
+    uint8_t byte=shiftRegister>>1; // shift startbit out
     if (self->port.callback) {
         self->port.callback(byte);
     } else {
@@ -210,66 +214,68 @@ void srStoreByte(softSerial_t *self) {
     }
 }
 
+// TODO
+static inline int16_t cmp16(uint16_t a, uint16_t b) 
+{
+    return a-b;
+}
+
+
+void softSerialRxProcess(softSerial_t *self)
+{
+    uint16_t capture0, capture1, symbolStart, symbolEnd;
+    
+    do { // return here if late edge was caught
+        // always process whole symbol; first captured edge must be startbit
+        while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
+            symbolEnd=symbolStart+((self->bitTime*(2*RX_TOTAL_BITS-1)/2)>>8);   // half bit shorter
+            if(cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
+                timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
+                return;   // symbol is not finished yet
+            }
+            symbolStart-=((self->bitTime / 2) >> 8); // offset startbit edge to get correct rounding
+            uint16_t rxShiftRegister=0xffff;
+            int bitIdxLast=-1;    
+            int bitIdx0=0;        // edge from 1 to 0 (and position of startbit)
+            int bitIdx1;          // edge from 0 to 1
+            // jump inside loop - startbit is always at known position
+            timerIn_QPop2(&self->rxTimerCh);
+            goto edge1;
+            while(timerIn_QPeek2(&self->rxTimerCh, &capture0, &capture1)) {
+                if(cmp16(capture0, symbolEnd)>0) {
+                    // this edge is in next symbol, process received data
+                    break;
+                }
+                timerIn_QPop2(&self->rxTimerCh);
+                bitIdx0=((unsigned long)((capture0-symbolStart)&0xffff)*self->invBitTime)>>16;
+            edge1:
+                bitIdx1=((unsigned long)((capture1-symbolStart)&0xffff)*self->invBitTime)>>16;
+
+                if(bitIdxLast>=bitIdx0 || bitIdx0>=bitIdx1) {
+                    // invalid bit interval or repeated edge in same bit
+                    rxShiftRegister&=~0x8000;  // non-transmitted bits are used as error flags, TODO - symbolic constants
+                    break;
+                }
+                bitIdxLast=bitIdx1;
+                rxShiftRegister&=~(0xffff<<bitIdx0);   // clear all bits >= bitIdx0
+                rxShiftRegister|=0xffff<<bitIdx1;      // set all bits >= bitIdx1
+            }
+            srStoreByte(self, rxShiftRegister);
+        }
+        // no data in queue, setup edge timeout
+    } while(!timerIn_ArmEdgeTimeout(&self->rxTimerCh));   // maybe goto will be more readable here ... 
+}
+
 void softSerialRxCallback(callbackRec_t *cb)
 {
     softSerial_t *self=container_of(cb, softSerial_t, rxCallback);
-    uint16_t capture, flags;
-    while(timerIn_QPop(&self->rxTimerCh, &capture, &flags)) {
-        if (self->rxBitIndex<0) {
-            // startbit edge needs to be processed as data first. goto here to restart startbit processing.
-            // maybe there is some way cheaner way to do this ... 
-        check_startbit:                     
-            if(flags&TIMERIN_FLAG_TIMER)    // waiting for startbit, discard timer 
-                continue;
-            if(self->port.inversion?(flags&TIMERIN_FLAG_HIGH):!(flags&TIMERIN_FLAG_HIGH))
-                continue;                   // must be correct polarity
-            self->rxStartRef = capture - ((self->bitTime / 2) >> 8);  // Some precision is lost here. Maybe scale the value first
-            self->rxBitIndex = 0;
-            self->rxInternalBuffer = 0x8000;                          // not neccessary, but easier to debug
-            timerQueue_Start(&self->rxTimerQueue, capture-timerIn_getTimCNT(&self->rxTimerCh)+((self->bitTime*RX_TOTAL_BITS)>>8)+20);  // add some time to wait for next startbit
-            timerIn_SetBuffering(&self->rxTimerCh, RX_TOTAL_BITS); 
-            // TODO - setup byte timeout here. No need to process individual edges until whole byte is received
-            
-            continue;                                                 // try with next edge
-        }
-
-        int8_t bitIdx=((unsigned long)((capture-self->rxStartRef)&0xffff)*self->invBitTime)>>16;
-        if(bitIdx>=RX_TOTAL_BITS) {
-            bitIdx=RX_TOTAL_BITS;
-        } else {
-            // ignore timer events unless ther finish byte
-            // this simplifies invalid edge detection 
-            if(flags&TIMERIN_FLAG_TIMER)
-                continue;
-        }
-        int8_t bitsReceived = bitIdx-self->rxBitIndex;
-        if(bitsReceived<=0) {
-            // invalid bit interval or repeated edge in same bit
-            self->receiveErrors++;
-            self->rxBitIndex=-1;
-            goto check_startbit;
-        }
-        // shift in reveived bits
-        self->rxInternalBuffer>>=bitsReceived; // zeroes are shifted in
-        if(self->port.inversion?!(flags&TIMERIN_FLAG_HIGH):(flags&TIMERIN_FLAG_HIGH)) { 
-            // set new bits to one
-            self->rxInternalBuffer|=~((0xffff) >> bitsReceived); 
-        }
-        if(bitIdx==RX_TOTAL_BITS) {
-            srStoreByte(self);
-            self->rxBitIndex=-1;
-            goto check_startbit;
-        } else {
-            self->rxBitIndex=bitIdx;
-        }
-    }
+    softSerialRxProcess(self); 
 }
 
 void softSerialRxTimeoutEvent(timerQueueRec_t *tq_ref)
 {
-    softSerial_t* self=container_of(tq_ref, softSerial_t, rxTimerQueue);
-    timerIn_Flush(&self->rxTimerCh);
-    timerIn_SetBuffering(&self->rxTimerCh, 0);
+    softSerial_t* self=container_of(tq_ref, softSerial_t, rxTimerQ);
+    softSerialRxProcess(self);
 }
 
 uint8_t softSerialTotalBytesWaiting(serialPort_t *instance)

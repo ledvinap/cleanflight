@@ -158,7 +158,7 @@ bool isCalibrating()
 void annexCode(void)
 {
     int32_t tmp, tmp2;
-    int32_t axis, prop1, prop2;
+    int32_t axis, prop1=0, prop2;
 
     static uint8_t batteryWarningEnabled = false;
     static uint8_t vbatTimer = 0;
@@ -190,8 +190,7 @@ void annexCode(void)
             rcCommand[axis] = lookupPitchRollRC[tmp2] + (tmp - tmp2 * 100) * (lookupPitchRollRC[tmp2 + 1] - lookupPitchRollRC[tmp2]) / 100;
             prop1 = 100 - (uint16_t)currentProfile->controlRateConfig.rollPitchRate * tmp / 500;
             prop1 = (uint16_t)prop1 * prop2 / 100;
-        }
-        if (axis == YAW) {
+        } else if (axis == YAW) {
             if (currentProfile->yaw_deadband) {
                 if (tmp > currentProfile->yaw_deadband) {
                     tmp -= currentProfile->yaw_deadband;

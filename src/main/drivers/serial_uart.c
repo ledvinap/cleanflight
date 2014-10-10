@@ -106,18 +106,19 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
 
     uartReconfigure(s);
 
-    DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-
     // Receive DMA or IRQ
     if (mode & MODE_RX) {
+
         if (s->rxDMAChannel) {
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+            
             DMA_InitStructure.DMA_BufferSize = s->port.rxBufferSize;
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
@@ -133,18 +134,18 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
         }
     }
 
-    DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-
     // Transmit DMA or IRQ
     if (mode & MODE_TX) {
         if (s->txDMAChannel) {
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    
             DMA_InitStructure.DMA_BufferSize = s->port.txBufferSize;
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
@@ -194,6 +195,9 @@ void uartSetDirection(serialPort_t *instance, portDirection_t direction)
 void uartStartTxDMA(uartPort_t *s)
 {
     s->txDMAChannel->CMAR = (uint32_t)&s->port.txBuffer[s->port.txBufferTail];
+    // TODO - data passed to DMA transfer are 'released' from queue immediately and could be overwritten. txBufferTail should be moved only after transfer is complete
+    //  but beware that whole queue may be pending then
+    // but usart_write does not check buffer space anyway ... 
     if (s->port.txBufferHead > s->port.txBufferTail) {
         s->txDMAChannel->CNDTR = s->port.txBufferHead - s->port.txBufferTail;
         s->port.txBufferTail = s->port.txBufferHead;

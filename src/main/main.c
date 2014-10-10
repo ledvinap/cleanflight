@@ -76,7 +76,7 @@ uint32_t sectionTimes[2][4];
 extern uint32_t previousTime;
 
 // TODO - lazy to pass it to makefile now
-//#define SOFTSERIAL_LOOPBACK
+#define SOFTSERIAL_LOOPBACK
 
 #ifdef SOFTSERIAL_LOOPBACK
 serialPort_t *loopbackPort;
@@ -227,9 +227,9 @@ void init(void)
 
     pwmRxInit(masterConfig.inputFilteringMode);
 
-    pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
+//    pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
 
-    mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
+//    mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
 
     failsafe = failsafeInit(&masterConfig.rxConfig);
     beepcodeInit(failsafe);
@@ -283,9 +283,10 @@ void init(void)
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);
     if (!loopbackPort->vTable) {
-        loopbackPort = openSoftSerial(0, NULL, 57600, MODE_RXTX|MODE_SINGLEWIRE, SERIAL_INVERTED);
+        loopbackPort = openSoftSerial(0, NULL, 57600, MODE_RXTX, SERIAL_NOT_INVERTED);
     }
-    serialPrint(loopbackPort, "LOOPBACK\r\n");
+    serialPrint(loopbackPort, "_-^");
+//    serialPrint(loopbackPort, "LOOPBACK\r\n");
 #endif
 
     // Now that everything has powered up the voltage and cell count be determined.
@@ -307,7 +308,8 @@ void processLoopback(void) {
     if (loopbackPort) {
         if(isSerialTransmitBufferEmpty(loopbackPort) && t<millis()) {
             t=millis()+100;
-//            serialPrint(loopbackPort, "===============================================================\r\n");
+//            serialPrint(loopbackPort, "\x55\xaa");
+            serialPrint(loopbackPort, "______________________________________________________________________\r\n");
         }
         uint8_t bytesWaiting;
         while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {

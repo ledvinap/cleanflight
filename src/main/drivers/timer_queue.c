@@ -6,17 +6,24 @@
 #include "platform.h"
 #include "common/utils.h"
 #include "callback.h"
+#include "nvic.h"
+#include "system.h"
 
 #include "timer.h"
+#include "timer_queue.h"
 
 /* 
    Timeout generator for timerIn. Could be extended to support other timming tasks.
    Implemented as binary heap
  */
-#define TIMERQUEUE_QUEUE_LEN 10
+#define TIMERQUEUE_QUEUE_LEN 8
+#define TIMERQUEUE_ISRQUEUE_LEN 8
+
 struct {
     timerQueueRec_t* heap[TIMERQUEUE_QUEUE_LEN];
     unsigned heapLen;
+    timerQueueRec_t* isr[TIMERQUEUE_ISRQUEUE_LEN];
+    unsigned isrHead, isrTail;
     volatile timCCR_t *timCCR;
     volatile uint16_t *timCNT;
 } timerQueue;
@@ -33,6 +40,7 @@ static void timerQueue_QueueDeleteIdx(unsigned parent);
 void timerQueue_Init(void)
 {
     timerQueue.heapLen=0;
+    timerQueue.isrHead=timerQueue.isrTail=0;
     timerQueue.timCCR=timerChCCR(&timerQueueHardware);
     timerQueue.timCNT=&timerQueueHardware.tim->CNT;
     timerConfigHandled(&timerQueueHardware);
@@ -60,21 +68,20 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
     self->flags=0;
 }
 
-// start timer, trigger after timeout usec
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
-    if(self->flags&TIMERQUEUE_FLAG_QUEUED) {
-        // TODO - this could be optimized - just update position
-        timerQueue_QueueDelete(self);
+    uint8_t saved_basepri = __get_BASEPRI();
+    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); 
+    // update time if called multiple times
+    self->timeISR=*timerQueue.timCNT+timeout; 
+    if(!self->inIsrQueue) {
+        timerQueue.isr[timerQueue.isrHead]=self;
+        timerQueue.isrHead=(timerQueue.isrHead+1)%TIMERQUEUE_ISRQUEUE_LEN;
+        self->inIsrQueue=true;
     }
-    self->time=*timerQueue.timCNT+timeout;
-    if(!timerQueue_QueueInsert(self)) {
-        // timer was inserted into head position - trigger callback to update CCR
-        //  (running directly could he hard on stack)
-        callbackTrigger(&timerQueueCallback);  
-    }
+    __set_BASEPRI(saved_basepri);
+    callbackTrigger(&timerQueueCallback);
 }
-
 
 // insert new timer into queue
 // return position where new record was inserted
@@ -140,13 +147,28 @@ void timerQueue_CallbackEvent(callbackRec_t *cb)
     timerQueue_Run();
 }
 
+void timerQueue_EnqueuePending(void)
+{
+    while(timerQueue.isrHead!=timerQueue.isrTail) {
+        timerQueueRec_t *t=timerQueue.isr[timerQueue.isrTail];
+        if(t->flags&TIMERQUEUE_FLAG_QUEUED)
+            timerQueue_QueueDelete(t);
+        t->time=t->timeISR;
+        timerQueue.isrTail=(timerQueue.isrTail+1)%TIMERQUEUE_ISRQUEUE_LEN;
+        t->inIsrQueue=false;
+        timerQueue_QueueInsert(t);
+    }
+}
+
 void timerQueue_Run(void) 
 {
+    // enqueue all isr timers first
+    timerQueue_EnqueuePending();
 check_again:
     // trigger all due timers, removing them from queue
     while(timerQueue.heapLen && tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT)<0) {
         timerQueueRec_t *rec=timerQueue.heap[0];
-        timerQueue_QueueDeleteIdx(0);                             // remove timer from queue first, so it is easy to reinsert it in callback function
+        timerQueue_QueueDeleteIdx(0);                              // remove timer from queue first, so it is easy to reinsert it in callback function
         rec->callbackFn(rec);                                      // call regitered function
     }
     // replan timer    

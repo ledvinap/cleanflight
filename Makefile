@@ -502,14 +502,9 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 $(OBJECT_DIR)/$(TARGET)/%.o: %.s
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
-<<<<<<< HEAD
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
 $(OBJECT_DIR)/$(TARGET)/%.o): %.S
-=======
-	@$(CC) -c -o $@ $(ASFLAGS) $< 
-$(OBJECT_DIR)/$(TARGET)/%.o: %.S
->>>>>>> 6b6df68fa7eb009fec7805e30609248c769ee725
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $< 

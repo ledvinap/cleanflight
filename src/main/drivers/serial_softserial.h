@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "timer_input.h"
+#include "timer_output.h"
+#include "timer_queue.h"
+
 #define SOFT_SERIAL_BUFFER_SIZE 256
 
 typedef enum {
@@ -36,14 +40,14 @@ typedef struct softSerial_s {
     uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point
     uint32_t         invBitTime;                          // inverse bit time, scaled to 16.16
 
-    timerData_Input_t rxTimerCh;
-    timerQueueRec_t  rxTimerQueue;
+    timerInputRec_t  rxTimerCh;
+    timerQueueRec_t  rxTimerQ;
     callbackRec_t    rxCallback;
     uint16_t         rxStartRef;                            // timestamp of startbit edge
     uint16_t         rxInternalBuffer;                    // includes start and stop bits
     int8_t           rxBitIndex;                           
 
-    timerData_Output_t txTimerCh;
+    timerOutputRec_t txTimerCh;
     callbackRec_t    txCallback;
     
     bool             directionTx;                         // current direction for singlewire mode 

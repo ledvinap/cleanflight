@@ -5,6 +5,7 @@
 #include "build_config.h"
 #include "common/utils.h"
 
+#include "gpio.h"
 
 #include "callback.h"
 
@@ -29,6 +30,15 @@ callbackRec_t callbackEmptyRec = {callbackEmptyFn, -1};
 
 void callbackInit(void)
 {
+// TODO debug
+    gpio_config_t cfg;
+    
+    cfg.pin = Pin_6;
+    cfg.mode = Mode_Out_PP;
+    cfg.speed = Speed_2MHz;
+    gpioInit(GPIOB, &cfg);
+    
+
     memset(callbackTriggers, 0, sizeof(callbackTriggers));
     for(int i=0;i<CALLBACK_MAX;i++)
         callbackEntries[i]=&callbackEmptyRec;
@@ -62,5 +72,7 @@ static void callbackCall(void) {
 
 void PendSV_Handler(void)
 {
+    digitalHi(GPIOB, Pin_6);
     callbackCall();
+    digitalLo(GPIOB, Pin_6);  
 }

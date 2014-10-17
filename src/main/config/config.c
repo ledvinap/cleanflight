@@ -54,6 +54,7 @@
 #include "io/ledstrip.h"
 #include "io/gps.h"
 #include "flight/failsafe.h"
+#include "flight/altitudehold.h"
 #include "flight/imu.h"
 #include "flight/navigation.h"
 
@@ -99,7 +100,7 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 master_t masterConfig;      // master config struct with data independent from profiles
 profile_t *currentProfile;   // profile config struct
 
-static const uint8_t EEPROM_CONF_VERSION = 79;
+static const uint8_t EEPROM_CONF_VERSION = 81;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -207,11 +208,12 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_MSP_CLI_GPS_PASTHROUGH);
     serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_GPS_ONLY);
 #if (SERIAL_PORT_COUNT > 2)
-    serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_TELEMETRY_ONLY);
+    serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_UNUSED);
+#if (SERIAL_PORT_COUNT > 3)
     serialConfig->serial_port_scenario[3] = lookupScenarioIndex(SCENARIO_UNUSED);
-
 #if (SERIAL_PORT_COUNT > 4)
     serialConfig->serial_port_scenario[4] = lookupScenarioIndex(SCENARIO_UNUSED);
+#endif
 #endif
 #endif
 
@@ -268,7 +270,7 @@ static void resetConf(void)
     masterConfig.yaw_control_direction = 1;
     masterConfig.gyroConfig.gyroMovementCalibrationThreshold = 32;
 
-    masterConfig.batteryConfig.vbatscale = 110;
+    masterConfig.batteryConfig.vbatscale = VBAT_SCALE_DEFAULT;
     masterConfig.batteryConfig.vbatmaxcellvoltage = 43;
     masterConfig.batteryConfig.vbatmincellvoltage = 33;
     masterConfig.batteryConfig.currentMeterOffset = 0;
@@ -427,6 +429,7 @@ void activateConfig(void)
 
     generatePitchCurve(&currentProfile->controlRateConfig);
     generateThrottleCurve(&currentProfile->controlRateConfig, &masterConfig.escAndServoConfig);
+    useRcControlsConfig(currentProfile->modeActivationConditions);
 
     useGyroConfig(&masterConfig.gyroConfig);
 #ifdef TELEMETRY
@@ -455,7 +458,8 @@ void activateConfig(void)
     imuRuntimeConfig.acc_unarmedcal = currentProfile->acc_unarmedcal;;
     imuRuntimeConfig.small_angle = masterConfig.small_angle;
 
-    configureImu(&imuRuntimeConfig, &currentProfile->pidProfile, &currentProfile->barometerConfig, &currentProfile->accDeadband);
+    configureImu(&imuRuntimeConfig, &currentProfile->pidProfile, &currentProfile->accDeadband);
+    configureAltitudeHold(&currentProfile->pidProfile, &currentProfile->barometerConfig);
 
     calculateThrottleAngleScale(currentProfile->throttle_correction_angle);
     calculateAccZLowPassFilterRCTimeConstant(currentProfile->accz_lpf_cutoff);

@@ -29,16 +29,18 @@
 #define BEEP_PIN Pin_15 // PA15 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
+#define MPU6000_CS_GPIO       GPIOA
+#define MPU6000_CS_PIN        GPIO_Pin_4
+#define MPU6000_SPI_INSTANCE  SPI1
+
 #define ACC
+#define USE_ACC_SPI_MPU6000
+
 #define GYRO
+#define USE_GYRO_SPI_MPU6000
+
 #define INVERTER
 #define BEEPER
-
-
-
-// #define SOFT_I2C // enable to test software i2c
-// #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
-// #define SOFT_I2C_PB67
 
 #define USE_USART1
 #define USE_USART3
@@ -50,6 +52,11 @@
 #define USART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
 
 #define SERIAL_PORT_COUNT 2
+
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+#define USE_SPI_DEVICE_2
+
 
 #define SENSORS_SET (SENSOR_ACC)
 

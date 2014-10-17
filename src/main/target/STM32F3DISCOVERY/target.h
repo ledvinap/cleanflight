@@ -33,17 +33,23 @@
 
 
 #define BEEPER_INVERTED
-#define BARO_GPIO   GPIOC
-#define BARO_PIN    Pin_13
 
 #define GYRO
+#define USE_GYRO_L3GD20
+
 #define ACC
+#define USE_ACC_LSM303DLHC
+
 #define BEEPER
 #define LED0
 #define LED1
 
-#define SERIAL_PORT_COUNT 5
+#define USE_VCP
+#define USE_USART1
+#define USE_USART2
+#define SERIAL_PORT_COUNT 3
 
+#define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
 #define SENSORS_SET (SENSOR_ACC)
@@ -51,6 +57,5 @@
 #define GPS
 #define LED_STRIP
 #define TELEMETRY
-#define SOFT_SERIAL
 #define SERIAL_RX
 #define AUTOTUNE

@@ -33,8 +33,13 @@
 #define LED2
 #define LED2_PERIPHERAL RCC_APB2Periph_GPIOC
 
+
 #define ACC
+#define USE_ACC_MPU6050
+
 #define GYRO
+#define USE_GYRO_MPU6050
+
 #define MAG
 
 #define BRUSHED_MOTORS
@@ -44,6 +49,7 @@
 
 #define SERIAL_PORT_COUNT 2
 
+#define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
 // #define SOFT_I2C // enable to test software i2c

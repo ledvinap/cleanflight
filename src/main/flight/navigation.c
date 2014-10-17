@@ -652,8 +652,8 @@ void updateGpsWaypointsAndMode(void)
 
     if (STATE(GPS_FIX) && GPS_numSat >= 5) {
         // if both GPS_HOME & GPS_HOLD are checked => GPS_HOME is the priority
-        if (rcOptions[BOXGPSHOME]) {
-            if (!STATE(GPS_HOME_MODE)) {
+        if (IS_RC_MODE_ACTIVE(BOXGPSHOME)) {
+            if (!FLIGHT_MODE(GPS_HOME_MODE)) {
                 ENABLE_FLIGHT_MODE(GPS_HOME_MODE);
                 DISABLE_FLIGHT_MODE(GPS_HOLD_MODE);
                 GPSNavReset = 0;
@@ -661,9 +661,9 @@ void updateGpsWaypointsAndMode(void)
                 nav_mode = NAV_MODE_WP;
             }
         } else {
-            DISABLE_STATE(GPS_HOME_MODE);
+            DISABLE_FLIGHT_MODE(GPS_HOME_MODE);
 
-            if (rcOptions[BOXGPSHOLD] && areSticksInApModePosition(gpsProfile->ap_mode)) {
+            if (IS_RC_MODE_ACTIVE(BOXGPSHOLD) && areSticksInApModePosition(gpsProfile->ap_mode)) {
                 if (!FLIGHT_MODE(GPS_HOLD_MODE)) {
                     ENABLE_FLIGHT_MODE(GPS_HOLD_MODE);
                     GPSNavReset = 0;

@@ -554,40 +554,22 @@ void timerInit(void)
     RCC_AHBPeriphClockCmd(TIMER_AHB_PERIPHERALS, ENABLE);
 #endif
 
-
-#ifdef STM32F303
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource8,  GPIO_AF_6);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8,  GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9,  GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOC, GPIO_PinSource6,  GPIO_AF_4);
-    GPIO_PinAFConfig(GPIOC, GPIO_PinSource7,  GPIO_AF_4);
-    GPIO_PinAFConfig(GPIOC, GPIO_PinSource8,  GPIO_AF_4);
-#ifdef CHEBUZZF3
-    GPIO_PinAFConfig(GPIOF, GPIO_PinSource9,  GPIO_AF_3);
-    GPIO_PinAFConfig(GPIOF, GPIO_PinSource10, GPIO_AF_3);
+#ifdef STM32F303xC
+    for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
+        const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
+        GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);
+    }
 #endif
-    GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1,  GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2,  GPIO_AF_1);
 
+#if 0
+#if defined(STMF3DISCOVERY) || defined(NAZE32PRO)
+    // FIXME move these where they are needed.
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_2);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource1, GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_2);
+#endif
 #endif
 
-#ifdef NAZE32PRO
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9,  GPIO_AF_6);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_6);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource4,  GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource6,  GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource7,  GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8,  GPIO_AF_2);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9,  GPIO_AF_2);
-#endif
-
+<<<<<<< HEAD
 // initialize timer channel structures
     for(int i=0;i<USABLE_TIMER_CHANNEL_COUNT;i++) {
         timerChannelInfo[i].type=TYPE_FREE;

@@ -12,41 +12,42 @@
 #include "timer.h"
 #include "timer_output.h"
 
-void timerOut_timerCompareEvent(void *self_, uint16_t compare);
+void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare);
 
-void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, callbackRec_t *callback, uint16_t flags)
+void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, channelType_t owner, int priority, callbackRec_t *callback, uint16_t flags)
 {
     self->timHw=timHw;
     self->tim=timHw->tim;
     self->timCCR=timerChCCR(timHw);
     self->callback=callback;
     self->flags=flags;
-    timerChConfigOC(timHw, true, self->flags&TIMEROUT_INVERTED);
-    timerChCfgGPIO(timHw, Mode_AF_PP);
-    timerChCfgCallbacks(timHw, (void*)self, timerOut_timerCompareEvent, NULL);
-    timerConfigHandled(timHw);
+    timerChInit(timHw, owner, priority);
+    timerChCCHandlerInit(&self->compareCb, timerOut_timerCompareEvent);
+
+    timerOut_Restart(self);
 }
 
 void timerOut_Release(timerOutputRec_t* self)
 {
-    self->flags&=~TIMEROUT_RUNNING;
-    timerChCfgCallbacks(self->timHw, NULL, NULL, NULL);
-    timerChConfigIC(self->timHw, 0);   // tristate channel
+    self->flags&=~(TIMEROUT_RUNNING|TIMEROUT_RESTART);
+    timerChConfigCallbacks(self->timHw, NULL, NULL);
+    timerChConfigIC(self->timHw, false, 0);   // tristate channel - TODO - check pullup/pulldown
 }
 
 void timerOut_Restart(timerOutputRec_t* self)
 {
     self->qhead=self->qheadUnc=self->qtail=0;
     self->qtailWake=~0;
+    
     timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_INVERTED);
-    timerChCfgGPIO(self->timHw, Mode_AF_PP);
-    timerChCfgCallbacks(self->timHw, (void*)self, timerOut_timerCompareEvent, NULL);
+    timerChConfigGPIO(self->timHw, Mode_AF_PP);
+    timerChConfigCallbacks(self->timHw, &self->compareCb, NULL);
 }
 
-void timerOut_timerCompareEvent(void *self_, uint16_t compare)
+void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
 {
     UNUSED(compare);
-    timerOutputRec_t *self=(timerOutputRec_t*)self_;
+    timerOutputRec_t *self=container_of(self_, timerOutputRec_t, compareCb);
 
     if(self->flags&TIMEROUT_RUNNING) {
         if(self->flags&TIMEROUT_RESTART) {   // data was added too late, start new pulse train

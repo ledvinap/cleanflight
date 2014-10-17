@@ -26,27 +26,33 @@ struct {
     unsigned isrHead, isrTail;
     volatile timCCR_t *timCCR;
     volatile uint16_t *timCNT;
+    timerCCHandlerRec_t compareCb;
+    callbackRec_t callback;
 } timerQueue;
 
-callbackRec_t timerQueueCallback;
 
-void timerQueue_TimerCompareEvent(void* self_, uint16_t compare);
+
+void timerQueue_TimerCompareEvent(timerCCHandlerRec_t* self_, uint16_t compare);
 void timerQueue_CallbackEvent(callbackRec_t *cb);
 void timerQueue_Run(void);
+void timerQueue_EnqueuePending(void);
 static int timerQueue_QueueInsert(timerQueueRec_t *rec);
 static void timerQueue_QueueDelete(timerQueueRec_t *rec);
 static void timerQueue_QueueDeleteIdx(unsigned parent);
 
 void timerQueue_Init(void)
 {
+    const timerHardware_t * timHw=timerHardware+TIMER_QUEUE_CHANNEL;
     timerQueue.heapLen=0;
     timerQueue.isrHead=timerQueue.isrTail=0;
-    timerQueue.timCCR=timerChCCR(&timerQueueHardware);
-    timerQueue.timCNT=&timerQueueHardware.tim->CNT;
-    timerConfigHandled(&timerQueueHardware);
-    timerChConfigOC(&timerQueueHardware, false, false);
-    timerChCfgCallbacks(&timerQueueHardware, NULL, timerQueue_TimerCompareEvent, NULL);
-    callbackRegister(&timerQueueCallback, timerQueue_CallbackEvent);
+    timerQueue.timCCR=timerChCCR(timHw);
+    timerQueue.timCNT=&timHw->tim->CNT;
+    timerChInit(timHw, TYPE_TIMER, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY));
+    timerChConfigOC(timHw, false, false);
+    timerChCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
+    callbackRegister(&timerQueue.callback, timerQueue_CallbackEvent);
+    timerChConfigCallbacks(timHw, &timerQueue.compareCb, NULL);
+    
 }
 
 // compare two timestamps circular timestamps. 
@@ -71,7 +77,7 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); 
+    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
     // update time if called multiple times
     self->timeISR=*timerQueue.timCNT+timeout; 
     if(!self->inIsrQueue) {
@@ -80,7 +86,7 @@ void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
         self->inIsrQueue=true;
     }
     __set_BASEPRI(saved_basepri);
-    callbackTrigger(&timerQueueCallback);
+    callbackTrigger(&timerQueue.callback);
 }
 
 // insert new timer into queue
@@ -127,26 +133,28 @@ static void timerQueue_QueueDeleteIdx(unsigned parent)
     timerQueue.heap[parent] = last;
 }
 
-void timerQueue_TimerCompareEvent(void* self_, uint16_t compare)
+void timerQueue_TimerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
 {
     UNUSED(self_);
     UNUSED(compare);
     // Only trigger callback here. Queue operations may be slow
-    callbackTrigger(&timerQueueCallback); 
+    callbackTrigger(&timerQueue.callback); 
 }
 
 // callback function for timer queue
 // - enqueue new handlers
 // - trigger expired handlers 
 // - prepare new timer compare event
-// this function must be run (at least) on callbbak (pendSv) interrupt priority
+// this function must be run on callbbak (pendSv) interrupt priority. It is not reentrant
 void timerQueue_CallbackEvent(callbackRec_t *cb)
 {
     UNUSED(cb);
-    // run all tending timers
+    // run all pending timers
+    timerQueue_EnqueuePending();
     timerQueue_Run();
 }
 
+// enqueue all timers started in ISR
 void timerQueue_EnqueuePending(void)
 {
     while(timerQueue.isrHead!=timerQueue.isrTail) {
@@ -162,25 +170,23 @@ void timerQueue_EnqueuePending(void)
 
 void timerQueue_Run(void) 
 {
-    // enqueue all isr timers first
-    timerQueue_EnqueuePending();
 check_again:
     // trigger all due timers, removing them from queue
     while(timerQueue.heapLen && tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT)<0) {
         timerQueueRec_t *rec=timerQueue.heap[0];
-        timerQueue_QueueDeleteIdx(0);                              // remove timer from queue first, so it is easy to reinsert it in callback function
+        timerQueue_QueueDeleteIdx(0);                              // remove timer from queue first, so it is posible reinsert it in callback function
         rec->callbackFn(rec);                                      // call regitered function
     }
     // replan timer    
     if(timerQueue.heapLen) {
+        timerChClearCCFlag(timerHardware+TIMER_QUEUE_CHANNEL); // maybe we will enable interrupt
         *timerQueue.timCCR=timerQueue.heap[0]->time;
         if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT)<0) { 
-            // maybe timer triggered, maybe not
-            // simply check timer again to be sure
+            // it is possible that we filled CCR too late. Run callbacks again immediately
             goto check_again;
         }
+        timerChITConfig(timerHardware+TIMER_QUEUE_CHANNEL, ENABLE);
     } else {
-        // TODO - disable timer channel interrupt 
-        // but triggering in next timer period does not hurt much ... 
+        timerChITConfig(timerHardware+TIMER_QUEUE_CHANNEL, DISABLE);
     }
 }

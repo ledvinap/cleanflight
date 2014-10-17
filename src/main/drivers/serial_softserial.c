@@ -27,6 +27,7 @@
 
 #include "common/utils.h"
 
+#include "nvic.h"
 #include "system.h"
 #include "gpio.h"
 #include "timer.h"
@@ -83,6 +84,13 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
                              uint32_t baud, uint8_t mode, serialInversion_e inversion)
 {
     softSerial_t *self = &(softSerialPorts[portIndex]);
+// TODO debug
+    gpio_config_t cfg;
+    
+    cfg.pin = Pin_0|Pin_8;
+    cfg.mode = Mode_Out_PP;
+    cfg.speed = Speed_10MHz;
+    gpioInit(GPIOA, &cfg);
 
     if (portIndex == SOFTSERIAL1) {
         self->rxTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_RX_HARDWARE]);
@@ -120,22 +128,30 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
-        timerOut_Config(&self->txTimerCh, self->txTimerHardware, &self->txCallback, (inversion?TIMEROUT_INVERTED:0)|TIMEROUT_WAKEONEMPTY);
+        timerOut_Config(&self->txTimerCh, 
+                        self->txTimerHardware, TYPE_SOFTSERIAL_RXTX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
+                        &self->txCallback, (inversion?TIMEROUT_INVERTED:0)|TIMEROUT_WAKEONEMPTY);
         timerOut_Release(&self->txTimerCh);
-        timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, &self->rxTimerQ, 
+        timerIn_Config(&self->rxTimerCh, 
+                       self->rxTimerHardware, TYPE_SOFTSERIAL_RXTX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
+                       &self->rxCallback, &self->rxTimerQ, 
                        (inversion?0:TIMERIN_RISING)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0));
         timerIn_SetBuffering(&self->rxTimerCh, 0);
     } else {
         if(mode & MODE_TX) {
-            timerOut_Config(&self->txTimerCh, self->txTimerHardware, &self->txCallback, (inversion?0:TIMEROUT_INVERTED)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
+            timerOut_Config(&self->txTimerCh, 
+                            self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY),
+                            &self->txCallback, (inversion?0:TIMEROUT_INVERTED)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
             callbackRegister(&self->txCallback, softSerialTxCallback);
             delay(1); // TODO - only for testing
         }
         if(mode & MODE_RX) {
             timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
             callbackRegister(&self->rxCallback, softSerialRxCallback);
-            timerIn_Config(&self->rxTimerCh, self->rxTimerHardware, &self->rxCallback, &self->rxTimerQ, 
-                           (inversion?TIMERIN_RISING:0)|TIMERIN_POLARITY_TOGGLE|TIMERIN_QUEUE_DUALTIMER|(inversion?TIMERIN_IPD:0)|TIMERIN_QUEUE_BUFFER);
+            timerIn_Config(&self->rxTimerCh, 
+                           self->rxTimerHardware,  TYPE_SOFTSERIAL_RX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
+                           &self->rxCallback, &self->rxTimerQ, 
+                           (inversion?TIMERIN_RISING:0)|TIMERIN_POLARITY_TOGGLE|(inversion?TIMERIN_IPD:0)|TIMERIN_QUEUE_BUFFER);
             self->rxTimerCh.timeout=((self->bitTime*RX_TOTAL_BITS)>>8)+50; // 50 us after stopbit
             callbackTrigger(&self->rxCallback);                           // setup timeouts correctly
         }
@@ -202,10 +218,13 @@ void softSerialTryTx(softSerial_t* self) {
 void srStoreByte(softSerial_t *self, uint16_t shiftRegister) {
     if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK)) != (0|STOPBIT_MASK)) {
         self->receiveErrors++;
+        digitalToggle(GPIOA, Pin_8);
         return;
     }
+
     // TODO - check parity if in sbus mode
     uint8_t byte=shiftRegister>>1; // shift startbit out
+
     if (self->port.callback) {
         self->port.callback(byte);
     } else {
@@ -224,7 +243,6 @@ static inline int16_t cmp16(uint16_t a, uint16_t b)
 void softSerialRxProcess(softSerial_t *self)
 {
     uint16_t capture0, capture1, symbolStart, symbolEnd;
-    
     do { // return here if late edge was caught
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {

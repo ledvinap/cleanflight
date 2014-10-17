@@ -13,13 +13,16 @@ http://resnet.uoregon.edu/~gurney_j/jmpc/bitwise.html
 
 #define UNUSED(x) (void)(x)
 
-#if 1
-// ISO C version, byt no type checking
+#if 0
+// ISO C version, but no type checking
 #define container_of(ptr, type, member) \
                       ((type *) ((char *)(ptr) - offsetof(type, member)))
 #else
-// this variant (from linux kernel) checks ptr type, but triggers 'ISO C forbids braced-groups within expressions [-Wpedantic]'
-#define container_of(ptr, type, member) ({                      \
+// non ISO variant from linux kernel; checks ptr type, but triggers 'ISO C forbids braced-groups within expressions [-Wpedantic]'
+//  __extension__ is here to disable this warning
+#define container_of(ptr, type, member)  __extension__ ({       \
         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
+
+
 #endif

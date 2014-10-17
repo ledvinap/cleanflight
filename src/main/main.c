@@ -140,6 +140,8 @@ void init(void)
 
     systemInit(masterConfig.emf_avoidance);
 
+    timerInit();  // timer must be initialized before any channel is allocated
+
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
 
@@ -190,7 +192,6 @@ void init(void)
 
     callbackInit();
     
-    timerInit();
     timerQueue_Init();
     
     serialInit(&masterConfig.serialConfig);
@@ -276,6 +277,9 @@ void init(void)
     baroSetCalibrationCycles(CALIBRATING_BARO_CYCLES);
 #endif
 
+    // start all timers
+    timerStart();                
+
     ENABLE_STATE(SMALL_ANGLE);
     DISABLE_ARMING_FLAG(PREVENT_ARMING);
 
@@ -283,7 +287,7 @@ void init(void)
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);
     if (!loopbackPort->vTable) {
-        loopbackPort = openSoftSerial(0, NULL, 57600, MODE_RXTX, SERIAL_NOT_INVERTED);
+        loopbackPort = openSoftSerial(0, NULL, 115200, MODE_RXTX, SERIAL_NOT_INVERTED);
     }
     serialPrint(loopbackPort, "_-^");
 //    serialPrint(loopbackPort, "LOOPBACK\r\n");
@@ -306,10 +310,11 @@ void init(void)
 void processLoopback(void) {
     static uint32_t t=0;
     if (loopbackPort) {
+        digitalToggle(GPIOA, Pin_0);
         if(isSerialTransmitBufferEmpty(loopbackPort) && t<millis()) {
             t=millis()+100;
 //            serialPrint(loopbackPort, "\x55\xaa");
-            serialPrint(loopbackPort, "______________________________________________________________________\r\n");
+//            serialPrint(loopbackPort, "______________________________________________________________________\r\n");
         }
         uint8_t bytesWaiting;
         while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {

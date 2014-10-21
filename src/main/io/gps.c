@@ -869,6 +869,7 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
     gpsPassthroughPortConfig.baudRate = serialConfig->gps_passthrough_baudrate;
     serialPort_t *gpsPassthroughPort = findOpenSerialPort(FUNCTION_GPS_PASSTHROUGH);
     if (gpsPassthroughPort) {
+        serialRelease(gpsPassthroughPort, NULL);
         waitForSerialPortToFinishTransmitting(gpsPassthroughPort);
         serialConfigure(gpsPassthroughPort, &gpsPassthroughPortConfig);
     } else {

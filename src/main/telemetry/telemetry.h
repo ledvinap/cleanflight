@@ -36,7 +36,7 @@ typedef enum {
 typedef struct telemetryConfig_s {
     telemetryProvider_e telemetry_provider;
     uint8_t telemetry_switch;               // Use aux channel to change serial output & baudrate( MSP / Telemetry ). It disables automatic switching to Telemetry when armed.
-    serialInversion_e frsky_inversion;
+    portMode_t frsky_inversion;             // TODO - maybe handle singlewire/halfduplex here?
 } telemetryConfig_t;
 
 void checkTelemetryState(void);

@@ -179,6 +179,8 @@ void init(void)
 
     delay(100);
 
+    timerInit();  // timer must be initialized before any channel is allocated
+
     ledInit();
 
 #ifdef BEEPER
@@ -225,7 +227,6 @@ void init(void)
 #endif
 #endif
 
-    timerInit();  // timer must be initialized before any channel is allocated
 
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
@@ -379,9 +380,13 @@ void init(void)
 
 #ifdef SOFTSERIAL_LOOPBACK
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
+    static serialPortConfig_t loopbackPortConfig = { 
+        .mode = MODE_RXTX,
+        .baudRate = 115200,
+    };
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);
     if (!loopbackPort->vTable) {
-        loopbackPort = openSoftSerial(0, NULL, 115200, MODE_RXTX, SERIAL_NOT_INVERTED);
+        loopbackPort = openSoftSerial(0, &loopbackPortConfig);
     }
     serialPrint(loopbackPort, "_-^");
 //    serialPrint(loopbackPort, "LOOPBACK\r\n");

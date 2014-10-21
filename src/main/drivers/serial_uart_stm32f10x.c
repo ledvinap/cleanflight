@@ -34,6 +34,9 @@
 
 #include "serial.h"
 #include "serial_uart.h"
+#include "serial_uart_impl.h"
+
+void uartStartTxDMA(uartPort_t *s);
 
 #ifdef USE_USART1
 static uartPort_t uartPort1;
@@ -47,16 +50,14 @@ static uartPort_t uartPort2;
 static uartPort_t uartPort3;
 #endif
 
-void uartStartTxDMA(uartPort_t *s);
-
 void usartIrqCallback(uartPort_t *s)
 {
     uint16_t SR = s->USARTx->SR;
 
     if (SR & USART_FLAG_RXNE) {
         // If we registered a callback, pass crap there
-        if (s->port.callback) {
-            s->port.callback(s->USARTx->DR);
+        if (s->port.rxCallback) {
+            s->port.rxCallback(s->USARTx->DR);
         } else {
             s->port.rxBuffer[s->port.rxBufferHead] = s->USARTx->DR;
             s->port.rxBufferHead = (s->port.rxBufferHead + 1) % s->port.rxBufferSize;
@@ -74,7 +75,7 @@ void usartIrqCallback(uartPort_t *s)
 
 #ifdef USE_USART1
 // USART1 - Telemetry (RX/TX by DMA)
-uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART1(const serialPortConfig_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx1Buffer[UART1_RX_BUFFER_SIZE];
@@ -85,13 +86,13 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     s = &uartPort1;
     s->port.vTable = uartVTable;
     
-    s->port.baudRate = baudRate;
+    s->port.baudRate = config->baudRate;
     
     s->port.rxBuffer = rx1Buffer;
     s->port.txBuffer = tx1Buffer;
     s->port.rxBufferSize = UART1_RX_BUFFER_SIZE;
     s->port.txBufferSize = UART1_TX_BUFFER_SIZE;
-    
+
     s->USARTx = USART1;
 
     s->txDMAPeripheralBaseAddr = (uint32_t)&s->USARTx->DR;
@@ -108,11 +109,11 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     gpio.speed = Speed_2MHz;
     gpio.pin = Pin_9;
     gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (config->mode & MODE_TX)
         gpioInit(GPIOA, &gpio);
     gpio.pin = Pin_10;
     gpio.mode = Mode_IPU;
-    if (mode & MODE_RX)
+    if (config->mode & MODE_RX)
         gpioInit(GPIOA, &gpio);
 
     // DMA TX Interrupt
@@ -159,7 +160,7 @@ void USART1_IRQHandler(void)
 
 #ifdef USE_USART2
 // USART2 - GPS or Spektrum or ?? (RX + TX by IRQ)
-uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART2(const serialPortConfig_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx2Buffer[UART2_RX_BUFFER_SIZE];
@@ -170,7 +171,7 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
     s = &uartPort2;
     s->port.vTable = uartVTable;
     
-    s->port.baudRate = baudRate;
+    s->port.baudRate = config->baudRate;
     
     s->port.rxBufferSize = UART2_RX_BUFFER_SIZE;
     s->port.txBufferSize = UART2_TX_BUFFER_SIZE;
@@ -190,11 +191,11 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
     gpio.speed = Speed_2MHz;
     gpio.pin = Pin_2;
     gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (config->mode & MODE_TX)
         gpioInit(GPIOA, &gpio);
     gpio.pin = Pin_3;
     gpio.mode = Mode_IPU;
-    if (mode & MODE_RX)
+    if (config->mode & MODE_RX)
         gpioInit(GPIOA, &gpio);
 
     // RX/TX Interrupt
@@ -219,7 +220,7 @@ void USART2_IRQHandler(void)
 
 #ifdef USE_USART3
 // USART3
-uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART3(const serialPortConfig_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx3Buffer[UART3_RX_BUFFER_SIZE];

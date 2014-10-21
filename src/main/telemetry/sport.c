@@ -53,7 +53,13 @@
 
 static serialPort_t *sPortPort;
 #define SPORT_BAUDRATE 57600
-#define SPORT_INITIAL_PORT_MODE MODE_RX|MODE_TX|MODE_SINGLEWIRE
+
+void telemetrySPortSerialRxCharCallback(uint16_t data);
+
+serialPortConfig_t sPortPortConfig = { .mode = MODE_RX|MODE_TX|MODE_SINGLEWIRE|MODE_INVERTED|MODE_HALFDUPLEX, 
+                                              .baudRate = SPORT_BAUDRATE,
+                                              .rxCallback = telemetrySPortSerialRxCharCallback
+};
 
 static telemetryConfig_t *telemetryConfig;
 
@@ -216,17 +222,17 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
     rcvd|=data&0xff;
     if(rcvd==((0x7e<<8)|DATA_ID_VARIO) && (pkt=telemPktQueueHead())!=NULL) {
         delayMicroseconds(100); // TODO!
-        serialSetDirection(sPortPort, DIRECTION_TX);
+        serialSetState(sPortPort, STATE_TX);
         for(unsigned i=0;i<8;i++)
             tx_u8(pkt[i]);
-        serialSetDirection(sPortPort, DIRECTION_RX_WHENTXDONE);
+        serialSetState(sPortPort, STATE_RX_WHENTXDONE);
         telemPktQueuePop();
     }
 }
 
 void telemetrySPortSerialTxDoneCallback(void)
 {
-    serialSetDirection(sPortPort, false);
+    serialSetState(sPortPort, STATE_TX);
 }
 
 
@@ -348,15 +354,12 @@ void initSPortTelemetry(telemetryConfig_t *initialTelemetryConfig)
     telemPktHead=telemPktTail=0;
 }
 
-static portMode_t previousPortMode;
-static uint32_t previousBaudRate;
+static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 
 void freeSPortTelemetryPort(void)
 {
-    // FIXME only need to reset the port if the port is shared
-    serialSetMode(sPortPort, previousPortMode);
-    serialSetBaudRate(sPortPort, previousBaudRate);
-
+    serialRelease(sPortPort, NULL);
+    serialConfigure(sPortPort, &previousSerialConfig);
     endSerialPortFunction(sPortPort, FUNCTION_TELEMETRY);
 }
 
@@ -364,20 +367,12 @@ void configureSPortTelemetryPort(void)
 {
     sPortPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (sPortPort) {
-        previousPortMode = sPortPort->mode;
-        previousBaudRate = sPortPort->baudRate;
-
+        serialRelease(sPortPort, &previousSerialConfig);
         //waitForSerialPortToFinishTransmitting(sPortPort); // FIXME locks up the system
-
-        serialSetBaudRate(sPortPort, SPORT_BAUDRATE);
-        serialSetMode(sPortPort, SPORT_INITIAL_PORT_MODE);
+        serialConfigure(sPortPort, &sPortPortConfig);
         beginSerialPortFunction(sPortPort, FUNCTION_TELEMETRY);
     } else {
-        sPortPort = openSerialPort(FUNCTION_TELEMETRY, telemetrySPortSerialRxCharCallback, SPORT_BAUDRATE, SPORT_INITIAL_PORT_MODE, telemetryConfig->frsky_inversion);
-
-        // FIXME only need these values to reset the port if the port is shared
-        previousPortMode = sPortPort->mode;
-        previousBaudRate = sPortPort->baudRate;
+        sPortPort = openSerialPort(FUNCTION_TELEMETRY, &sPortPortConfig);
     }
 }
 

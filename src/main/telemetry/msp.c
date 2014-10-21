@@ -39,12 +39,10 @@
 static telemetryConfig_t *telemetryConfig;
 
 #define MSP_TELEMETRY_BAUDRATE 19200 // TODO make this configurable
-#define MSP_TELEMETRY_INITIAL_PORT_MODE MODE_TX
 
 static serialPort_t *mspTelemetryPort;
 
-static portMode_t previousPortMode;
-static uint32_t previousBaudRate;
+static const serialPortConfig_t mspTelemetrySerialPortConfig = { .mode = MODE_TX|MODE_RX, .baudRate = MSP_TELEMETRY_BAUDRATE };  
 
 void initMSPTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
@@ -56,12 +54,11 @@ void handleMSPTelemetry(void)
     sendMspTelemetry();
 }
 
+static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 void freeMSPTelemetryPort(void)
 {
     // FIXME only need to reset the port if the port is shared
-    serialSetMode(mspTelemetryPort, previousPortMode);
-    serialSetBaudRate(mspTelemetryPort, previousBaudRate);
-
+    serialConfigure(mspTelemetryPort, &previousSerialConfig);
     endSerialPortFunction(mspTelemetryPort, FUNCTION_TELEMETRY);
 }
 
@@ -69,20 +66,14 @@ void configureMSPTelemetryPort(void)
 {
     mspTelemetryPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (mspTelemetryPort) {
-        previousPortMode = mspTelemetryPort->mode;
-        previousBaudRate = mspTelemetryPort->baudRate;
+        serialRelease(mspTelemetryPort, &previousSerialConfig);
 
         //waitForSerialPortToFinishTransmitting(mspTelemetryPort); // FIXME locks up the system
 
-        serialSetBaudRate(mspTelemetryPort, MSP_TELEMETRY_BAUDRATE);
-        serialSetMode(mspTelemetryPort, MSP_TELEMETRY_INITIAL_PORT_MODE);
+        serialConfigure(mspTelemetryPort, &mspTelemetrySerialPortConfig);
         beginSerialPortFunction(mspTelemetryPort, FUNCTION_TELEMETRY);
     } else {
-        mspTelemetryPort = openSerialPort(FUNCTION_TELEMETRY, NULL, MSP_TELEMETRY_BAUDRATE, MSP_TELEMETRY_INITIAL_PORT_MODE, SERIAL_NOT_INVERTED);
-
-        // FIXME only need these values to reset the port if the port is shared
-        previousPortMode = mspTelemetryPort->mode;
-        previousBaudRate = mspTelemetryPort->baudRate;
+        mspTelemetryPort = openSerialPort(FUNCTION_TELEMETRY, &mspTelemetrySerialPortConfig);
     }
     mspSetTelemetryPort(mspTelemetryPort);
 }

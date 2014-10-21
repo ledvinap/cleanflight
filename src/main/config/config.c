@@ -199,7 +199,7 @@ void resetFlight3DConfig(flight3DConfig_t *flight3DConfig)
 void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 {
     telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_SPORT;
-    telemetryConfig->frsky_inversion = SERIAL_INVERTED;
+    telemetryConfig->frsky_inversion = MODE_INVERTED;
     telemetryConfig->telemetry_switch = 0;
 }
 

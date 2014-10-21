@@ -526,7 +526,7 @@ void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)
     }
 }
 
-serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
+serialPort_t *openSerialPort(serialPortFunction_e function, const serialPortConfig_t *config)
 {
     serialPort_t *serialPort = NULL;
 
@@ -535,8 +535,8 @@ serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbac
     functionConstraint_t updatedFunctionConstraint;
     memcpy(&updatedFunctionConstraint, initialFunctionConstraint, sizeof(updatedFunctionConstraint));
     if (initialFunctionConstraint->autoBaud == NO_AUTOBAUD) {
-        updatedFunctionConstraint.minBaudRate = baudRate;
-        updatedFunctionConstraint.maxBaudRate = baudRate;
+        updatedFunctionConstraint.minBaudRate = config->baudRate;
+        updatedFunctionConstraint.maxBaudRate = config->baudRate;
     }
     functionConstraint_t *functionConstraint = &updatedFunctionConstraint;
 
@@ -564,27 +564,25 @@ serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbac
 #endif
 #ifdef USE_USART1
         case SERIAL_PORT_USART1:
-            serialPort = uartOpen(USART1, callback, baudRate, mode, inversion);
+            serialPort = uartOpen(USART1, config);
             break;
 #endif
 #ifdef USE_USART2
         case SERIAL_PORT_USART2:
-            serialPort = uartOpen(USART2, callback, baudRate, mode, inversion);
+            serialPort = uartOpen(USART2, config);
             break;
 #endif
 #ifdef USE_USART3
         case SERIAL_PORT_USART3:
-            serialPort = uartOpen(USART3, callback, baudRate, mode, inversion);
+            serialPort = uartOpen(USART3, config);
             break;
 #endif
 #ifdef USE_SOFT_SERIAL
         case SERIAL_PORT_SOFTSERIAL1:
-            serialPort = openSoftSerial(SOFTSERIAL1, callback, baudRate, mode, inversion);
-            serialSetMode(serialPort, mode);
+            serialPort = openSoftSerial(SOFTSERIAL1, config);
             break;
         case SERIAL_PORT_SOFTSERIAL2:
-            serialPort = openSoftSerial(SOFTSERIAL2, callback, baudRate, mode, inversion);
-            serialSetMode(serialPort, mode);
+            serialPort = openSoftSerial(SOFTSERIAL2, config);
             break;
 #endif
         default:

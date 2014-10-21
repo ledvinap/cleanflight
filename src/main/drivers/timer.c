@@ -569,7 +569,6 @@ void timerInit(void)
 #endif
 #endif
 
-<<<<<<< HEAD
 // initialize timer channel structures
     for(int i=0;i<USABLE_TIMER_CHANNEL_COUNT;i++) {
         timerChannelInfo[i].type=TYPE_FREE;

@@ -19,6 +19,7 @@ int callbackCount;
 #endif
 
 uint32_t callbackTriggers[(CALLBACK_MAX+(CALLBACK_MAX-1))/32];
+uint32_t callbackFree[(CALLBACK_MAX+(CALLBACK_MAX-1))/32];
 
 void callbackEmptyFn(callbackRec_t *self)
 {
@@ -40,6 +41,7 @@ void callbackInit(void)
     
 
     memset(callbackTriggers, 0, sizeof(callbackTriggers));
+    memset(callbackFree, 0xff, sizeof(callbackTriggers));
     for(int i=0;i<CALLBACK_MAX;i++)
         callbackEntries[i]=&callbackEmptyRec;
     callbackCount=0;
@@ -48,12 +50,20 @@ void callbackInit(void)
 
 void callbackRegister(callbackRec_t *self, callbackFun_t *fn)
 {
-    if(callbackCount>=CALLBACK_MAX)
-        return; 
+    int id=__builtin_ffs(callbackFree[0])-1;
+    if(id<0)      // no free callback available
+        return;
     self->fn=fn;
-    self->id=callbackCount;
-    callbackEntries[callbackCount]=self;
-    callbackCount++;
+    self->id=id;
+    callbackEntries[id]=self;
+    callbackFree[0] &= ~(1 << id);
+}
+
+void callbackRelease(callbackRec_t *self)
+{
+    callbackTriggers[0] &= ~(1 << self->id);         // clear trigger if set
+    callbackEntries[self->id]=&callbackEmptyRec;     // remove entry
+    callbackFree[0] |= 1 << self->id;                // mark his position as free
 }
 
 void callbackTrigger(callbackRec_t *self)

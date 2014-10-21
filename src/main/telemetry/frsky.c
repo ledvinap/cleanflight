@@ -51,7 +51,8 @@
 
 static serialPort_t *frskyPort;
 #define FRSKY_BAUDRATE 9600
-#define FRSKY_INITIAL_PORT_MODE MODE_TX
+
+static const serialPortConfig_t frskySerialPortConfig = { .mode = MODE_TX, .baudRate = 9600 };
 
 static telemetryConfig_t *telemetryConfig;
 
@@ -298,14 +299,12 @@ void initFrSkyTelemetry(telemetryConfig_t *initialTelemetryConfig)
     telemetryConfig = initialTelemetryConfig;
 }
 
-static portMode_t previousPortMode;
-static uint32_t previousBaudRate;
+static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 
 void freeFrSkyTelemetryPort(void)
 {
     // FIXME only need to reset the port if the port is shared
-    serialSetMode(frskyPort, previousPortMode);
-    serialSetBaudRate(frskyPort, previousBaudRate);
+    serialConfigure(frskyPort, &previousSerialConfig);
 
     endSerialPortFunction(frskyPort, FUNCTION_TELEMETRY);
 }
@@ -314,20 +313,13 @@ void configureFrSkyTelemetryPort(void)
 {
     frskyPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (frskyPort) {
-        previousPortMode = frskyPort->mode;
-        previousBaudRate = frskyPort->baudRate;
-
+        serialRelease(frskyPort, &previousSerialConfig);
         //waitForSerialPortToFinishTransmitting(frskyPort); // FIXME locks up the system
-
-        serialSetBaudRate(frskyPort, FRSKY_BAUDRATE);
-        serialSetMode(frskyPort, FRSKY_INITIAL_PORT_MODE);
+        
+        serialConfigure(frskyPort, &frskySerialPortConfig);
         beginSerialPortFunction(frskyPort, FUNCTION_TELEMETRY);
     } else {
-        frskyPort = openSerialPort(FUNCTION_TELEMETRY, NULL, FRSKY_BAUDRATE, FRSKY_INITIAL_PORT_MODE, telemetryConfig->frsky_inversion);
-
-        // FIXME only need these values to reset the port if the port is shared
-        previousPortMode = frskyPort->mode;
-        previousBaudRate = frskyPort->baudRate;
+        frskyPort = openSerialPort(FUNCTION_TELEMETRY, &frskySerialPortConfig);
     }
 }
 

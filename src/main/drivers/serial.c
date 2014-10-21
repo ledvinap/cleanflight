@@ -50,22 +50,30 @@ uint8_t serialRead(serialPort_t *instance)
     return instance->vTable->serialRead(instance);
 }
 
-void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate)
-{
-    instance->vTable->serialSetBaudRate(instance, baudRate);
-}
-
 bool isSerialTransmitBufferEmpty(serialPort_t *instance)
 {
     return instance->vTable->isSerialTransmitBufferEmpty(instance);
 }
 
-void serialSetMode(serialPort_t *instance, portMode_t mode)
+void serialSetState(serialPort_t *instance, portState_t state)
 {
-    instance->vTable->setMode(instance, mode);
+    instance->vTable->setState(instance, state);
 }
 
-void serialSetDirection(serialPort_t *instance, portDirection_t direction)
+void serialRelease(serialPort_t *instance, serialPortConfig_t* config)
 {
-    instance->vTable->setDirection(instance, direction);
+    if(config)
+        instance->vTable->configure(instance, OP_GET_CONFIG, config);
+    instance->vTable->configure(instance, OP_RELEASE, config);
 }
+
+void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config)
+{
+    instance->vTable->configure(instance, OP_CONFIGURE, (serialPortConfig_t*)config);
+}
+
+void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config)
+{
+    instance->vTable->configure(instance, OP_GET_CONFIG, config);
+}
+

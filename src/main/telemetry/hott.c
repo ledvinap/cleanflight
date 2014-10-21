@@ -99,7 +99,8 @@ static uint8_t hottMsgCrc;
 #define HOTT_CRC_SIZE (sizeof(hottMsgCrc))
 
 #define HOTT_BAUDRATE 19200
-#define HOTT_INITIAL_PORT_MODE MODE_RX
+static const serialPortConfig_t hottSerialPortConfig = { .mode = MODE_RXTX, .baudRate = HOTT_BAUDRATE };
+
 
 static serialPort_t *hottPort;
 
@@ -229,15 +230,12 @@ static void hottSerialWrite(uint8_t c)
     serialWrite(hottPort, c);
 }
 
-static portMode_t previousPortMode;
-static uint32_t previousBaudRate;
+static serialPortConfig_t previousSerialPortConfig;
 
 void freeHoTTTelemetryPort(void)
 {
     // FIXME only need to do this if the port is shared
-    serialSetMode(hottPort, previousPortMode);
-    serialSetBaudRate(hottPort, previousBaudRate);
-
+    serialConfigure(hottPort, &previousSerialPortConfig);
     endSerialPortFunction(hottPort, FUNCTION_TELEMETRY);
 }
 
@@ -252,20 +250,13 @@ void configureHoTTTelemetryPort(void)
 {
     hottPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (hottPort) {
-        previousPortMode = hottPort->mode;
-        previousBaudRate = hottPort->baudRate;
-
+        serialRelease(hottPort, &previousSerialPortConfig);
         //waitForSerialPortToFinishTransmitting(hottPort); // FIXME locks up the system
-
-        serialSetBaudRate(hottPort, HOTT_BAUDRATE);
-        serialSetMode(hottPort, HOTT_INITIAL_PORT_MODE);
+        
+        serialConfigure(hottPort, &hottSerialPortConfig);
         beginSerialPortFunction(hottPort, FUNCTION_TELEMETRY);
     } else {
-        hottPort = openSerialPort(FUNCTION_TELEMETRY, NULL, HOTT_BAUDRATE, HOTT_INITIAL_PORT_MODE, SERIAL_NOT_INVERTED);
-
-        // FIXME only need to do this if the port is shared
-        previousPortMode = hottPort->mode;
-        previousBaudRate = hottPort->baudRate;
+        hottPort = openSerialPort(FUNCTION_TELEMETRY, &hottSerialPortConfig);
     }
 }
 
@@ -382,7 +373,7 @@ static void hottCheckSerialData(uint32_t currentMicros) {
 static void hottSendTelemetryData(void) {
     if (!hottIsSending) {
         hottIsSending = true;
-        serialSetMode(hottPort, MODE_TX);
+        serialSetState(hottPort, STATE_TX);
         hottMsgCrc = 0;
         return;
     }
@@ -391,7 +382,7 @@ static void hottSendTelemetryData(void) {
         hottMsg = NULL;
         hottIsSending = false;
 
-        serialSetMode(hottPort, MODE_RX);
+        serialSetState(hottPort, STATE_RX);
         flushHottRxBuffer();
         return;
     }

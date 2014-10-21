@@ -34,6 +34,7 @@
 
 #include "serial.h"
 #include "serial_uart.h"
+#include "serial_uart_impl.h"
 
 // Using RX DMA disables the use of receive callbacks
 #define USE_USART1_RX_DMA
@@ -57,7 +58,7 @@ static uartPort_t uartPort2;
 
 void uartStartTxDMA(uartPort_t *s);
 
-uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART1(const serialPortConfig_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx1Buffer[UART1_RX_BUFFER_SIZE];
@@ -68,7 +69,7 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     s = &uartPort1;
     s->port.vTable = uartVTable;
     
-    s->port.baudRate = baudRate;
+    s->port.baudRate = config->baudRate;
     
     s->port.rxBuffer = rx1Buffer;
     s->port.txBuffer = tx1Buffer;
@@ -93,13 +94,13 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 
-    if (mode & MODE_TX) {
+    if (config->mode & MODE_TX) {
         GPIO_InitStructure.GPIO_Pin = UART1_TX_PIN;
         GPIO_PinAFConfig(UART1_GPIO, UART1_TX_PINSOURCE, GPIO_AF_7);
         GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
     }
 
-    if (mode & MODE_RX) {
+    if (config->mode & MODE_RX) {
         GPIO_InitStructure.GPIO_Pin = UART1_RX_PIN;
         GPIO_PinAFConfig(UART1_GPIO, UART1_RX_PINSOURCE, GPIO_AF_7);
         GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
@@ -123,7 +124,7 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     return s;
 }
 
-uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART2(const serialPortConfig_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx2Buffer[UART2_RX_BUFFER_SIZE];
@@ -134,7 +135,7 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
     s = &uartPort2;
     s->port.vTable = uartVTable;
     
-    s->port.baudRate = baudRate;
+    s->port.baudRate = config->baudRate;
     
     s->port.rxBufferSize = UART2_RX_BUFFER_SIZE;
     s->port.txBufferSize = UART2_TX_BUFFER_SIZE;
@@ -163,13 +164,13 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
 
-    if (mode & MODE_TX) {
+    if (config->mode & MODE_TX) {
         GPIO_InitStructure.GPIO_Pin = UART2_TX_PIN;
         GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PINSOURCE, GPIO_AF_7);
         GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
     }
 
-    if (mode & MODE_RX) {
+    if (config->mode & MODE_RX) {
         GPIO_InitStructure.GPIO_Pin = UART2_RX_PIN;
         GPIO_PinAFConfig(UART2_GPIO, UART2_RX_PINSOURCE, GPIO_AF_7);
         GPIO_Init(UART2_GPIO, &GPIO_InitStructure);

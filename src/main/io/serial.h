@@ -101,7 +101,8 @@ typedef enum {
     SPF_NONE                   = 0,
     SPF_SUPPORTS_CALLBACK      = (1 << 0),
     SPF_SUPPORTS_SBUS_MODE     = (1 << 1),
-    SPF_IS_SOFTWARE_INVERTABLE = (1 << 2)
+    SPF_IS_SOFTWARE_INVERTABLE = (1 << 2),
+    SPF_SUPPORTS_SINGLEWIRE    = (1 << 3),
 } serialPortFeature_t;
 
 typedef struct serialPortConstraint_s {
@@ -136,7 +137,7 @@ typedef struct serialConfig_s {
 uint8_t lookupScenarioIndex(serialPortFunctionScenario_e scenario);
 
 serialPort_t *findOpenSerialPort(uint16_t functionMask);
-serialPort_t *openSerialPort(serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion);
+serialPort_t *openSerialPort(serialPortFunction_e functionMask, const serialPortConfig_t *config);
 
 bool canOpenSerialPort(serialPortFunction_e function);
 void beginSerialPortFunction(serialPort_t *port, serialPortFunction_e function);

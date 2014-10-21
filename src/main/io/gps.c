@@ -165,6 +165,8 @@ static void gpsSetState(uint8_t state)
     gpsData.messageState = GPS_MESSAGE_STATE_IDLE;
 }
 
+static serialPortConfig_t gpsSerialPortConfig;
+
 // When using PWM input GPS usage reduces number of available channels by 2 - see pwm_common.c/pwmInit()
 void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
 {
@@ -193,7 +195,10 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
         mode = MODE_RX;
 
     // no callback - buffer will be consumed in gpsThread()
-    gpsPort = openSerialPort(FUNCTION_GPS, NULL, gpsInitData[gpsData.baudrateIndex].baudrate, mode, SERIAL_NOT_INVERTED);
+    gpsSerialPortConfig.baudRate=gpsInitData[gpsData.baudrateIndex].baudrate;
+    gpsSerialPortConfig.mode=mode;
+    
+    gpsPort = openSerialPort(FUNCTION_GPS, &gpsSerialPortConfig);
     if (!gpsPort) {
         featureClear(FEATURE_GPS);
         return;
@@ -206,11 +211,13 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
 void gpsInitNmea(void)
 {
     switch(gpsData.state) {
-        case GPS_INITIALIZING:
-        case GPS_CHANGE_BAUD:
-            serialSetBaudRate(gpsPort, gpsInitData[gpsData.baudrateIndex].baudrate);
-            gpsSetState(GPS_RECEIVING_DATA);
-            break;
+    case GPS_INITIALIZING:
+    case GPS_CHANGE_BAUD:
+        serialRelease(gpsPort, NULL);
+        gpsSerialPortConfig.baudRate=gpsInitData[gpsData.baudrateIndex].baudrate;
+        serialConfigure(gpsPort, &gpsSerialPortConfig);
+        gpsSetState(GPS_RECEIVING_DATA);
+        break;
     }
 }
 
@@ -232,7 +239,9 @@ void gpsInitUblox(void)
 
             if (gpsData.state_position < GPS_INIT_ENTRIES) {
                 // try different speed to INIT
-                serialSetBaudRate(gpsPort, gpsInitData[gpsData.state_position].baudrate);
+                serialRelease(gpsPort, NULL);
+                gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
+                serialConfigure(gpsPort, &gpsSerialPortConfig);
                 // but print our FIXED init string for the baudrate we want to be at
                 serialPrint(gpsPort, gpsInitData[gpsData.baudrateIndex].ubx);
 
@@ -244,7 +253,9 @@ void gpsInitUblox(void)
             }
             break;
         case GPS_CHANGE_BAUD:
-            serialSetBaudRate(gpsPort, gpsInitData[gpsData.baudrateIndex].baudrate);
+            serialRelease(gpsPort, NULL);
+            gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
+            serialConfigure(gpsPort, &gpsSerialPortConfig);
             gpsSetState(GPS_CONFIGURE);
             break;
         case GPS_CONFIGURE:
@@ -848,18 +859,20 @@ static bool gpsNewFrameUBLOX(uint8_t data)
     return parsed;
 }
 
+static serialPortConfig_t gpsPassthroughPortConfig = { .mode = MODE_RXTX };
+
 gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
 {
     if (gpsData.state != GPS_RECEIVING_DATA)
         return GPS_PASSTHROUGH_NO_GPS;
 
+    gpsPassthroughPortConfig.baudRate = serialConfig->gps_passthrough_baudrate;
     serialPort_t *gpsPassthroughPort = findOpenSerialPort(FUNCTION_GPS_PASSTHROUGH);
     if (gpsPassthroughPort) {
-
         waitForSerialPortToFinishTransmitting(gpsPassthroughPort);
-        serialSetBaudRate(gpsPassthroughPort, serialConfig->gps_passthrough_baudrate);
+        serialConfigure(gpsPassthroughPort, &gpsPassthroughPortConfig);
     } else {
-        gpsPassthroughPort = openSerialPort(FUNCTION_GPS_PASSTHROUGH, NULL, serialConfig->gps_passthrough_baudrate, MODE_RXTX, SERIAL_NOT_INVERTED);
+        gpsPassthroughPort = openSerialPort(FUNCTION_GPS_PASSTHROUGH, &gpsPassthroughPortConfig);
         if (!gpsPassthroughPort) {
             return GPS_PASSTHROUGH_NO_SERIAL_PORT;
         }

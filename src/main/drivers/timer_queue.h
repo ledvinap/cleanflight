@@ -18,5 +18,6 @@ typedef struct timerQueueRec_s {
 
 void timerQueue_Init(void);
 void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn);
+void timerQueue_Release(timerQueueRec_t *self);
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout);
 bool timerQueue_IsRunning(timerQueueRec_t *self, int16_t timeout);

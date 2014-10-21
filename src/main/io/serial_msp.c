@@ -68,6 +68,7 @@
 #include "serial_msp.h"
 
 static serialPort_t *mspSerialPort;
+static serialPortConfig_t mspPortConfig = { .mode = MODE_RXTX };
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
@@ -436,18 +437,18 @@ static void openAllMSPSerialPorts(serialConfig_t *serialConfig)
     uint8_t portIndex = 0;
     do {
 
-        uint32_t baudRate = serialConfig->msp_baudrate;
+        mspPortConfig.baudRate = serialConfig->msp_baudrate;
 
         bool triedFallbackRate = false;
         do {
 
-            port = openSerialPort(FUNCTION_MSP, NULL, baudRate, MODE_RXTX, SERIAL_NOT_INVERTED);
+            port = openSerialPort(FUNCTION_MSP, &mspPortConfig);
             if (!port) {
                 if (triedFallbackRate) {
                     break;
                 }
 
-                baudRate = MSP_FALLBACK_BAUDRATE;
+                mspPortConfig.baudRate = MSP_FALLBACK_BAUDRATE;
                 triedFallbackRate = true;
             }
         } while (!port);
@@ -1250,19 +1251,21 @@ void mspSetTelemetryPort(serialPort_t *serialPort)
     mspPort_t *matchedPort = NULL;
 
     // find existing telemetry port
-    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT && !matchedPort; portIndex++) {
+    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
         candidatePort = &mspPorts[portIndex];
         if (candidatePort->mspPortUsage == FOR_TELEMETRY) {
             matchedPort = candidatePort;
+            break;
         }
     }
 
     if (!matchedPort) {
         // find unused port
-        for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT && !matchedPort; portIndex++) {
+        for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
             candidatePort = &mspPorts[portIndex];
             if (candidatePort->mspPortUsage == UNUSED_PORT) {
                 matchedPort = candidatePort;
+                break;
             }
         }
     }

@@ -59,8 +59,7 @@ typedef struct softSerial_s {
 
 extern softSerial_t softSerialPorts[];
 
-serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallbackPtr callback, 
-                             uint32_t baud, uint8_t mode, serialInversion_e inversion);
+serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t* config);
 
 // serialPort API
 void softSerialWriteByte(serialPort_t *instance, uint8_t ch);

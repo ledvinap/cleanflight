@@ -17,27 +17,34 @@
 
 #pragma once
 
-typedef enum {
-    SERIAL_NOT_INVERTED = 0,
-    SERIAL_INVERTED
-} serialInversion_e;
-
+// port mode is set when port is open and should not change (reopen port if neccesary, but that may not be implemented correctly now)
 typedef enum portMode_t {
-    MODE_RX = 1 << 0,
-    MODE_TX = 1 << 1,
-    MODE_RXTX = MODE_RX | MODE_TX,
-    MODE_SBUS = 1 << 2,
-    MODE_SINGLEWIRE = 1<<3,
+    MODE_RX         = 1 << 0,
+    MODE_TX         = 1 << 1,
+    MODE_RXTX       = MODE_RX | MODE_TX,
+    MODE_SBUS       = 1 << 2,
+    MODE_HALFDUPLEX = 1 << 3,
+    MODE_SINGLEWIRE = 1 << 4,
+    MODE_INVERTED   = 1 << 5,
 } portMode_t;
 
-typedef enum portDirection_t {
-    DIRECTION_TX=1<<0,
-    DIRECTION_RX=1<<1,
-    DIRECTION_DELAYDONE=1<<2,
-    DIRECTION_DELAYTIMER=1<<3,
+// port state is used to change state of open port.
+// maybe it is reasonable to merge mode and state enums
+typedef enum portState_t {
+    STATE_TX         = 1 << 0,
+    STATE_RX         = 1 << 1,
+    STATE_RXTX       = STATE_RX|STATE_TX,
+    STATE_DELAYDONE  = 1 << 2,  // TODO - implemented only for softserial
+    STATE_DELAYTIMER = 1 << 3,  // TODO - not implemented
 
-    DIRECTION_RX_WHENTXDONE=DIRECTION_RX|DIRECTION_DELAYDONE,
-} portDirection_t;
+    STATE_RX_WHENTXDONE = STATE_RX|STATE_DELAYDONE,
+} portState_t;
+
+typedef enum portConfigOperation_t {
+    OP_CONFIGURE,
+    OP_GET_CONFIG,
+    OP_RELEASE,
+} portConfigOperation_t;
 
 typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial drivers to return frames to app
 
@@ -47,7 +54,8 @@ typedef struct serialPort {
 
     uint8_t identifier;
     portMode_t mode;
-    serialInversion_e inversion;
+    portState_t state;
+    
     uint32_t baudRate;
 
     uint32_t rxBufferSize;
@@ -60,32 +68,38 @@ typedef struct serialPort {
     uint32_t txBufferTail;
 
     // FIXME rename member to rxCallback
-    serialReceiveCallbackPtr callback;
+    serialReceiveCallbackPtr rxCallback;
 } serialPort_t;
+
+// this structure should hold all info necessary for serial port initialization
+// is is currently only used to save port state when changing function,
+// but tighter integration would be nice
+typedef struct  {
+    portMode_t mode;
+    uint32_t baudRate;
+    serialReceiveCallbackPtr rxCallback;
+} serialPortConfig_t;
+
+#define SERIAL_CONFIG_INIT_EMPTY { .mode=0 }
 
 struct serialPortVTable {
     void (*serialWrite)(serialPort_t *instance, uint8_t ch);
-
     uint8_t (*serialTotalBytesWaiting)(serialPort_t *instance);
-
     uint8_t (*serialRead)(serialPort_t *instance);
-
-    // Specified baud rate may not be allowed by an implementation, use serialGetBaudRate to determine actual baud rate in use.
-    void (*serialSetBaudRate)(serialPort_t *instance, uint32_t baudRate);
-
     bool (*isSerialTransmitBufferEmpty)(serialPort_t *instance);
-
-    void (*setMode)(serialPort_t *instance, portMode_t mode);
-
-    void (*setDirection)(serialPort_t *instance, portDirection_t direction);
+    void (*setState)(serialPort_t *instance, portState_t state);
+    void (*configure)(serialPort_t *instance, portConfigOperation_t op, serialPortConfig_t* config);
 };
 
 void serialWrite(serialPort_t *instance, uint8_t ch);
 uint8_t serialTotalBytesWaiting(serialPort_t *instance);
 uint8_t serialRead(serialPort_t *instance);
-void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate);
-void serialSetMode(serialPort_t *instance, portMode_t mode);
-void serialSetDirection(serialPort_t *instance, portDirection_t direction);
+void serialSetState(serialPort_t *instance, portState_t state);
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
 void serialPrint(serialPort_t *instance, const char *str);
-uint32_t serialGetBaudRate(serialPort_t *instance);
+// store current configuration into passed struct if not null, release port
+void serialRelease(serialPort_t *instance, serialPortConfig_t* config);
+// restore previous configuration
+void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config);
+// get actual configuration
+void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config);

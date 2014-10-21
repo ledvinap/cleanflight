@@ -34,8 +34,6 @@
 
 // driver for SUMH receiver using UART2
 
-#define SUMH_BAUDRATE 115200
-
 #define SUMH_MAX_CHANNEL_COUNT 8
 #define SUMH_FRAME_SIZE 21
 
@@ -48,7 +46,11 @@ static void sumhDataReceive(uint16_t c);
 static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 static serialPort_t *sumhPort;
-
+static const serialPortConfig_t sumhConfig = {
+    .mode = MODE_RX,
+    .baudRate = 115200,
+    .rxCallback = sumhDataReceive
+};
 
 static void sumhDataReceive(uint16_t c);
 static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
@@ -56,15 +58,15 @@ static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 void sumhUpdateSerialRxFunctionConstraint(functionConstraint_t *functionConstraint)
 {
-    functionConstraint->minBaudRate = SUMH_BAUDRATE;
-    functionConstraint->maxBaudRate = SUMH_BAUDRATE;
+    functionConstraint->minBaudRate = sumhConfig.baudRate;
+    functionConstraint->maxBaudRate = sumhConfig.baudRate;
     functionConstraint->requiredSerialPortFeatures = SPF_SUPPORTS_CALLBACK;
 }
 
 bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     UNUSED(rxConfig);
-    sumhPort = openSerialPort(FUNCTION_SERIAL_RX, sumhDataReceive, SUMH_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    sumhPort = openSerialPort(FUNCTION_SERIAL_RX, &sumhConfig);
     if (callback)
         *callback = sumhReadRawRC;
 

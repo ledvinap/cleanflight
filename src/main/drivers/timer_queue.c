@@ -74,6 +74,20 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
     self->flags=0;
 }
 
+// TODO - caller must make sure that nothing will start this callback during release now
+// maybe use some flag to mark callback as deleted
+void timerQueue_Release(timerQueueRec_t *self) 
+{
+    uint8_t saved_basepri = __get_BASEPRI();
+    __set_BASEPRI(NVIC_BUILD_PRIORITY(CALLBACK_IRQ_PRIORITY, CALLBACK_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
+    if(self->flags&TIMERQUEUE_FLAG_QUEUED)
+        timerQueue_QueueDelete(self);
+    self->flags &= ~TIMERQUEUE_FLAG_QUEUED;
+    __set_BASEPRI(saved_basepri);
+}
+
+
+
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
     uint8_t saved_basepri = __get_BASEPRI();

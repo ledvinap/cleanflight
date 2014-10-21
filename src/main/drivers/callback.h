@@ -22,4 +22,5 @@ typedef struct callbackRec_s {
 
 void callbackInit(void);
 void callbackRegister(callbackRec_t *self, callbackFun_t *fn);
+void callbackRelease(callbackRec_t *self);
 void callbackTrigger(callbackRec_t *self);

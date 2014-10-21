@@ -98,6 +98,8 @@ extern uint16_t cycleTime; // FIXME dependency on mw.c
 
 static serialPort_t *cliPort;
 
+static serialPortConfig_t cliPortConfig = { .mode = MODE_RXTX };
+
 // signal that we're in cli mode
 uint8_t cliMode = 0;
 
@@ -1318,7 +1320,8 @@ void cliInit(serialConfig_t *serialConfig)
 {
     cliPort = findOpenSerialPort(FUNCTION_CLI);
     if (!cliPort) {
-        cliPort = openSerialPort(FUNCTION_CLI, NULL, serialConfig->cli_baudrate, MODE_RXTX, SERIAL_NOT_INVERTED);
+        cliPortConfig.baudRate=serialConfig->cli_baudrate;
+        cliPort = openSerialPort(FUNCTION_CLI, &cliPortConfig);
     }
 
 }

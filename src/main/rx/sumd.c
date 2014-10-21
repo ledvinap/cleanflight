@@ -40,26 +40,30 @@
 #define SUMD_MAX_CHANNEL 16
 #define SUMD_BUFFSIZE (SUMD_MAX_CHANNEL * 2 + 5) // 6 channels + 5 = 17 bytes for 6 channels
 
-#define SUMD_BAUDRATE 115200
-
 static bool sumdFrameDone = false;
 static uint32_t sumdChannels[SUMD_MAX_CHANNEL];
 static serialPort_t *sumdPort;
 
 static void sumdDataReceive(uint16_t c);
+static const serialPortConfig_t sumdPortConfig = {
+    .mode = MODE_RX,
+    .baudRate = 115200,
+    .rxCallback = sumdDataReceive
+};
+
 static uint16_t sumdReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 void sumdUpdateSerialRxFunctionConstraint(functionConstraint_t *functionConstraint)
 {
-    functionConstraint->minBaudRate = SUMD_BAUDRATE;
-    functionConstraint->maxBaudRate = SUMD_BAUDRATE;
+    functionConstraint->minBaudRate = sumdPortConfig.baudRate;
+    functionConstraint->maxBaudRate = sumdPortConfig.baudRate;
     functionConstraint->requiredSerialPortFeatures = SPF_SUPPORTS_CALLBACK;
 }
 
 bool sumdInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     UNUSED(rxConfig);
-    sumdPort = openSerialPort(FUNCTION_SERIAL_RX, sumdDataReceive, SUMD_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    sumdPort = openSerialPort(FUNCTION_SERIAL_RX, &sumdPortConfig);
     if (callback)
         *callback = sumdReadRawRC;
 

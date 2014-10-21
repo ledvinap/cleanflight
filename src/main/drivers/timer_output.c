@@ -39,7 +39,7 @@ void timerOut_Restart(timerOutputRec_t* self)
     self->qhead=self->qheadUnc=self->qtail=0;
     self->qtailWake=~0;
     
-    timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_INVERTED);
+    timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_START_HI);
     timerChConfigGPIO(self->timHw, Mode_AF_PP);
     timerChConfigCallbacks(self->timHw, &self->compareCb, NULL);
 }

@@ -17,7 +17,7 @@
 
 #pragma once
 
-// port mode is set when port is open and should not change (reopen port if neccesary, but that may not be implemented correctly now)
+// port mode is set when port is open and should not change (reopen port if neccesary)
 typedef enum portMode_t {
     MODE_RX         = 1 << 0,
     MODE_TX         = 1 << 1,
@@ -29,15 +29,16 @@ typedef enum portMode_t {
 } portMode_t;
 
 // port state is used to change state of open port.
-// maybe it is reasonable to merge mode and state enums
+// TODO - this needs some work, interface is a bit confusing now
 typedef enum portState_t {
-    STATE_TX         = 1 << 0,
-    STATE_RX         = 1 << 1,
-    STATE_RXTX       = STATE_RX|STATE_TX,
-    STATE_DELAYDONE  = 1 << 2,  // TODO - implemented only for softserial
-    STATE_DELAYTIMER = 1 << 3,  // TODO - not implemented
+    STATE_TX             = 1 << 0,
+    STATE_RX             = 1 << 1,
+    STATE_RXTX           = STATE_RX|STATE_TX,
+    STATE_RX_WHENTXDONE  = 1 << 2,  // TODO - implemented only for softserial
+    STATE_TX_DELAY       = 1 << 3,  // TODO - not implemented
 
-    STATE_RX_WHENTXDONE = STATE_RX|STATE_DELAYDONE,
+    STATE_CMD_SET        = 1 << 7,
+    STATE_CMD_CLEAR      = 1 << 8
 } portState_t;
 
 typedef enum portConfigOperation_t {

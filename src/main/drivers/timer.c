@@ -355,7 +355,7 @@ volatile timCCR_t* timerChCCR(const timerHardware_t* timHw)
     return (volatile timCCR_t*)((volatile char*)&timHw->tim->CCR1+timHw->channel);
 }
 
-void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool outInvert)
+void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool stateHigh)
 {
     TIM_OCInitTypeDef  TIM_OCInitStructure;
 
@@ -363,7 +363,7 @@ void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool outInver
     if(outEnable) {
         TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Inactive;        
         TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-        TIM_OCInitStructure.TIM_OCPolarity = outInvert?TIM_OCPolarity_Low:TIM_OCPolarity_High;
+        TIM_OCInitStructure.TIM_OCPolarity = stateHigh?TIM_OCPolarity_High:TIM_OCPolarity_Low;
     } else {
         TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;        
     }

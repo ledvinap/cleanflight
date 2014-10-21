@@ -85,7 +85,7 @@ uint32_t sectionTimes[2][4];
 extern uint32_t previousTime;
 
 // TODO - lazy to pass it to makefile now
-#define SOFTSERIAL_LOOPBACK
+//#define SOFTSERIAL_LOOPBACK
 
 #ifdef SOFTSERIAL_LOOPBACK
 serialPort_t *loopbackPort;

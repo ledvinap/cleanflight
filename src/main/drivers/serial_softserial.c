@@ -40,7 +40,7 @@
 
 #if defined(STM32F10X_MD) || defined(CHEBUZZF3)
 #define SOFT_SERIAL_1_TIMER_RX_HARDWARE 11 // PWM 5
-#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 12 // PWM 6
+#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 10 // PWM 6
 #define SOFT_SERIAL_2_TIMER_RX_HARDWARE 12 // PWM 7
 #define SOFT_SERIAL_2_TIMER_TX_HARDWARE 13 // PWM 8
 #endif
@@ -52,10 +52,10 @@
 #define SOFT_SERIAL_2_TIMER_TX_HARDWARE 11 // PWM 12
 #endif
 
-#define RX_BITS 8
-#define RX_TOTAL_BITS (1+RX_BITS+1)
-#define TX_BITS 8
-#define TX_TOTAL_BITS (1+TX_BITS+1)
+#define SYM_DATA_BITS        8
+#define SYM_TOTAL_BITS       (1+SYM_DATA_BITS+1)          // start/data/stop
+#define SYM_TOTAL_BITS_SBUS  (1+SYM_DATA_BITS+1+2)        // start/data/parity/stop
+
 
 #define MAX_SOFTSERIAL_PORTS 2
 softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
@@ -115,7 +115,10 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     uint32_t baud=config->baudRate;
     portMode_t mode=config->mode;
     portState_t state=0;
-    
+
+    if(config->mode==0)   // prevent reconfiguration with empty config
+        return;
+
     // fix mode if caller got it wong
     if(self->txTimerHardware==self->rxTimerHardware)
         mode |= MODE_SINGLEWIRE;
@@ -133,10 +136,11 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     self->transmissionErrors = 0;
     self->receiveErrors = 0;
     
-    self->bitTime=(1000000<<8)/baud;                     // fractional number of timer ticks per bit, 24.8 fixed point
-    self->invBitTime=((long long)baud<<16)/1000000;      // scaled inverse bit time. Used to to get bit number (multiplication is faster)
-
-
+    self->bitTime=(1000000<<8)/baud;                             // fractional number of timer ticks per bit, 24.8 fixed point
+    self->invBitTime=((long long)baud<<16)/1000000;              // scaled inverse bit time. Used to to get bit number (multiplication is faster)
+    int symbolBits = mode & MODE_SBUS ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS; 
+    self->symbolLength = (self->bitTime * (2 * symbolBits - 1) / 2) >> 8;  //  symbol ends in middle of last stopbit
+    
 
     if(mode & MODE_SINGLEWIRE) {
         // in sinlgewire we start in RX mode
@@ -148,7 +152,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh, 
                         self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY),
-                        &self->txCallback, (mode&MODE_INVERTED?0:TIMEROUT_INVERTED)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
+                        &self->txCallback, (mode&MODE_INVERTED?0:TIMEROUT_START_HI)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
         state|=STATE_TX;
     }
     if(mode & MODE_HALFDUPLEX) {  
@@ -164,7 +168,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
                        self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RX : TYPE_SOFTSERIAL_RX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
                        &self->rxCallback, &self->rxTimerQ, 
                        ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) | TIMERIN_POLARITY_TOGGLE | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0) | TIMERIN_QUEUE_BUFFER);
-        self->rxTimerCh.timeout=((self->bitTime * RX_TOTAL_BITS) >> 8) + 50; // 50 us after stopbit
+        self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit
         state|=STATE_RX;
         callbackTrigger(&self->rxCallback);                                  // setup timeouts correctly
     } 
@@ -201,32 +205,39 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
 void softSerialSetState(serialPort_t *serial, portState_t newState)
 {
     softSerial_t* self=container_of(serial, softSerial_t, port);
-    
-    // TODO - there should be much better way to handle delayed transitions
-    if(newState & (STATE_DELAYDONE)) {
-        self->directionRxOnDone = true;
-        return; // do not touch sate now
+   
+    // elevate priority to CALLBACK to prevent race with serial handlers
+    uint8_t saved_basepri = __get_BASEPRI();
+    __set_BASEPRI(NVIC_BUILD_PRIORITY(CALLBACK_IRQ_PRIORITY, CALLBACK_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
+    if(newState & STATE_CMD_SET) {
+        newState = self->port.state | newState;
+    } else if(newState & STATE_CMD_CLEAR) {
+        newState = self->port.state & ~newState;
     }
-
+    
     // release channels first
-    if(((newState & STATE_TX) == 0) && (self->port.state & STATE_TX)) {
+    if(!(newState & STATE_TX) && (self->port.state & STATE_TX)) {
         timerOut_Release(&self->txTimerCh);
         self->port.state &= ~STATE_TX;
         self->directionTx = false;
     }
-    if(((newState & STATE_RX)==0) && (self->port.state & STATE_RX)) {
-        timerOut_Release(&self->txTimerCh);
-        self->port.state &= ~STATE_TX;
+    if(!(newState & STATE_RX) && (self->port.state & STATE_RX)) {
+        timerIn_Release(&self->rxTimerCh);
+        self->port.state &= ~STATE_RX;
+    }
+
+    if(newState & STATE_RX_WHENTXDONE) {
+        self->directionRxOnDone = true;
     }
     
-    if((newState & STATE_RX) && ((self->port.state & STATE_RX) == 0)) {
-        if(self->port.mode & MODE_HALFDUPLEX) 
+    if((newState & STATE_RX) && !(self->port.state & STATE_RX)) {
+        if(self->port.mode & MODE_HALFDUPLEX)
             self->directionTx=false;
         timerIn_Restart(&self->rxTimerCh);
         self->port.state |= STATE_RX;
     }
      
-    if((newState & STATE_TX) && ((self->port.state & STATE_TX) == 0)) {
+    if((newState & STATE_TX) && !(self->port.state & STATE_TX)) {
         if(self->port.mode & MODE_HALFDUPLEX) {
             self->directionTx=true;       
             self->directionRxOnDone = false;
@@ -234,8 +245,7 @@ void softSerialSetState(serialPort_t *serial, portState_t newState)
         timerOut_Restart(&self->txTimerCh);
         self->port.state |= STATE_TX;
     }
-
-
+    __set_BASEPRI(saved_basepri);
 }
 
 void softSerialTxCallback(callbackRec_t *cb)
@@ -249,16 +259,22 @@ void softSerialTxCallback(callbackRec_t *cb)
 
 void softSerialTryTx(softSerial_t* self) {
     while(!isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?  
-          && timerOut_QSpace(&self->txTimerCh)>TX_TOTAL_BITS) {  // we need space for whole byte
+          && timerOut_QSpace(&self->txTimerCh) > ((self->port.mode & MODE_SBUS) ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS)) {  // we need space for whole byte 
 
     
         uint16_t byteToSend = self->port.txBuffer[self->port.txBufferTail];
         self->port.txBufferTail=(self->port.txBufferTail+1)%self->port.txBufferSize; 
     
-        byteToSend<<=1;                 // add startbit
-        byteToSend|=1<<(TX_BITS+1);     // add stopbit
-    
-        // we need to enque odxd number of intervals
+        if(self->port.mode & MODE_SBUS) {
+            byteToSend |= (__builtin_parity(byteToSend))<<SYM_DATA_BITS;      // parity bit
+            byteToSend |= 0x03 << (SYM_DATA_BITS+1);                           // 2x stopbit
+            byteToSend<<=1;                                                    // startbit      
+        } else {
+            byteToSend|=1<<SYM_DATA_BITS;                                      // stopbit
+            byteToSend<<=1;                                                    // startbit
+        }
+        
+        // we need to enque odd number of intervals
         // there is toggle on start of each interval, first interval starts in idle state
         unsigned bitPos=0;
         uint16_t lastEdgePos=0;
@@ -274,16 +290,26 @@ void softSerialTryTx(softSerial_t* self) {
     }
 }
 #define STARTBIT_MASK 0x0001
-#define STOPBIT_MASK ((0xffff<<(RX_BITS+1))&0xffff)   // check event 'virtual' stopbits, useful to signal errors
+#define STOPBIT_MASK ((0xffff<<(SYM_DATA_BITS+1))&0xffff)   // check event 'virtual' stopbits, useful to signal errors
+
+#define STOPBIT_MASK_SBUS ((0xffff<<(SYM_DATA_BITS+1+1))&0xffff)
+#define PARITY_MASK_SBUS ((~(STOPBIT_MASK_SBUS|STARTBIT_MASK))&0xffff)
 
 void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
-    if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK)) != (0|STOPBIT_MASK)) {
-        self->receiveErrors++;
-        digitalToggle(GPIOA, Pin_8);
-        return;
+    if(self->port.mode & MODE_SBUS) {
+        if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK_SBUS)) != (0|STOPBIT_MASK_SBUS)
+           || __builtin_parity(shiftRegister & PARITY_MASK_SBUS) != 0) {
+            self->receiveErrors++;
+            digitalToggle(GPIOA, Pin_8);
+            return;
+        }
+    } else {
+        if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK)) != (0|STOPBIT_MASK)) {
+            self->receiveErrors++;
+            digitalToggle(GPIOA, Pin_8);
+            return;
+        }
     }
-
-    // TODO - check parity if in sbus mode
     uint8_t byte=shiftRegister>>1; // shift startbit out
 
     if (self->port.rxCallback) {
@@ -307,7 +333,7 @@ void softSerialRxProcess(softSerial_t *self)
     do { // return here if late edge was caught
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
-            symbolEnd=symbolStart+((self->bitTime*(2*RX_TOTAL_BITS-1)/2)>>8);   // half bit shorter
+            symbolEnd=symbolStart+self->symbolLength;   // half bit shorter
             if(cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
                 timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
                 return;   // symbol is not finished yet
@@ -407,20 +433,6 @@ void softSerialWriteByte(serialPort_t *s, uint8_t ch)
         softSerialTryTx(self);
         __set_BASEPRI(saved_basepri);   
     }
-}
-
-void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate)
-{
-    softSerial_t *self = container_of(s, softSerial_t, port);
-    // TODO!
-    self->port.baudRate = baudRate;
-    self->bitTime=(1000000<<8)/baudRate;                     // fractional number of timer ticks per bit, 24.8 fixed point
-    self->invBitTime=((long long)baudRate<<16)/1000000;      // scaled inverse bit time. Used to to get bit number (multiplication is faster)
-}
-
-void softSerialSetMode(serialPort_t *instance, portMode_t mode)
-{
-    instance->mode = mode;
 }
 
 bool isSoftSerialTransmitBufferEmpty(serialPort_t *instance)

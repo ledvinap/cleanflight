@@ -39,6 +39,7 @@ typedef struct softSerial_s {
 
     uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point
     uint32_t         invBitTime;                          // inverse bit time, scaled to 16.16
+    uint16_t         symbolLength;                        // length of whole symbol (start+parity+stop-0.5)
 
     timerInputRec_t  rxTimerCh;
     timerQueueRec_t  rxTimerQ;

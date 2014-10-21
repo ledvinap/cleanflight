@@ -112,8 +112,8 @@ static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
     {SERIAL_PORT_USART2,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE},
 #if (SERIAL_PORT_COUNT > 2)
-    {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE},
-    {SERIAL_PORT_SOFTSERIAL2,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
+    {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_IS_SOFTWARE_INVERTABLE},
+    {SERIAL_PORT_SOFTSERIAL2,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_IS_SOFTWARE_INVERTABLE}
 #endif
 };
 #endif
@@ -216,19 +216,16 @@ static void sortSerialPortFunctions(serialPortFunction_t *serialPortFunctions, u
 {
     serialPortFunction_t swap;
 
-    int8_t index1;
-    int8_t index2;
-    int result;
-
+    int index1;
+    int index2;
+    
+    // bubble-sort array (TODO - port selection can be implemented as repeated minimum search with bitmask marking used elements)
     for (index1 = 0; index1 < (elements - 1); index1++) {
         for (index2 = 0; index2 < elements - index1 - 1; index2++) {
-
-            result = serialPortFunctionMostSpecificFirstComparator(&serialPortFunctions[index2], &serialPortFunctions[index2 + 1]);
-
-            if (result > 0) {
-                memcpy(&swap, &serialPortFunctions[index1], sizeof(serialPortFunction_t));
-                memcpy(&serialPortFunctions[index1], &serialPortFunctions[index2 + 1], sizeof(serialPortFunction_t));
-                memcpy(&serialPortFunctions[index2 + 1], &swap, sizeof(serialPortFunction_t));
+            if(serialPortFunctionMostSpecificFirstComparator(&serialPortFunctions[index2], &serialPortFunctions[index2 + 1]) > 0) {
+                swap=serialPortFunctions[index2];
+                serialPortFunctions[index2] = serialPortFunctions[index2 + 1];
+                serialPortFunctions[index2 + 1] = swap;
             }
         }
     }
@@ -257,7 +254,7 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         }
 
 #if (defined(NAZE) || defined(OLIMEXINO)) && defined(SONAR)
-        if (!feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {
+        if (feature(FEATURE_SONAR) && !feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {
             continue;
         }
 #endif

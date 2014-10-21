@@ -52,12 +52,11 @@
 #include "telemetry/sport.h"
 
 static serialPort_t *sPortPort;
-#define SPORT_BAUDRATE 57600
 
 void telemetrySPortSerialRxCharCallback(uint16_t data);
 
-serialPortConfig_t sPortPortConfig = { .mode = MODE_RX|MODE_TX|MODE_SINGLEWIRE|MODE_INVERTED|MODE_HALFDUPLEX, 
-                                              .baudRate = SPORT_BAUDRATE,
+serialPortConfig_t sPortPortConfig = { .mode = MODE_RX|MODE_TX|MODE_SINGLEWIRE|MODE_HALFDUPLEX|MODE_INVERTED, 
+                                              .baudRate = 57600,
                                               .rxCallback = telemetrySPortSerialRxCharCallback
 };
 
@@ -225,14 +224,9 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
         serialSetState(sPortPort, STATE_TX);
         for(unsigned i=0;i<8;i++)
             tx_u8(pkt[i]);
-        serialSetState(sPortPort, STATE_RX_WHENTXDONE);
+        serialSetState(sPortPort, STATE_RX_WHENTXDONE|STATE_CMD_SET);
         telemPktQueuePop();
     }
-}
-
-void telemetrySPortSerialTxDoneCallback(void)
-{
-    serialSetState(sPortPort, STATE_TX);
 }
 
 
@@ -438,6 +432,6 @@ void handleSPortTelemetry(void)
 }
 
 uint32_t getSPortTelemetryProviderBaudRate(void) {
-    return SPORT_BAUDRATE;
+    return sPortPortConfig.baudRate;
 }
 #endif

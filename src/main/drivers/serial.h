@@ -26,6 +26,7 @@ typedef enum portMode_t {
     MODE_HALFDUPLEX = 1 << 3,
     MODE_SINGLEWIRE = 1 << 4,
     MODE_INVERTED   = 1 << 5,
+    MODE_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
 } portMode_t;
 
 // port state is used to change state of open port.

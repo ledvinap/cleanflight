@@ -119,13 +119,16 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     if(config->mode==0)   // prevent reconfiguration with empty config
         return;
 
-    // fix mode if caller got it wong
-    if(self->txTimerHardware==self->rxTimerHardware)
+    // fix mode if caller got it wrong
+    if((mode & MODE_RXTX) == MODE_RXTX && self->txTimerHardware == self->rxTimerHardware)
         mode |= MODE_SINGLEWIRE;
     if(mode & MODE_SINGLEWIRE)
         mode |= MODE_HALFDUPLEX;
-    if(mode & MODE_HALFDUPLEX)
+    if(mode & MODE_HALFDUPLEX) {
         mode |= MODE_RXTX;
+        if(self->txTimerHardware != self->rxTimerHardware)
+            mode |= MODE_DUALTIMER;     // we have two channels, so use them 
+    }
     
     self->port.baudRate = baud;
     self->port.mode = mode;
@@ -157,18 +160,23 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     }
     if(mode & MODE_HALFDUPLEX) {  
         // release tx channel in halfduplex mode before configuring RX (timer may be shared)
-        // TODO - correctly handle pin in halfduplex ont two pins
+        // TODO - correctly handle pin in halfduplex on two pins
         timerOut_Release(&self->txTimerCh);
-        state&=~STATE_TX;
+        state &= ~STATE_TX;
     }
     if(mode & MODE_RX) {
+        // TODO - in dualtimer case whe should chech that second channel is available and fallback to single-channel mode in neccesary
+        // Or fail to open port - could be safer when DMA is used (much higher processor load can be dangerous)
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerIn_Config(&self->rxTimerCh, 
-                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RX : TYPE_SOFTSERIAL_RX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
+                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_RX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
                        &self->rxCallback, &self->rxTimerQ, 
-                       ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) | TIMERIN_POLARITY_TOGGLE | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0) | TIMERIN_QUEUE_BUFFER );
-        self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit
+                       ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) 
+                       | ((mode & MODE_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE) 
+                       | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0) 
+                       | TIMERIN_QUEUE_BUFFER);
+        self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit (make it configurable)
         state|=STATE_RX;
         callbackTrigger(&self->rxCallback);                                  // setup timeouts correctly
     } 

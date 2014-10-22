@@ -194,6 +194,11 @@ void timerIn_QPop2(timerInputRec_t* self)
     self->qtail=(self->qtail+2)%TIMERIN_QUEUE_LEN;
 }
 
+int timerIn_QLen(timerInputRec_t* self) {
+    return (self->qhead-self->qtail)&(TIMERIN_QUEUE_LEN-1);
+}
+
 uint16_t timerIn_getTimCNT(timerInputRec_t *self) {
     return self->tim->CNT;
 }
+

@@ -4,6 +4,8 @@
 #include "platform.h"
 #include "build_config.h"
 #include "common/utils.h"
+#include "nvic.h"
+#include "system.h"
 
 #include "gpio.h"
 
@@ -68,14 +70,21 @@ void callbackRelease(callbackRec_t *self)
 
 void callbackTrigger(callbackRec_t *self)
 {
+    uint8_t saved_basepri = __get_BASEPRI();
+    __set_BASEPRI(NVIC_BUILD_PRIORITY(MAX_IRQ_PRIORITY, MAX_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
     callbackTriggers[0] |= 1 << self->id;
+    __set_BASEPRI(saved_basepri);
     SCB->ICSR=SCB_ICSR_PENDSVSET;
 }
 
 static void callbackCall(void) {
     while(callbackTriggers[0]) {
         uint8_t idx=31-__builtin_clz(callbackTriggers[0]);
+        // TODO - use some atomic macro. Disabling interrupts is probably OK here
+        uint8_t saved_basepri = __get_BASEPRI();
+        __set_BASEPRI(NVIC_BUILD_PRIORITY(MAX_IRQ_PRIORITY, MAX_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
         callbackTriggers[0]&=~(1<<idx);
+        __set_BASEPRI(saved_basepri);
         callbackEntries[idx]->fn(callbackEntries[idx]);
     }
 }

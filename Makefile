@@ -578,5 +578,8 @@ help:
 	@echo "Valid TARGET values are: $(VALID_TARGETS)"
 	@echo ""
 
+# rebuild everything when makefile changes
+$(TARGET_OBJS) : Makefile
+
 # include auto-generated dependencies
 -include $(TARGET_DEPS)

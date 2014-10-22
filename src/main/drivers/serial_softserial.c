@@ -167,7 +167,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         timerIn_Config(&self->rxTimerCh, 
                        self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RX : TYPE_SOFTSERIAL_RX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
                        &self->rxCallback, &self->rxTimerQ, 
-                       ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) | TIMERIN_POLARITY_TOGGLE | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0) | TIMERIN_QUEUE_BUFFER);
+                       ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) | TIMERIN_POLARITY_TOGGLE | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0) | TIMERIN_QUEUE_BUFFER );
         self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit
         state|=STATE_RX;
         callbackTrigger(&self->rxCallback);                                  // setup timeouts correctly
@@ -202,6 +202,8 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
     config->rxCallback = self->port.rxCallback;
 }
 
+
+// this interface needs to be changes - it is too complicated now 
 void softSerialSetState(serialPort_t *serial, portState_t newState)
 {
     softSerial_t* self=container_of(serial, softSerial_t, port);
@@ -214,7 +216,19 @@ void softSerialSetState(serialPort_t *serial, portState_t newState)
     } else if(newState & STATE_CMD_CLEAR) {
         newState = self->port.state & ~newState;
     }
-    
+
+    if(newState & STATE_RX_WHENTXDONE) {
+        // first check if there is something in buffer. 
+        if(isSoftSerialTransmitBufferEmpty(&self->port) && (timerOut_QLen(&self->txTimerCh) == 0)) {
+            // Return to RX immediately 
+            newState &= ~STATE_TX;
+            newState |= STATE_RX;
+        } else {
+            self->directionRxOnDone = true;
+            digitalHi(GPIOA, Pin_8);
+        }
+    }
+        
     // release channels first
     if(!(newState & STATE_TX) && (self->port.state & STATE_TX)) {
         timerOut_Release(&self->txTimerCh);
@@ -226,21 +240,20 @@ void softSerialSetState(serialPort_t *serial, portState_t newState)
         self->port.state &= ~STATE_RX;
     }
 
-    if(newState & STATE_RX_WHENTXDONE) {
-        self->directionRxOnDone = true;
-    }
-    
+
     if((newState & STATE_RX) && !(self->port.state & STATE_RX)) {
-        if(self->port.mode & MODE_HALFDUPLEX)
+        if(self->port.mode & MODE_HALFDUPLEX) 
             self->directionTx=false;
         timerIn_Restart(&self->rxTimerCh);
+        self->directionRxOnDone = false;
+        digitalLo(GPIOA, Pin_8);
         self->port.state |= STATE_RX;
     }
      
     if((newState & STATE_TX) && !(self->port.state & STATE_TX)) {
         if(self->port.mode & MODE_HALFDUPLEX) {
             self->directionTx=true;       
-            self->directionRxOnDone = false;
+
         }
         timerOut_Restart(&self->txTimerCh);
         self->port.state |= STATE_TX;
@@ -251,8 +264,11 @@ void softSerialSetState(serialPort_t *serial, portState_t newState)
 void softSerialTxCallback(callbackRec_t *cb)
 {
     softSerial_t *self=container_of(cb, softSerial_t, txCallback);;
+    digitalToggle(GPIOA, Pin_0);
     softSerialTryTx(self);
+
     if(self->directionRxOnDone && timerOut_QLen(&self->txTimerCh)==0) {
+        digitalToggle(GPIOA, Pin_0);
         softSerialSetState(&self->port, STATE_RX);
     }
 }
@@ -300,13 +316,11 @@ void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
         if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK_SBUS)) != (0|STOPBIT_MASK_SBUS)
            || __builtin_parity(shiftRegister & PARITY_MASK_SBUS) != 0) {
             self->receiveErrors++;
-            digitalToggle(GPIOA, Pin_8);
             return;
         }
     } else {
         if((shiftRegister & (STARTBIT_MASK|STOPBIT_MASK)) != (0|STOPBIT_MASK)) {
             self->receiveErrors++;
-            digitalToggle(GPIOA, Pin_8);
             return;
         }
     }
@@ -334,7 +348,8 @@ void softSerialRxProcess(softSerial_t *self)
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
             symbolEnd=symbolStart+self->symbolLength;   // half bit shorter
-            if(cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
+            if(timerIn_QLen(&self->rxTimerCh)<SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol was received to prevent problems with timerCnt overflow
+               && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
                 timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
                 return;   // symbol is not finished yet
             }

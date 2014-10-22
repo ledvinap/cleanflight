@@ -35,6 +35,7 @@
 #include "drivers/accgyro.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
+#include "drivers/timer_queue.h"
 #include "drivers/serial.h"
 #include "io/serial.h"
 
@@ -54,6 +55,8 @@
 static serialPort_t *sPortPort;
 
 void telemetrySPortSerialRxCharCallback(uint16_t data);
+
+timerQueueRec_t telemetrySPortTimerQ;
 
 serialPortConfig_t sPortPortConfig = { .mode = MODE_RX|MODE_TX|MODE_SINGLEWIRE|MODE_HALFDUPLEX|MODE_INVERTED, 
                                               .baudRate = 57600,
@@ -216,19 +219,24 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
 {
     // TODO !!
     static uint16_t rcvd;
-    uint8_t *pkt;
     rcvd<<=8;
     rcvd|=data&0xff;
-    if(rcvd==((0x7e<<8)|DATA_ID_VARIO) && (pkt=telemPktQueueHead())!=NULL) {
-        delayMicroseconds(100); // TODO!
-        serialSetState(sPortPort, STATE_TX);
-        for(unsigned i=0;i<8;i++)
-            tx_u8(pkt[i]);
-        serialSetState(sPortPort, STATE_RX_WHENTXDONE|STATE_CMD_SET);
-        telemPktQueuePop();
+    if(rcvd==((0x7e<<8)|DATA_ID_VARIO) && telemPktQueueHead()!=NULL) {
+        timerQueue_Start(&telemetrySPortTimerQ, 100);
     }
 }
 
+void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
+{
+    UNUSED(cb);
+    uint8_t *pkt=telemPktQueueHead();
+    if(!pkt) return;
+    serialSetState(sPortPort, STATE_TX);
+    for(unsigned i=0;i<8;i++)
+        tx_u8(pkt[i]);
+    serialSetState(sPortPort, STATE_RX_WHENTXDONE|STATE_CMD_SET);
+    telemPktQueuePop();
+}
 
 static void pushPacket(uint16_t id, uint32_t value)
 {
@@ -346,6 +354,8 @@ void initSPortTelemetry(telemetryConfig_t *initialTelemetryConfig)
         telemQueueInsert(millis(), i);
     }
     telemPktHead=telemPktTail=0;
+    // timer user to trigger reply after poll
+    timerQueue_Config(&telemetrySPortTimerQ, telemetrySPortTimerQCallback);
 }
 
 static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;

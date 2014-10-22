@@ -1,6 +1,10 @@
 
 #pragma once
 
+// can't use 0 
+#define MAX_IRQ_PRIORITY    0
+#define MAX_IRQ_SUBPRIORITY 1
+
 #define TIMER_IRQ_PRIORITY 0
 #define TIMER_IRQ_SUBPRIORITY 1
 

@@ -63,6 +63,7 @@ void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
             if(self->qtailWake==self->qtail)  // user wants to be woken up
                 callbackTrigger(self->callback);
         } else {
+            digitalToggle(GPIOA, Pin_8);
             self->flags&=~TIMEROUT_RUNNING;
             if(self->flags&TIMEROUT_WAKEONEMPTY) 
                 callbackTrigger(self->callback);

@@ -38,6 +38,7 @@ bool timerIn_QPeek(timerInputRec_t *self, uint16_t *capture, uint16_t *flags);
 void timerIn_QPop(timerInputRec_t *self);
 bool timerIn_QPeek2(timerInputRec_t *self, uint16_t *capture1, uint16_t *capture2); 
 void timerIn_QPop2(timerInputRec_t *self);
+int timerIn_QLen(timerInputRec_t* self);
 void timerIn_SetBuffering(timerInputRec_t *self, short buffer);
 bool timerIn_ArmEdgeTimeout(timerInputRec_t* self);
 uint16_t timerIn_getTimCNT(timerInputRec_t *self);

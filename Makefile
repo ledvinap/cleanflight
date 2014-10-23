@@ -465,22 +465,22 @@ endif
 
 DEBUG_FLAGS	 = -ggdb3
 
-CFLAGS		 = $(ARCH_FLAGS) 				\
-		   $(LTO_FLAGS) 				\
-		   $(addprefix -D,$(OPTIONS)) 			\
-		   $(addprefix -I,$(INCLUDE_DIRS)) 		\
-		   $(DEBUG_FLAGS) 				\
-		   -std=gnu99 					\
-		   -W -Wall -Wextra -Wunsafe-loop-optimizations \
-		   -ffunction-sections 				\
-		   -fdata-sections 				\
-		   $(DEVICE_FLAGS) 				\
-		   -DUSE_STDPERIPH_DRIVER 			\
-		   $(TARGET_FLAGS) 				\
-		   -D'__FORKNAME__="$(FORKNAME)"' 		\
-		   -D'__TARGET__="$(TARGET)"' 			\
-                   -D'__REVISION__="$(REVISION)"' 		\
-		   -save-temps=obj -fverbose-asm		\
+CFLAGS		 = $(ARCH_FLAGS) \
+		   $(LTO_FLAGS) \
+		   $(addprefix -D,$(OPTIONS)) \
+		   $(addprefix -I,$(INCLUDE_DIRS)) \
+		   $(DEBUG_FLAGS) \
+		   -std=gnu99 \
+		   -Wall -Wextra -Wunsafe-loop-optimizations \
+		   -ffunction-sections \
+		   -fdata-sections \
+		   $(DEVICE_FLAGS) \
+		   -DUSE_STDPERIPH_DRIVER \
+		   $(TARGET_FLAGS) \
+		   -D'__FORKNAME__="$(FORKNAME)"' \
+		   -D'__TARGET__="$(TARGET)"' \
+		   -D'__REVISION__="$(REVISION)"' \
+		   -save-temps=obj \
 		   -MD
 
 ASFLAGS		 = $(ARCH_FLAGS) \
@@ -536,7 +536,7 @@ $(TARGET_ELF):  $(TARGET_OBJS)
 $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
-	@$(CC) -c -o $@ $(CFLAGS) -Wa,-adhln=$(@:%.o=%.lst) $<
+	@$(CC) -c -o $@ $(CFLAGS) $<
 
 # Assemble
 $(OBJECT_DIR)/$(TARGET)/%.o: %.s
@@ -544,7 +544,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.s
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
-$(OBJECT_DIR)/$(TARGET)/%.o): %.S
+$(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $< 

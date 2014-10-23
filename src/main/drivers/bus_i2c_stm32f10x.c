@@ -124,8 +124,9 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
             while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
-            if (timeout == 0)
+            if (timeout == 0) {
                 return i2cHandleHardwareFailure();
+            }
             I2C_GenerateSTART(I2Cx, ENABLE);                            // send the start for the new job
         }
         I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, ENABLE);            // allow the interrupts to fire off again
@@ -133,8 +134,9 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
 
     timeout = I2C_DEFAULT_TIMEOUT;
     while (busy && --timeout > 0) { ; }
-    if (timeout == 0)
+    if (timeout == 0) {
         return i2cHandleHardwareFailure();
+    }
 
     return !error;
 }
@@ -181,11 +183,12 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
 
 static void i2c_er_handler(void)
 {
-    // Read the I2C1 status register
+    // Read the I2Cx status register
     volatile uint32_t SR1Register = I2Cx->SR1;
 
-    if (SR1Register & 0x0F00)                                           // an error
+    if (SR1Register & 0x0F00) {                                         // an error
         error = true;
+    }
 
     // If AF, BERR or ARLO, abandon the current job and commence new if there are jobs
     if (SR1Register & 0x0700) {
@@ -340,15 +343,15 @@ void i2cInit(I2CDevice index)
 
     // I2C ER Interrupt
     nvic.NVIC_IRQChannel = i2cHardwareMap[index].er_irq;
-    nvic.NVIC_IRQChannelPreemptionPriority = I2C_ER_PRIORITY;
-    nvic.NVIC_IRQChannelSubPriority = I2C_ER_SUBPRIORITY;
+    nvic.NVIC_IRQChannelPreemptionPriority = I2C_ER_IRQ_PRIORITY;
+    nvic.NVIC_IRQChannelSubPriority = I2C_ER_IRQ_SUBPRIORITY;
     nvic.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&nvic);
 
     // I2C EV Interrupt
     nvic.NVIC_IRQChannel = i2cHardwareMap[index].ev_irq;
-    nvic.NVIC_IRQChannelPreemptionPriority = I2C_EV_PRIORITY;
-    nvic.NVIC_IRQChannelSubPriority = I2C_EV_SUBPRIORITY;
+    nvic.NVIC_IRQChannelPreemptionPriority = I2C_EV_IRQ_PRIORITY;
+    nvic.NVIC_IRQChannelSubPriority = I2C_EV_IRQ_SUBPRIORITY;
     NVIC_Init(&nvic);
 }
 

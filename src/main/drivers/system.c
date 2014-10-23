@@ -26,6 +26,7 @@
 #include "gpio.h"
 #include "light_led.h"
 #include "sound_beeper.h"
+#include "nvic.h"
 
 #include "system.h"
 

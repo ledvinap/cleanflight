@@ -92,7 +92,7 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
     s->port.txBuffer = tx1Buffer;
     s->port.rxBufferSize = UART1_RX_BUFFER_SIZE;
     s->port.txBufferSize = UART1_TX_BUFFER_SIZE;
-
+    
     s->USARTx = USART1;
 
     s->txDMAPeripheralBaseAddr = (uint32_t)&s->USARTx->DR;
@@ -118,8 +118,8 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART1_TXDMA_PRIORITY;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART1_TXDMA_SUBPRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART1_TXDMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART1_TXDMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 

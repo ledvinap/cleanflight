@@ -22,6 +22,11 @@ void timerIn_dualCaptureEventStore( timerCCHandlerRec_t *self_, uint16_t capture
 
 struct timerQueueRec_s;
 
+// check buffer length assumption
+#if TIMERIN_QUEUE_LEN & (TIMERIN_QUEUE_LEN-1)
+# error "TIMERIN_QUEUE_LEN must be power of 2"
+#endif
+
 void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channelType_t owner, int priority, callbackRec_t *callback, struct timerQueueRec_s* timer, uint16_t flags)
 {
     self->timHw=timHw;

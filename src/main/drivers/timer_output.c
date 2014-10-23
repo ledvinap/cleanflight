@@ -12,6 +12,11 @@
 #include "timer.h"
 #include "timer_output.h"
 
+// check buffer length assumption
+#if TIMEROUT_QUEUE_LEN & (TIMEROUT_QUEUE_LEN-1)
+# error "TIMEROUT_QUEUE_LEN must be power of 2"
+#endif
+
 void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare);
 
 void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, channelType_t owner, int priority, callbackRec_t *callback, uint16_t flags)

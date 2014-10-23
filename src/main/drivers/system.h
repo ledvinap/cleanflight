@@ -34,8 +34,3 @@ void systemResetToBootloader(void);
 void enableGPIOPowerUsageAndNoiseReductions(void);
 // current crystal frequency - 8 or 12MHz
 extern uint32_t hse_value;
-
-#define NVIC_PRIORITY_GROUPING NVIC_PriorityGroup_2
-#define NVIC_BUILD_PRIORITY(base,sub) ((((base)<<(4-(7-(NVIC_PRIORITY_GROUPING>>8))))|((sub)&(0x0f>>(7-(NVIC_PRIORITY_GROUPING>>8)))))<<4)
-#define NVIC_SPLIT_PRIORITY_BASE(prio) (((prio)>>(4-(7-(NVIC_PRIORITY_GROUPING>>8))))>>4)
-#define NVIC_SPLIT_PRIORITY_SUB(prio) (((prio)&(0x0f>>(7-(NVIC_PRIORITY_GROUPING>>8))))>>4)

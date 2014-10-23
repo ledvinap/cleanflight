@@ -1,7 +1,7 @@
 
 #pragma once
 
-#define TIMEROUT_QUEUE_LEN (1<<5)
+#define TIMEROUT_QUEUE_LEN 32
 #define TIMEROUT_QUEUE_LOW 5
 
 #define TIMEROUT_RUNNING       0x0100

@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define TARGET_BOARD_IDENTIFIER "AFF3" // AFro F3
+
 #pragma once
 
 #define LED0_GPIO   GPIOB
@@ -41,8 +43,6 @@
 #define SENSORS_SET (SENSOR_ACC)
 
 #define GPS
-#define LED_STRIP
 #define TELEMETRY
-#define SOFT_SERIAL
 #define SERIAL_RX
 #define AUTOTUNE

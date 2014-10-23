@@ -32,7 +32,7 @@ typedef struct softSerial_s {
     serialPort_t     port;
 
     const timerHardware_t *rxTimerHardware;
-    volatile uint8_t rxBuffer[SOFT_SERIAL_BUFFER_SIZE];
+    volatile uint8_t rxBuffer[SOFTSERIAL_BUFFER_SIZE];
 
     const timerHardware_t *txTimerHardware;
     volatile uint8_t txBuffer[SOFT_SERIAL_BUFFER_SIZE];

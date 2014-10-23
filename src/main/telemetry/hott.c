@@ -58,6 +58,8 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #ifdef TELEMETRY
 
 #include "common/axis.h"
@@ -109,6 +111,8 @@ static telemetryConfig_t *telemetryConfig;
 static HOTT_GPS_MSG_t hottGPSMessage;
 static HOTT_EAM_MSG_t hottEAMMessage;
 
+static bool useSoftserialRxFailureWorkaround = false;
+
 static void initialiseEAMMessage(HOTT_EAM_MSG_t *msg, size_t size)
 {
     memset(msg, 0, size);
@@ -147,8 +151,8 @@ static void initialiseMessages(void)
 #ifdef GPS
 void addGPSCoordinates(HOTT_GPS_MSG_t *hottGPSMessage, int32_t latitude, int32_t longitude)
 {
-    int16_t deg = latitude / 10000000L;
-    int32_t sec = (latitude - (deg * 10000000L)) * 6;
+    int16_t deg = latitude / GPS_DEGREES_DIVIDER;
+    int32_t sec = (latitude - (deg * GPS_DEGREES_DIVIDER)) * 6;
     int8_t min = sec / 1000000L;
     sec = (sec % 1000000L) / 100L;
     uint16_t degMin = (deg * 100L) + min;
@@ -159,8 +163,8 @@ void addGPSCoordinates(HOTT_GPS_MSG_t *hottGPSMessage, int32_t latitude, int32_t
     hottGPSMessage->pos_NS_sec_L = sec;
     hottGPSMessage->pos_NS_sec_H = sec >> 8;
 
-    deg = longitude / 10000000L;
-    sec = (longitude - (deg * 10000000L)) * 6;
+    deg = longitude / GPS_DEGREES_DIVIDER;
+    sec = (longitude - (deg * GPS_DEGREES_DIVIDER)) * 6;
     min = sec / 1000000L;
     sec = (sec % 1000000L) / 100L;
     degMin = (deg * 100L) + min;
@@ -333,11 +337,23 @@ static void flushHottRxBuffer(void)
     }
 }
 
-static void hottCheckSerialData(uint32_t currentMicros) {
-
+static void hottCheckSerialData(uint32_t currentMicros)
+{
     static bool lookingForRequest = true;
 
     uint8_t bytesWaiting = serialTotalBytesWaiting(hottPort);
+
+    if (useSoftserialRxFailureWorkaround) {
+        // FIXME The 0x80 is being read as 0x00 - softserial timing/syncronisation problem somewhere.
+        if (!bytesWaiting) {
+            return;
+        }
+
+        uint8_t incomingByte = serialRead(hottPort);
+        processBinaryModeRequest(incomingByte);
+
+        return;
+    }
 
     if (bytesWaiting <= 1) {
         return;

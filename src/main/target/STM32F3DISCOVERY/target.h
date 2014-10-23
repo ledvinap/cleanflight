@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define TARGET_BOARD_IDENTIFIER "SDF3" // STM Discovery F3
+
 #define LED0_GPIO   GPIOE
 #define LED0_PIN    Pin_8|Pin_12 // Blue LEDs - PE8/PE12
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOE
@@ -56,6 +58,7 @@
 
 #define GPS
 #define LED_STRIP
+#define LED_STRIP_TIMER TIM16
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE

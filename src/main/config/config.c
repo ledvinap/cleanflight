@@ -100,7 +100,7 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 master_t masterConfig;      // master config struct with data independent from profiles
 profile_t *currentProfile;   // profile config struct
 
-static const uint8_t EEPROM_CONF_VERSION = 81;
+static const uint8_t EEPROM_CONF_VERSION = 82;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -201,6 +201,11 @@ void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
     telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_SPORT;
     telemetryConfig->frsky_inversion = MODE_INVERTED;
     telemetryConfig->telemetry_switch = 0;
+    telemetryConfig->gpsNoFixLatitude = 0;
+    telemetryConfig->gpsNoFixLongitude = 0;
+    telemetryConfig->frsky_coordinate_format = FRSKY_FORMAT_DMS;
+    telemetryConfig->frsky_unit = FRSKY_UNIT_METRICS;
+    telemetryConfig->batterySize = 0;
 }
 
 void resetSerialConfig(serialConfig_t *serialConfig)
@@ -308,6 +313,7 @@ static void resetConf(void)
     // gps/nav stuff
     masterConfig.gpsConfig.provider = GPS_NMEA;
     masterConfig.gpsConfig.sbasMode = SBAS_AUTO;
+    masterConfig.gpsConfig.gpsAutoConfig = GPS_AUTOCONFIG_ON;
 #endif
 
     resetSerialConfig(&masterConfig.serialConfig);
@@ -508,9 +514,21 @@ void validateAndFixConfig(void)
     }
 
 
-#if defined(STM32F10X)
-    // led strip needs the same timer as softserial
-    if (feature(FEATURE_SOFTSERIAL)) {
+#if defined(LED_STRIP) && (defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2))
+    if (feature(FEATURE_SOFTSERIAL) && (
+#ifdef USE_SOFTSERIAL1
+            (LED_STRIP_TIMER == SOFTSERIAL_1_TIMER)
+#else
+            0
+#endif
+            ||
+#ifdef USE_SOFTSERIAL2
+            (LED_STRIP_TIMER == SOFTSERIAL_2_TIMER)
+#else
+            0
+#endif
+    )) {
+        // led strip needs the same timer as softserial
         featureClear(FEATURE_LED_STRIP);
     }
 #endif

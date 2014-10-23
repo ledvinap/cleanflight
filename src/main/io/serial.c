@@ -90,12 +90,14 @@ static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
 #ifdef CC3D
 static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
-    {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE}
+    {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+    {SERIAL_PORT_SOFTSERIAL1, NULL, SCENARIO_UNUSED, FUNCTION_NONE}
 };
 
 static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
-    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE}
+    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE},
+    {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
 };
 #else
 
@@ -245,7 +247,7 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         uint8_t serialPortIndex = lookupSerialPortIndexByIdentifier(serialPortFunction->identifier);
         const serialPortConstraint_t *serialPortConstraint = &serialPortConstraints[serialPortIndex];
 
-#ifdef USE_SOFT_SERIAL
+#if defined(USE_SOFTSERIAL1) ||(defined(USE_SOFTSERIAL2))
         if (!feature(FEATURE_SOFTSERIAL) && (
                 serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1 ||
                 serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2
@@ -574,10 +576,12 @@ serialPort_t *openSerialPort(serialPortFunction_e function, const serialPortConf
             serialPort = uartOpen(USART3, config);
             break;
 #endif
-#ifdef USE_SOFT_SERIAL
+#ifdef USE_SOFTSERIAL1
         case SERIAL_PORT_SOFTSERIAL1:
             serialPort = openSoftSerial(SOFTSERIAL1, config);
             break;
+#endif
+#ifdef USE_SOFTSERIAL2
         case SERIAL_PORT_SOFTSERIAL2:
             serialPort = openSoftSerial(SOFTSERIAL2, config);
             break;

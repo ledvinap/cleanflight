@@ -21,7 +21,7 @@
 
 #include "platform.h"
 
-#ifdef USE_SOFT_SERIAL
+#if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 
 #include "build_config.h"
 
@@ -56,11 +56,14 @@
 #define SYM_TOTAL_BITS       (1+SYM_DATA_BITS+1)          // start/data/stop
 #define SYM_TOTAL_BITS_SBUS  (1+SYM_DATA_BITS+1+2)        // start/data/parity/stop
 
-
+#if defined(USE_SOFTSERIAL1) && defined(USE_SOFTSERIAL2)
 #define MAX_SOFTSERIAL_PORTS 2
-softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
+#else
+#define MAX_SOFTSERIAL_PORTS 1
+#endif
 
 extern const struct serialPortVTable softSerialVTable[];
+softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
 
 void softSerialTxCallback(callbackRec_t *cb);
 void softSerialRxCallback(callbackRec_t *cb);
@@ -210,6 +213,18 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
     config->rxCallback = self->port.rxCallback;
 }
 
+static void resetBuffers(softSerial_t *softSerial)
+{
+    softSerial->port.rxBufferSize = SOFTSERIAL_BUFFER_SIZE;
+    softSerial->port.rxBuffer = softSerial->rxBuffer;
+    softSerial->port.rxBufferTail = 0;
+    softSerial->port.rxBufferHead = 0;
+
+    softSerial->port.txBuffer = softSerial->txBuffer;
+    softSerial->port.txBufferSize = SOFTSERIAL_BUFFER_SIZE;
+    softSerial->port.txBufferTail = 0;
+    softSerial->port.txBufferHead = 0;
+}
 
 // this interface needs to be changes - it is too complicated now 
 void softSerialSetState(serialPort_t *serial, portState_t newState)
@@ -224,6 +239,7 @@ void softSerialSetState(serialPort_t *serial, portState_t newState)
     } else if(newState & STATE_CMD_CLEAR) {
         newState = self->port.state & ~newState;
     }
+#endif
 
     if(newState & STATE_RX_WHENTXDONE) {
         // first check if there is something in buffer. 
@@ -414,7 +430,7 @@ uint8_t softSerialTotalBytesWaiting(serialPort_t *instance)
 
     softSerial_t *s = (softSerial_t *)instance;
 
-    return (s->port.rxBufferHead - s->port.rxBufferTail) % (s->port.rxBufferSize);
+    return (s->port.rxBufferHead - s->port.rxBufferTail) & (s->port.rxBufferSize - 1);
 }
 
 uint8_t softSerialReadByte(serialPort_t *instance)

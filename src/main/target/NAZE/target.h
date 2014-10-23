@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define TARGET_BOARD_IDENTIFIER "AFNA" // AFroNAze - NAZE might be considerd misleading on Naze clones like the flip32.
+
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
@@ -80,8 +82,16 @@
 
 #define USE_USART1
 #define USE_USART2
-#define USE_SOFT_SERIAL
+#define USE_SOFTSERIAL1
+#define USE_SOFTSERIAL2
 #define SERIAL_PORT_COUNT 4
+
+#define SOFTSERIAL_1_TIMER TIM3
+#define SOFTSERIAL_1_TIMER_RX_HARDWARE 4 // PWM 5
+#define SOFTSERIAL_1_TIMER_TX_HARDWARE 5 // PWM 6
+#define SOFTSERIAL_2_TIMER TIM3
+#define SOFTSERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
+#define SOFTSERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
@@ -99,8 +109,9 @@
 
 #define GPS
 
-//#define LED_STRIP
+#define LED_STRIP
+#define LED_STRIP_TIMER TIM3
+
 #define TELEMETRY
-#define SOFT_SERIAL
 #define SERIAL_RX
 #define AUTOTUNE

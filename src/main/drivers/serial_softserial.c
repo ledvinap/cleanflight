@@ -61,13 +61,13 @@ void softSerialSetState(serialPort_t *serial, portState_t newState);
 
 static void resetBuffers(softSerial_t *self)
 {
-    self->port.rxBufferSize = SOFT_SERIAL_BUFFER_SIZE;
+    self->port.rxBufferSize = SOFTSERIAL_BUFFER_SIZE;
     self->port.rxBuffer = self->rxBuffer;
     self->port.rxBufferTail = 0;
     self->port.rxBufferHead = 0;
 
     self->port.txBuffer = self->txBuffer;
-    self->port.txBufferSize = SOFT_SERIAL_BUFFER_SIZE;
+    self->port.txBufferSize = SOFTSERIAL_BUFFER_SIZE;
     self->port.txBufferTail = 0;
     self->port.txBufferHead = 0;
 }
@@ -84,14 +84,14 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortCo
     gpioInit(GPIOA, &cfg);
 #ifdef USE_SOFTSERIAL1
     if (portIndex == SOFTSERIAL1) {
-        self->rxTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_RX_HARDWARE]);
-        self->txTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_TX_HARDWARE]);
+        self->rxTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_RX_HARDWARE]);
+        self->txTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_TX_HARDWARE]);
     }
 #endif
 #ifdef USE_SOFTSERIAL2
     if (portIndex == SOFTSERIAL2) {
-        self->rxTimerHardware = &(timerHardware[SOFT_SERIAL_2_TIMER_RX_HARDWARE]);
-        self->txTimerHardware = &(timerHardware[SOFT_SERIAL_2_TIMER_TX_HARDWARE]);
+        self->rxTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_RX_HARDWARE]);
+        self->txTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_TX_HARDWARE]);
     }
 #endif
     self->port.vTable = softSerialVTable;
@@ -201,18 +201,6 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
     config->rxCallback = self->port.rxCallback;
 }
 
-static void resetBuffers(softSerial_t *softSerial)
-{
-    softSerial->port.rxBufferSize = SOFTSERIAL_BUFFER_SIZE;
-    softSerial->port.rxBuffer = softSerial->rxBuffer;
-    softSerial->port.rxBufferTail = 0;
-    softSerial->port.rxBufferHead = 0;
-
-    softSerial->port.txBuffer = softSerial->txBuffer;
-    softSerial->port.txBufferSize = SOFTSERIAL_BUFFER_SIZE;
-    softSerial->port.txBufferTail = 0;
-    softSerial->port.txBufferHead = 0;
-}
 
 // this interface needs to be changes - it is too complicated now 
 void softSerialSetState(serialPort_t *serial, portState_t newState)

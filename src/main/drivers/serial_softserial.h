@@ -21,7 +21,7 @@
 #include "timer_output.h"
 #include "timer_queue.h"
 
-#define SOFT_SERIAL_BUFFER_SIZE 256
+#define SOFTSERIAL_BUFFER_SIZE 256
 
 typedef enum {
     SOFTSERIAL1 = 0,
@@ -35,8 +35,8 @@ typedef struct softSerial_s {
     volatile uint8_t rxBuffer[SOFTSERIAL_BUFFER_SIZE];
 
     const timerHardware_t *txTimerHardware;
-    volatile uint8_t txBuffer[SOFT_SERIAL_BUFFER_SIZE];
-
+    volatile uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
+    
     uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point
     uint32_t         invBitTime;                          // inverse bit time, scaled to 16.16
     uint16_t         symbolLength;                        // length of whole symbol (start+parity+stop-0.5)

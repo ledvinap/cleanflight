@@ -38,20 +38,6 @@
 #include "serial.h"
 #include "serial_softserial.h"
 
-#if defined(STM32F10X_MD) || defined(CHEBUZZF3)
-#define SOFT_SERIAL_1_TIMER_RX_HARDWARE 11 // PWM 5
-#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 10 // PWM 6
-#define SOFT_SERIAL_2_TIMER_RX_HARDWARE 12 // PWM 7
-#define SOFT_SERIAL_2_TIMER_TX_HARDWARE 13 // PWM 8
-#endif
-
-#if defined(STM32F303) && !defined(CHEBUZZF3)
-#define SOFT_SERIAL_1_TIMER_RX_HARDWARE 8 // PWM 9
-#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 9 // PWM 10
-#define SOFT_SERIAL_2_TIMER_RX_HARDWARE 10 // PWM 11
-#define SOFT_SERIAL_2_TIMER_TX_HARDWARE 11 // PWM 12
-#endif
-
 #define SYM_DATA_BITS        8
 #define SYM_TOTAL_BITS       (1+SYM_DATA_BITS+1)          // start/data/stop
 #define SYM_TOTAL_BITS_SBUS  (1+SYM_DATA_BITS+1+2)        // start/data/parity/stop
@@ -63,6 +49,7 @@
 #endif
 
 extern const struct serialPortVTable softSerialVTable[];
+
 softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
 
 void softSerialTxCallback(callbackRec_t *cb);
@@ -95,17 +82,18 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortCo
     cfg.mode = Mode_Out_PP;
     cfg.speed = Speed_10MHz;
     gpioInit(GPIOA, &cfg);
-
+#ifdef USE_SOFTSERIAL1
     if (portIndex == SOFTSERIAL1) {
         self->rxTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_RX_HARDWARE]);
         self->txTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_TX_HARDWARE]);
     }
-
+#endif
+#ifdef USE_SOFTSERIAL2
     if (portIndex == SOFTSERIAL2) {
         self->rxTimerHardware = &(timerHardware[SOFT_SERIAL_2_TIMER_RX_HARDWARE]);
         self->txTimerHardware = &(timerHardware[SOFT_SERIAL_2_TIMER_TX_HARDWARE]);
     }
-
+#endif
     self->port.vTable = softSerialVTable;
     softSerialConfigure(&self->port, config);
     return &self->port;
@@ -239,7 +227,6 @@ void softSerialSetState(serialPort_t *serial, portState_t newState)
     } else if(newState & STATE_CMD_CLEAR) {
         newState = self->port.state & ~newState;
     }
-#endif
 
     if(newState & STATE_RX_WHENTXDONE) {
         // first check if there is something in buffer. 

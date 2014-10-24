@@ -267,32 +267,6 @@ static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
     cfg.speed = Speed_2MHz;
     gpioInit(gpio, &cfg);
 }
-
-void pwmICPolarity(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity) {
-    timCCER_t tmpccer=tim->CCER;
-    tmpccer &= (~TIM_CCER_CC1P) << channel;
-    tmpccer |= polarity << channel;
-    tim->CCER = tmpccer;
-}
-
-void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
-{
-    TIM_ICInitTypeDef TIM_ICInitStructure;
-
-    TIM_ICStructInit(&TIM_ICInitStructure);
-    TIM_ICInitStructure.TIM_Channel = channel;
-    TIM_ICInitStructure.TIM_ICPolarity = polarity;
-    TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
-    TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-
-    if (inputFilteringMode == INPUT_FILTERING_ENABLED) {
-        TIM_ICInitStructure.TIM_ICFilter = INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX;
-    } else {
-        TIM_ICInitStructure.TIM_ICFilter = 0x00;
-    }
-
-    TIM_ICInit(tim, &TIM_ICInitStructure);
-}
 #endif
 
 void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)

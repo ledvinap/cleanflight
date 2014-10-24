@@ -433,11 +433,11 @@ CHEBUZZF3_SRC	 = $(STM32F3DISCOVERY_SRC) \
 MASSIVEF3_SRC	 = $(STM32F3DISCOVERY_SRC) \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
-		   
+
 ifeq ($(TARGET),MASSIVEF3)
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_128k.ld
 endif
-		   
+
 
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src

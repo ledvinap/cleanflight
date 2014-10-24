@@ -31,12 +31,6 @@
 
 #include "timer.h"
 
-#define TIM_N(i) (1<<(i))
-
-#define INCLUDE_LAYOUT_BODY
-#include "timer_layout.h"
-#undef INCLUDE_LAYOUT_BODY
-
 #define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
 #define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4
 
@@ -537,22 +531,12 @@ void timerInit(void)
         cfg.speed = Speed_10MHz;
         gpioInit(GPIOB, &cfg);
     }
-    
+    // call target-specific initialization routine
+    timerInitTarget();
 #ifdef CC3D
     GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);
 #endif
 
-#ifdef TIMER_APB1_PERIPHERALS
-    RCC_APB1PeriphClockCmd(TIMER_APB1_PERIPHERALS, ENABLE);
-#endif
-
-#ifdef TIMER_APB2_PERIPHERALS
-    RCC_APB2PeriphClockCmd(TIMER_APB2_PERIPHERALS, ENABLE);
-#endif
-
-#ifdef TIMER_AHB_PERIPHERALS
-    RCC_AHBPeriphClockCmd(TIMER_AHB_PERIPHERALS, ENABLE);
-#endif
 
 #ifdef STM32F303xC
     for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {

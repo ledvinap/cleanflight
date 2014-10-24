@@ -17,7 +17,7 @@
 
 #pragma once
 
-// port mode is set when port is open and should not change (reopen port if neccesary)
+// port mode is set when port is open and can't be changed (reopen port if neccesary)
 typedef enum portMode_t {
     MODE_RX         = 1 << 0,
     MODE_TX         = 1 << 1,
@@ -29,24 +29,29 @@ typedef enum portMode_t {
     MODE_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
 } portMode_t;
 
-// port state is used to change state of open port.
+// port state is used to indicate (and change) state of open port.
 // TODO - this needs some work, interface is a bit confusing now
-typedef enum portState_t {
+typedef enum {
+    // port direction
     STATE_TX             = 1 << 0,
     STATE_RX             = 1 << 1,
     STATE_RXTX           = STATE_RX|STATE_TX,
+    // function flags
     STATE_RX_WHENTXDONE  = 1 << 2,  // TODO - implemented only for softserial
     STATE_TX_DELAY       = 1 << 3,  // TODO - not implemented
-
-    STATE_CMD_SET        = 1 << 7,
-    STATE_CMD_CLEAR      = 1 << 8
 } portState_t;
 
-typedef enum portConfigOperation_t {
-    OP_CONFIGURE,
-    OP_GET_CONFIG,
-    OP_RELEASE,
-} portConfigOperation_t;
+// operations that can be invoked on serial port
+// some of theese oparations are wrapped with serialXxx function
+typedef enum {
+    CMD_CONFIGURE,     // (const serialPortConfig_t* config)
+    CMD_GET_CONFIG,    // (serialPortConfig_t* config)
+    CMD_RELEASE,       // (void)
+    CMD_ENABLE_STATE,  // (portState_t)
+    CMD_DISABLE_STATE, // (portState_t)
+    CMD_SET_DIRECTION, // (portState_t, only TX/RX)
+    
+} portCommand_t;
 
 typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial drivers to return frames to app
 
@@ -69,34 +74,30 @@ typedef struct serialPort {
     uint32_t txBufferHead;
     uint32_t txBufferTail;
 
-    // FIXME rename member to rxCallback
     serialReceiveCallbackPtr rxCallback;
 } serialPort_t;
 
-// this structure should hold all info necessary for serial port initialization
-// is is currently only used to save port state when changing function,
-// but tighter integration would be nice
+// this structure holds all serial port configuration (GET_CONFIG/RELEASE/CONFIGURE must work)
 typedef struct  {
     portMode_t mode;
     uint32_t baudRate;
     serialReceiveCallbackPtr rxCallback;
 } serialPortConfig_t;
 
+// use this to initialize structure used to store port config. CMD_CONFIGURE can be safely called with it 
 #define SERIAL_CONFIG_INIT_EMPTY { .mode=0 }
 
 struct serialPortVTable {
     void (*serialWrite)(serialPort_t *instance, uint8_t ch);
-    uint8_t (*serialTotalBytesWaiting)(serialPort_t *instance);
-    uint8_t (*serialRead)(serialPort_t *instance);
+    int (*serialTotalBytesWaiting)(serialPort_t *instance);
+    int (*serialRead)(serialPort_t *instance);
     bool (*isSerialTransmitBufferEmpty)(serialPort_t *instance);
-    void (*setState)(serialPort_t *instance, portState_t state);
-    void (*configure)(serialPort_t *instance, portConfigOperation_t op, serialPortConfig_t* config);
+    int (*command)(serialPort_t *instance, portCommand_t cmd, void* data);
 };
 
 void serialWrite(serialPort_t *instance, uint8_t ch);
-uint8_t serialTotalBytesWaiting(serialPort_t *instance);
-uint8_t serialRead(serialPort_t *instance);
-void serialSetState(serialPort_t *instance, portState_t state);
+int serialTotalBytesWaiting(serialPort_t *instance);
+int serialRead(serialPort_t *instance);
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
 void serialPrint(serialPort_t *instance, const char *str);
 // store current configuration into passed struct if not null, release port
@@ -105,3 +106,7 @@ void serialRelease(serialPort_t *instance, serialPortConfig_t* config);
 void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config);
 // get actual configuration
 void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config);
+void serialSetDirection(serialPort_t *instance, portState_t state);
+void serialEnableState(serialPort_t *instance, portState_t state);
+void serialDisableState(serialPort_t *instance, portState_t state);
+int serialCmd(serialPort_t *instance, portCommand_t cmd, void* data);

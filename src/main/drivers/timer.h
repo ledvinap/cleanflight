@@ -21,7 +21,10 @@
 
 #include "callback.h"
 
-#include "timer_layout.h"
+// TODO - get rid of this
+#define TIM_N(i) (1<<(i))
+
+#include "target_timer.h"
 
 #if defined(STM32F303)
 typedef uint32_t timCCR_t;

@@ -1,5 +1,7 @@
 // include correct pin layout definition. Define macros to prevent multiple inclusio
 
+#error "No not use this file, use files in target/"
+
 #if !defined(TIMER_LAYOUT_HEADER_INCLUDED) || defined(INCLUDE_LAYOUT_BODY)
 
 #if !defined(INCLUDE_LAYOUT_BODY) && !defined(TIMER_LAYOUT_HEADER_INCLUDED)

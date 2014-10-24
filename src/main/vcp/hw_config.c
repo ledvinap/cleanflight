@@ -191,7 +191,7 @@ void USB_Interrupts_Config(void)
     NVIC_InitTypeDef NVIC_InitStructure;
 
     /* 2 bit for pre-emption priority, 2 bits for subpriority */
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);     // is this really neccesary?
+    NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);     // is this really neccesary?
 
     /* Enable the USB interrupt */
     NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;

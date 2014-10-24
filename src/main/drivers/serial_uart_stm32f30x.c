@@ -31,6 +31,7 @@
 
 #include "system.h"
 #include "gpio.h"
+#include "nvic.h"
 
 #include "serial.h"
 #include "serial_uart.h"

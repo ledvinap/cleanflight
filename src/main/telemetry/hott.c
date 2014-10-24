@@ -218,6 +218,20 @@ static inline void hottEAMUpdateBattery(HOTT_EAM_MSG_t *hottEAMMessage)
     hottEAMMessage->batt1_voltage_H = vbat >> 8;
 }
 
+static inline void hottEAMUpdateCurrentMeter(HOTT_EAM_MSG_t *hottEAMMessage)
+{
+	int32_t amp = amperage / 10;
+	hottEAMMessage->current_L = amp & 0xFF;
+    hottEAMMessage->current_H = amp >> 8;
+}
+
+static inline void hottEAMUpdateBatteryDrawnCapacity(HOTT_EAM_MSG_t *hottEAMMessage)
+{
+	int32_t mAh = mAhDrawn / 10;
+	hottEAMMessage->batt_cap_L = mAh & 0xFF;
+    hottEAMMessage->batt_cap_H = mAh >> 8;
+}
+
 void hottPrepareEAMResponse(HOTT_EAM_MSG_t *hottEAMMessage)
 {
     // Reset alarms
@@ -225,6 +239,8 @@ void hottPrepareEAMResponse(HOTT_EAM_MSG_t *hottEAMMessage)
     hottEAMMessage->alarm_invers1 = 0x0;
 
     hottEAMUpdateBattery(hottEAMMessage);
+    hottEAMUpdateCurrentMeter(hottEAMMessage);
+    hottEAMUpdateBatteryDrawnCapacity(hottEAMMessage);
 }
 
 static void hottSerialWrite(uint8_t c)

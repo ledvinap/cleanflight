@@ -61,15 +61,8 @@ static void uartReconfigure(uartPort_t *self)
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 {
-<<<<<<< HEAD
     uartPort_t *self = NULL;
     
-=======
-    UNUSED(inversion);
-
-    uartPort_t *s = NULL;
-
->>>>>>> 6db86da9756cdca6202f9226f63d633fe755e26a
 #ifdef INVERTER
     if (config->mode & MODE_INVERTED && USARTx == INVERTER_USART) {
         // Enable hardware inverter if available.
@@ -116,7 +109,6 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 
     uartReconfigure(self);
 
-<<<<<<< HEAD
 
     // Receive DMA or IRQ
     DMA_InitTypeDef DMA_InitStructure;
@@ -126,28 +118,14 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
         if (self->rxDMAChannel) {
             DMA_StructInit(&DMA_InitStructure);
             DMA_InitStructure.DMA_PeripheralBaseAddr = self->rxDMAPeripheralBaseAddr;
-=======
- 
-    // Receive DMA or IRQ
-    DMA_InitTypeDef DMA_InitStructure;
-    if (mode & MODE_RX) {
-        if (s->rxDMAChannel) {
-            DMA_StructInit(&DMA_InitStructure);
-            DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
->>>>>>> 6db86da9756cdca6202f9226f63d633fe755e26a
             DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
             DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
             DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
             DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
             DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
             DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-<<<<<<< HEAD
             
             DMA_InitStructure.DMA_BufferSize = self->port.rxBufferSize;
-=======
-
-            DMA_InitStructure.DMA_BufferSize = s->port.rxBufferSize;
->>>>>>> 6db86da9756cdca6202f9226f63d633fe755e26a
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
             DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)self->port.rxBuffer;
@@ -163,30 +141,18 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
     }
 
     // Transmit DMA or IRQ
-<<<<<<< HEAD
     if (self->port.mode & MODE_TX) {
         if (self->txDMAChannel) {
             DMA_StructInit(&DMA_InitStructure);
             DMA_InitStructure.DMA_PeripheralBaseAddr = self->txDMAPeripheralBaseAddr;
-=======
-    if (mode & MODE_TX) {
-        if (s->txDMAChannel) {
-            DMA_StructInit(&DMA_InitStructure);
-            DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
->>>>>>> 6db86da9756cdca6202f9226f63d633fe755e26a
             DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
             DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
             DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
             DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
             DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
             DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-<<<<<<< HEAD
     
             DMA_InitStructure.DMA_BufferSize = self->port.txBufferSize;
-=======
-
-            DMA_InitStructure.DMA_BufferSize = s->port.txBufferSize;
->>>>>>> 6db86da9756cdca6202f9226f63d633fe755e26a
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
             DMA_DeInit(self->txDMAChannel);

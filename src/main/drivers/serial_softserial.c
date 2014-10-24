@@ -25,11 +25,8 @@
 
 #include "build_config.h"
 
-<<<<<<< HEAD
 #include "common/utils.h"
 
-=======
->>>>>>> 6db86da9756cdca6202f9226f63d633fe755e26a
 #include "nvic.h"
 #include "system.h"
 #include "gpio.h"

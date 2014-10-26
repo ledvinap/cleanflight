@@ -405,7 +405,7 @@ static void hottCheckSerialData(uint32_t currentMicros)
 static void hottSendTelemetryData(void) {
     if (!hottIsSending) {
         hottIsSending = true;
-        serialSetState(hottPort, STATE_TX);
+        serialSetDirection(hottPort, STATE_TX);
         hottMsgCrc = 0;
         return;
     }
@@ -414,7 +414,7 @@ static void hottSendTelemetryData(void) {
         hottMsg = NULL;
         hottIsSending = false;
 
-        serialSetState(hottPort, STATE_RX);
+        serialSetDirection(hottPort, STATE_RX);
         flushHottRxBuffer();
         return;
     }

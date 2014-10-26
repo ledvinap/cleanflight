@@ -19,18 +19,23 @@
 
 // port mode is set when port is open and can't be changed (reopen port if neccesary)
 typedef enum portMode_t {
-    MODE_RX         = 1 << 0,
-    MODE_TX         = 1 << 1,
-    MODE_RXTX       = MODE_RX | MODE_TX,
-    MODE_SBUS       = 1 << 2,
-    MODE_HALFDUPLEX = 1 << 3,
-    MODE_SINGLEWIRE = 1 << 4,
-    MODE_INVERTED   = 1 << 5,
-    MODE_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
+    MODE_RX           = 1 << 0,
+    MODE_TX           = 1 << 1,
+    MODE_RXTX         = MODE_RX | MODE_TX,
+    MODE_SBUS         = 1 << 2,
+    MODE_HALFDUPLEX   =   1 << 3,
+    MODE_SINGLEWIRE   = 1 << 4,
+    MODE_INVERTED     = 1 << 5,
+// softserial specific
+    MODE_S_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
+// uart specific
+    MODE_U_DMARX      = 1 << 7, // use USART RX DMA if available
+    MODE_U_DMATX      = 1 << 8, // use USART TX DMA if available
 } portMode_t;
 
+
+
 // port state is used to indicate (and change) state of open port.
-// TODO - this needs some work, interface is a bit confusing now
 typedef enum {
     // port direction
     STATE_TX             = 1 << 0,
@@ -53,7 +58,7 @@ typedef enum {
     
 } portCommand_t;
 
-typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial drivers to return frames to app
+typedef void serialReceiveCallback(uint16_t data);   // used by serial drivers to return frames to app
 
 typedef struct serialPort {
 
@@ -65,8 +70,8 @@ typedef struct serialPort {
     
     uint32_t baudRate;
 
-    uint32_t rxBufferSize;
-    uint32_t txBufferSize;
+    uint32_t rxBufferSize;              // must be power of two
+    uint32_t txBufferSize;              // must be power of two
     volatile uint8_t *rxBuffer;
     volatile uint8_t *txBuffer;
     uint32_t rxBufferHead;
@@ -74,32 +79,36 @@ typedef struct serialPort {
     uint32_t txBufferHead;
     uint32_t txBufferTail;
 
-    serialReceiveCallbackPtr rxCallback;
+    serialReceiveCallback *rxCallback;
 } serialPort_t;
 
 // this structure holds all serial port configuration (GET_CONFIG/RELEASE/CONFIGURE must work)
 typedef struct  {
     portMode_t mode;
     uint32_t baudRate;
-    serialReceiveCallbackPtr rxCallback;
+    serialReceiveCallback *rxCallback;
 } serialPortConfig_t;
 
 // use this to initialize structure used to store port config. CMD_CONFIGURE can be safely called with it 
 #define SERIAL_CONFIG_INIT_EMPTY { .mode=0 }
 
 struct serialPortVTable {
-    void (*serialWrite)(serialPort_t *instance, uint8_t ch);
-    int (*serialTotalBytesWaiting)(serialPort_t *instance);
-    int (*serialRead)(serialPort_t *instance);
     bool (*isSerialTransmitBufferEmpty)(serialPort_t *instance);
+    void (*serialWriteByte)(serialPort_t *instance, uint8_t ch);
+
+    int (*serialTotalBytesWaiting)(serialPort_t *instance);
+    int (*serialReadByte)(serialPort_t *instance);
+    
     int (*command)(serialPort_t *instance, portCommand_t cmd, void* data);
 };
 
+bool isSerialTransmitBufferEmpty(serialPort_t *instance);
 void serialWrite(serialPort_t *instance, uint8_t ch);
+//void serialWrite(serialPort_t *instance, uint8_t *data, int len);
+void serialPrint(serialPort_t *instance, const char *str);
+
 int serialTotalBytesWaiting(serialPort_t *instance);
 int serialRead(serialPort_t *instance);
-bool isSerialTransmitBufferEmpty(serialPort_t *instance);
-void serialPrint(serialPort_t *instance, const char *str);
 // store current configuration into passed struct if not null, release port
 void serialRelease(serialPort_t *instance, serialPortConfig_t* config);
 // restore previous configuration

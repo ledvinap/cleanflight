@@ -17,10 +17,32 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "platform.h"
 
 #include "serial.h"
+
+// TODO - implement optimized version that can write more bytes
+void serialWrite(serialPort_t *instance, uint8_t ch)
+{
+    instance->vTable->serialWriteByte(instance, ch);
+}
+
+int serialTotalBytesWaiting(serialPort_t *instance)
+{
+    return instance->vTable->serialTotalBytesWaiting(instance);
+}
+
+int serialRead(serialPort_t *instance)
+{
+    return instance->vTable->serialReadByte(instance);
+}
+
+bool isSerialTransmitBufferEmpty(serialPort_t *instance)
+{
+    return instance->vTable->isSerialTransmitBufferEmpty(instance);
+}
 
 void serialPrint(serialPort_t *instance, const char *str)
 {
@@ -30,50 +52,39 @@ void serialPrint(serialPort_t *instance, const char *str)
     }
 }
 
-uint32_t serialGetBaudRate(serialPort_t *instance)
-{
-    return instance->baudRate;
-}
-
-void serialWrite(serialPort_t *instance, uint8_t ch)
-{
-    instance->vTable->serialWrite(instance, ch);
-}
-
-uint8_t serialTotalBytesWaiting(serialPort_t *instance)
-{
-    return instance->vTable->serialTotalBytesWaiting(instance);
-}
-
-uint8_t serialRead(serialPort_t *instance)
-{
-    return instance->vTable->serialRead(instance);
-}
-
-bool isSerialTransmitBufferEmpty(serialPort_t *instance)
-{
-    return instance->vTable->isSerialTransmitBufferEmpty(instance);
-}
-
-void serialSetState(serialPort_t *instance, portState_t state)
-{
-    instance->vTable->setState(instance, state);
-}
-
 void serialRelease(serialPort_t *instance, serialPortConfig_t* config)
 {
     if(config)
-        instance->vTable->configure(instance, OP_GET_CONFIG, config);
-    instance->vTable->configure(instance, OP_RELEASE, config);
+        serialGetConfig(instance, config);
+    serialCmd(instance, CMD_RELEASE, NULL);
 }
 
 void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config)
 {
-    instance->vTable->configure(instance, OP_CONFIGURE, (serialPortConfig_t*)config);
+    serialCmd(instance, CMD_CONFIGURE, (void*)config);
 }
 
 void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config)
 {
-    instance->vTable->configure(instance, OP_GET_CONFIG, config);
+    serialCmd(instance, CMD_GET_CONFIG, (void*)config);
 }
 
+void serialSetDirection(serialPort_t *instance, portState_t state)
+{
+    serialCmd(instance, CMD_SET_DIRECTION, (void*)state);
+}
+
+void serialEnableState(serialPort_t *instance, portState_t state)
+{
+    serialCmd(instance, CMD_ENABLE_STATE, (void*)state);
+}
+
+void serialDisableState(serialPort_t *instance, portState_t state)
+{
+    serialCmd(instance, CMD_DISABLE_STATE, (void*)state);
+}
+
+int serialCmd(serialPort_t *instance, portCommand_t cmd, void* data)
+{
+    return instance->vTable->command(instance, cmd, data);
+}

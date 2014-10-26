@@ -54,11 +54,14 @@
 #define UART2_TX_PINSOURCE  GPIO_PinSource5
 #define UART2_RX_PINSOURCE  GPIO_PinSource6
 
+#ifdef USE_USART1
 static uartPort_t uartPort1;
+#endif
+#ifdef USE_USART2
 static uartPort_t uartPort2;
+#endif
 
-void uartStartTxDMA(uartPort_t *s);
-
+#ifdef USE_USART1
 uartPort_t *serialUSART1(const serialPortConfig_t *config)
 {
     uartPort_t *s;
@@ -124,7 +127,9 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
 
     return s;
 }
+#endif
 
+#ifdef USE_USART2
 uartPort_t *serialUSART2(const serialPortConfig_t *config)
 {
     uartPort_t *s;
@@ -196,6 +201,7 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
 
     return s;
 }
+#endif
 
 static void handleUsartTxDma(uartPort_t *s)
 {
@@ -225,45 +231,13 @@ void DMA1_Channel7_IRQHandler(void)
     handleUsartTxDma(s);
 }
 
-void usartIrqHandler(uartPort_t *s)
-{
-    uint32_t ISR = s->USARTx->ISR;
-
-    if (!s->rxDMAChannel && (ISR & USART_FLAG_RXNE)) {
-        if (s->port.callback) {
-            s->port.callback(s->USARTx->RDR);
-        } else {
-            s->port.rxBuffer[s->port.rxBufferHead] = s->USARTx->RDR;
-            s->port.rxBufferHead = (s->port.rxBufferHead + 1) % s->port.rxBufferSize;
-        }
-    }
-
-    if (!s->txDMAChannel && (ISR & USART_FLAG_TXE)) {
-        if (s->port.txBufferTail != s->port.txBufferHead) {
-            USART_SendData(s->USARTx, s->port.txBuffer[s->port.txBufferTail]);
-            s->port.txBufferTail = (s->port.txBufferTail + 1) % s->port.txBufferSize;
-        } else {
-            USART_ITConfig(s->USARTx, USART_IT_TXE, DISABLE);
-        }
-    }
-
-    if (ISR & USART_FLAG_ORE)
-    {
-        USART_ClearITPendingBit (s->USARTx, USART_IT_ORE);
-    }
-}
-
 void USART1_IRQHandler(void)
 {
-    uartPort_t *s = &uartPort1;
-
-    usartIrqHandler(s);
+    uartIrqHandler(&uartPort1);
 }
 
 void USART2_IRQHandler(void)
 {
-    uartPort_t *s = &uartPort2;
-
-    usartIrqHandler(s);
+    uartIrqHandler(&uartPort2);
 }
 

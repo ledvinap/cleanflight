@@ -48,7 +48,7 @@ static uint32_t sbusChannelData[SBUS_MAX_CHANNEL];
 
 static serialPort_t *sBusPort;
 static const serialPortConfig_t sBusPortConfig = { 
-    .mode = MODE_RX | MODE_SBUS | MODE_INVERTED | MODE_DUALTIMER,
+    .mode = MODE_RX | MODE_SBUS | MODE_INVERTED | MODE_S_DUALTIMER,
     .baudRate = 100000,
     .rxCallback = sbusDataReceive
 };

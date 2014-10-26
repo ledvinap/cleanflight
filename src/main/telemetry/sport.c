@@ -58,7 +58,7 @@ void telemetrySPortSerialRxCharCallback(uint16_t data);
 
 timerQueueRec_t telemetrySPortTimerQ;
 
-serialPortConfig_t sPortPortConfig = { .mode = MODE_RXTX | MODE_SINGLEWIRE | MODE_HALFDUPLEX | MODE_INVERTED | MODE_DUALTIMER, 
+serialPortConfig_t sPortPortConfig = { .mode = MODE_RXTX | MODE_SINGLEWIRE | MODE_HALFDUPLEX | MODE_INVERTED | MODE_S_DUALTIMER, 
                                               .baudRate = 57600,
                                               .rxCallback = telemetrySPortSerialRxCharCallback
 };
@@ -231,10 +231,10 @@ void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
     UNUSED(cb);
     uint8_t *pkt=telemPktQueueHead();
     if(!pkt) return;
-    serialSetState(sPortPort, STATE_TX);
+    serialSetDirection(sPortPort, STATE_TX);
     for(unsigned i=0;i<8;i++)
         tx_u8(pkt[i]);
-    serialSetState(sPortPort, STATE_RX_WHENTXDONE|STATE_CMD_SET);
+    serialEnableState(sPortPort, STATE_RX_WHENTXDONE);
     telemPktQueuePop();
 }
 

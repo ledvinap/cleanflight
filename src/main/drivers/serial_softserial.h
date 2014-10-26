@@ -63,9 +63,8 @@ extern softSerial_t softSerialPorts[];
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t* config);
 
 // serialPort API
-void softSerialWriteByte(serialPort_t *instance, uint8_t ch);
-uint8_t softSerialTotalBytesWaiting(serialPort_t *instance);
-uint8_t softSerialReadByte(serialPort_t *instance);
-void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate);
 bool isSoftSerialTransmitBufferEmpty(serialPort_t *s);
+void softSerialWriteByte(serialPort_t *instance, uint8_t ch);
+int softSerialTotalBytesWaiting(serialPort_t *instance);
+int softSerialReadByte(serialPort_t *instance);
 

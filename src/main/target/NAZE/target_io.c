@@ -4,6 +4,7 @@
 #include "platform.h"
 
 #include "drivers/timer.h"
+#include "drivers/timer_impl.h"
 
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM2, GPIOA, Pin_0, TIM_Channel_1, TIM2_IRQn, 0, Mode_IPD},          // PWM1

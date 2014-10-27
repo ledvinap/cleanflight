@@ -214,9 +214,9 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_MSP_CLI_GPS_PASTHROUGH);
     serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_GPS_ONLY);
 #if (SERIAL_PORT_COUNT > 2)
-    serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_UNUSED);
+    serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_TELEMETRY_ONLY);
 #if (SERIAL_PORT_COUNT > 3)
-    serialConfig->serial_port_scenario[3] = lookupScenarioIndex(SCENARIO_UNUSED);
+    serialConfig->serial_port_scenario[3] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
 #if (SERIAL_PORT_COUNT > 4)
     serialConfig->serial_port_scenario[4] = lookupScenarioIndex(SCENARIO_UNUSED);
 #endif
@@ -253,7 +253,7 @@ static void resetConf(void)
 #ifdef CJMCU
     featureSet(FEATURE_RX_PPM);
 #endif
-    featureSet(FEATURE_VBAT);
+//    featureSet(FEATURE_VBAT);
     featureSet(FEATURE_SOFTSERIAL);
     featureSet(FEATURE_TELEMETRY);
     featureSet(FEATURE_RX_MSP);

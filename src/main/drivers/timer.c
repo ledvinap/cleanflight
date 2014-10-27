@@ -30,6 +30,7 @@
 #include "callback.h"
 
 #include "timer.h"
+#include "timer_impl.h"
 
 #define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
 #define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4

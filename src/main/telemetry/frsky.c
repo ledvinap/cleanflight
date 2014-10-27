@@ -410,7 +410,8 @@ void configureFrSkyTelemetryPort(void)
 {
     frskyPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (frskyPort) {
-        serialRelease(frskyPort, &previousSerialConfig);
+        serialGetConfig(frskyPort, &previousSerialConfig);
+        serialRelease(frskyPort);
         //waitForSerialPortToFinishTransmitting(frskyPort); // FIXME locks up the system
         
         serialConfigure(frskyPort, &frskySerialPortConfig);

@@ -234,7 +234,7 @@ void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
     serialSetDirection(sPortPort, STATE_TX);
     for(unsigned i=0;i<8;i++)
         tx_u8(pkt[i]);
-    serialEnableState(sPortPort, STATE_RX_WHENTXDONE);
+    serialUpdateState(sPortPort, ~0, STATE_RX_WHENTXDONE);
     telemPktQueuePop();
 }
 
@@ -362,7 +362,7 @@ static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 
 void freeSPortTelemetryPort(void)
 {
-    serialRelease(sPortPort, NULL);
+    serialRelease(sPortPort);
     serialConfigure(sPortPort, &previousSerialConfig);
     endSerialPortFunction(sPortPort, FUNCTION_TELEMETRY);
 }
@@ -371,7 +371,8 @@ void configureSPortTelemetryPort(void)
 {
     sPortPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (sPortPort) {
-        serialRelease(sPortPort, &previousSerialConfig);
+        serialGetConfig(sPortPort, &previousSerialConfig);
+        serialRelease(sPortPort);
         //waitForSerialPortToFinishTransmitting(sPortPort); // FIXME locks up the system
         serialConfigure(sPortPort, &sPortPortConfig);
         beginSerialPortFunction(sPortPort, FUNCTION_TELEMETRY);

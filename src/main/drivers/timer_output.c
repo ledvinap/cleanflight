@@ -12,6 +12,12 @@
 #include "timer.h"
 #include "timer_output.h"
 
+#if defined(STM32F10X)
+# include "timer_stm32f10x.h"
+#elif defined(STM32F30X)
+# include "timer_stm32f30x.h"
+#endif
+
 // check buffer length assumption
 #if TIMEROUT_QUEUE_LEN & (TIMEROUT_QUEUE_LEN-1)
 # error "TIMEROUT_QUEUE_LEN must be power of 2"

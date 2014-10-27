@@ -270,7 +270,8 @@ void configureHoTTTelemetryPort(void)
 {
     hottPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (hottPort) {
-        serialRelease(hottPort, &previousSerialPortConfig);
+        serialGetConfig(hottPort, &previousSerialPortConfig);
+        serialRelease(hottPort);
         //waitForSerialPortToFinishTransmitting(hottPort); // FIXME locks up the system
         
         serialConfigure(hottPort, &hottSerialPortConfig);

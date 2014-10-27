@@ -23,68 +23,65 @@
 
 #include "serial.h"
 
-// TODO - implement optimized version that can write more bytes
-void serialWrite(serialPort_t *instance, uint8_t ch)
+void serialPutc(serialPort_t *instance, uint8_t ch)
 {
-    instance->vTable->serialWriteByte(instance, ch);
+    instance->vTable->putc(instance, ch);
+}
+
+void serialWrite(serialPort_t *instance, uint8_t ch) {
+    serialPutc(instance, ch);
 }
 
 int serialTotalBytesWaiting(serialPort_t *instance)
 {
-    return instance->vTable->serialTotalBytesWaiting(instance);
+    return instance->vTable->totalBytesWaiting(instance);
+}
+
+int serialGetc(serialPort_t *instance)
+{
+    return instance->vTable->getc(instance);
 }
 
 int serialRead(serialPort_t *instance)
 {
-    return instance->vTable->serialReadByte(instance);
+    return serialGetc(instance);
 }
 
 bool isSerialTransmitBufferEmpty(serialPort_t *instance)
 {
-    return instance->vTable->isSerialTransmitBufferEmpty(instance);
+    return instance->vTable->isTransmitBufferEmpty(instance);
 }
 
 void serialPrint(serialPort_t *instance, const char *str)
 {
     uint8_t ch;
     while ((ch = *(str++)) != 0) {
-        serialWrite(instance, ch);
+        serialPutc(instance, ch);
     }
 }
 
-void serialRelease(serialPort_t *instance, serialPortConfig_t* config)
+void serialRelease(serialPort_t *instance)
 {
-    if(config)
-        serialGetConfig(instance, config);
-    serialCmd(instance, CMD_RELEASE, NULL);
+    instance->vTable->release(instance);
 }
 
 void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config)
 {
-    serialCmd(instance, CMD_CONFIGURE, (void*)config);
+    instance->vTable->configure(instance, config);
 }
 
 void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config)
 {
-    serialCmd(instance, CMD_GET_CONFIG, (void*)config);
+    instance->vTable->getConfig(instance, config);
+}
+
+void serialUpdateState(serialPort_t *instance, portState_t keepMask, portState_t setMask)
+{
+    instance->vTable->updateState(instance, keepMask, setMask);
 }
 
 void serialSetDirection(serialPort_t *instance, portState_t state)
 {
-    serialCmd(instance, CMD_SET_DIRECTION, (void*)state);
+    serialUpdateState(instance, ~STATE_RXTX, state);
 }
 
-void serialEnableState(serialPort_t *instance, portState_t state)
-{
-    serialCmd(instance, CMD_ENABLE_STATE, (void*)state);
-}
-
-void serialDisableState(serialPort_t *instance, portState_t state)
-{
-    serialCmd(instance, CMD_DISABLE_STATE, (void*)state);
-}
-
-int serialCmd(serialPort_t *instance, portCommand_t cmd, void* data)
-{
-    return instance->vTable->command(instance, cmd, data);
-}

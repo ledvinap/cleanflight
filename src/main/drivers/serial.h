@@ -23,7 +23,7 @@ typedef enum portMode_t {
     MODE_TX           = 1 << 1,
     MODE_RXTX         = MODE_RX | MODE_TX,
     MODE_SBUS         = 1 << 2,
-    MODE_HALFDUPLEX   =   1 << 3,
+    MODE_HALFDUPLEX   = 1 << 3,
     MODE_SINGLEWIRE   = 1 << 4,
     MODE_INVERTED     = 1 << 5,
 // softserial specific
@@ -93,29 +93,36 @@ typedef struct  {
 #define SERIAL_CONFIG_INIT_EMPTY { .mode=0 }
 
 struct serialPortVTable {
-    bool (*isSerialTransmitBufferEmpty)(serialPort_t *instance);
-    void (*serialWriteByte)(serialPort_t *instance, uint8_t ch);
+    bool (*isTransmitBufferEmpty)(serialPort_t *instance);
+    void (*putc)(serialPort_t *instance, uint8_t ch);
 
-    int (*serialTotalBytesWaiting)(serialPort_t *instance);
-    int (*serialReadByte)(serialPort_t *instance);
+    int (*totalBytesWaiting)(serialPort_t *instance);
+    int (*getc)(serialPort_t *instance);
     
-    int (*command)(serialPort_t *instance, portCommand_t cmd, void* data);
+    void (*release)(serialPort_t *instance);
+    void (*configure)(serialPort_t *instance, const serialPortConfig_t* config);
+    void (*getConfig)(serialPort_t *instance, serialPortConfig_t* config);
+    void (*updateState)(serialPort_t *serial, portState_t keepMask, portState_t setMask);
 };
 
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
-void serialWrite(serialPort_t *instance, uint8_t ch);
-//void serialWrite(serialPort_t *instance, uint8_t *data, int len);
+void serialWrite(serialPort_t *instance, uint8_t ch); // for backward comaptibility
+void serialPutc(serialPort_t *instance, uint8_t ch);
+int serialWriteData(serialPort_t *instance, const uint8_t *data, int len); // TODO - implement this
 void serialPrint(serialPort_t *instance, const char *str);
 
 int serialTotalBytesWaiting(serialPort_t *instance);
-int serialRead(serialPort_t *instance);
-// store current configuration into passed struct if not null, release port
-void serialRelease(serialPort_t *instance, serialPortConfig_t* config);
+int serialRead(serialPort_t *instance);  // for backward comaptibility
+int serialGetc(serialPort_t *instance);
+int serialReadData(serialPort_t *instance, const uint8_t *data, int len); // TODO - implement this
+// release port
+void serialRelease(serialPort_t *instance);
 // restore previous configuration
 void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config);
 // get actual configuration
 void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config);
+// change serial state, bits not in keepMask are reset(&), then bits in setmask are set (|)
+void serialUpdateState(serialPort_t *serial, portState_t keepMask, portState_t setMask);
+
+// convenience wrapper to serialUpdateState
 void serialSetDirection(serialPort_t *instance, portState_t state);
-void serialEnableState(serialPort_t *instance, portState_t state);
-void serialDisableState(serialPort_t *instance, portState_t state);
-int serialCmd(serialPort_t *instance, portCommand_t cmd, void* data);

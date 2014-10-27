@@ -257,18 +257,6 @@ static void pwmEdgeCallback(timerCCHandlerRec_t *self_, uint16_t capture)
     }
 }
 
-#if 0
-static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
-{
-    gpio_config_t cfg;
-
-    cfg.pin = pin;
-    cfg.mode = mode;
-    cfg.speed = Speed_2MHz;
-    gpioInit(gpio, &cfg);
-}
-#endif
-
 void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
 {
     pwmInputPort_t *self = &pwmInputPorts[channel];

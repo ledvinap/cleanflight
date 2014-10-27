@@ -115,7 +115,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
     }
     
 // FIXME use inversion on STM32F3
-    
+// TODO - user singlewire mode    
     uartReconfigure(self);
 
     // Receive DMA or IRQ
@@ -196,9 +196,10 @@ void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     uartPort_t *self = container_of(serial, uartPort_t, port);
     // just call reconfigure now. keep this in sync with uartRelease
     // TODO - we should reaquire DMA channels
-    self->port.mode = config->mode;
     if(config->mode == 0)  // check for dummy config
         return;
+
+    self->port.mode = config->mode;
     self->port.baudRate = config->baudRate;
     self->port.state = 0;
     if(self->port.mode & MODE_RX)
@@ -212,7 +213,7 @@ void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 void uartRelease(serialPort_t *serial)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
-    self->port.state = 0;
+    uartUpdateState(&self->port, 0, 0);
     // DMA channels should be released
     USART_Cmd(self->USARTx, DISABLE);
     uartReconfigure(self);
@@ -273,7 +274,7 @@ void uartIrqHandler(uartPort_t *self)
         }
     }
 #ifdef STM32F303
-    // is this really neccesary?
+    // TODO - is this really neccesary?
     if (flags & USART_FLAG_ORE)
     {
         USART_ClearITPendingBit (self->USARTx, USART_IT_ORE);
@@ -292,7 +293,7 @@ bool isUartTransmitBufferEmpty(serialPort_t *serial)
         return self->port.txBufferTail == self->port.txBufferHead;
 }
 
-void uartWriteByte(serialPort_t *serial, uint8_t ch)
+void uartPutc(serialPort_t *serial, uint8_t ch)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
     // TODO - check for full buffer
@@ -318,7 +319,7 @@ int uartTotalBytesWaiting(serialPort_t *serial)
     }
 }
 
-int uartReadByte(serialPort_t *serial)
+int uartGetc(serialPort_t *serial)
 {
     uint8_t ch;
     uartPort_t *self = container_of(serial, uartPort_t, port);
@@ -337,37 +338,14 @@ int uartReadByte(serialPort_t *serial)
     return ch;
 }
 
-int uartCommand(serialPort_t *serial, portCommand_t command, void* data)
-{
-    switch(command) {
-    case CMD_CONFIGURE:     // (const serialPortConfig_t* config)
-        uartConfigure(serial, (const serialPortConfig_t*)data);
-        break;       
-    case CMD_GET_CONFIG:    // (serialPortConfig_t* config)
-        uartGetConfig(serial, (serialPortConfig_t*)data);
-        break;
-    case CMD_RELEASE:       // (void)
-        uartRelease(serial);
-        break;
-    case CMD_ENABLE_STATE:  // (portState_t)
-        uartUpdateState(serial, ~0, (portState_t)data);
-        break;
-    case CMD_DISABLE_STATE: // (portState_t)
-        uartUpdateState(serial, ~(portState_t)data, 0);
-        break;
-    case CMD_SET_DIRECTION: // (portState_t, only TX/RX)
-        uartUpdateState(serial, ~(portState_t)STATE_RXTX, (portState_t)data);
-        break;
-    }
-    return 0;
-}
-
 const struct serialPortVTable uartVTable = {
-    isUartTransmitBufferEmpty,
-    uartWriteByte,
+    .isTransmitBufferEmpty = isUartTransmitBufferEmpty,
+    .putc = uartPutc,    
+    .totalBytesWaiting = uartTotalBytesWaiting,
+    .getc = uartGetc,
     
-    uartTotalBytesWaiting,
-    uartReadByte,
-
-    uartCommand
+    .release = uartRelease,
+    .configure = uartConfigure,
+    .getConfig = uartGetConfig,
+    .updateState = uartUpdateState
 };

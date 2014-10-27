@@ -18,6 +18,7 @@
 #pragma once
 
 // FIXME since serial ports can be used for any function these buffer sizes probably need normalising.
+// this should be probably moved to target directory
 // buffer size must be power of 2
 
 #define UART1_RX_BUFFER_SIZE    256
@@ -48,7 +49,12 @@ typedef struct {
 serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config);
 
 // serialPort API
-bool isUartTransmitBufferEmpty(serialPort_t *s);
-void uartWriteByte(serialPort_t *instance, uint8_t ch);
+bool isUartTransmitBufferEmpty(serialPort_t *instance);
+void uartPutc(serialPort_t *instance, uint8_t ch);
 int uartTotalBytesWaiting(serialPort_t *instance);
-int uartReadByte(serialPort_t *instance);
+int uartGetc(serialPort_t *instance);
+
+void uartRelease(serialPort_t *instance);
+void uartConfigure(serialPort_t *instance, const serialPortConfig_t* config);
+void uartGetConfig(serialPort_t *instance, serialPortConfig_t* config);
+void uartUpdateState(serialPort_t *instance, portState_t keepMask, portState_t setMask);

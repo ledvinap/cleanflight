@@ -213,7 +213,7 @@ void gpsInitNmea(void)
     switch(gpsData.state) {
     case GPS_INITIALIZING:
     case GPS_CHANGE_BAUD:
-        serialRelease(gpsPort, NULL);
+        serialRelease(gpsPort);
         gpsSerialPortConfig.baudRate=gpsInitData[gpsData.baudrateIndex].baudrate;
         serialConfigure(gpsPort, &gpsSerialPortConfig);
         gpsSetState(GPS_RECEIVING_DATA);
@@ -239,7 +239,7 @@ void gpsInitUblox(void)
 
             if (gpsData.state_position < GPS_INIT_ENTRIES) {
                 // try different speed to INIT
-                serialRelease(gpsPort, NULL);
+                serialRelease(gpsPort);
                 gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
                 serialConfigure(gpsPort, &gpsSerialPortConfig);
                 // but print our FIXED init string for the baudrate we want to be at
@@ -253,7 +253,7 @@ void gpsInitUblox(void)
             }
             break;
         case GPS_CHANGE_BAUD:
-            serialRelease(gpsPort, NULL);
+            serialRelease(gpsPort);
             gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
             serialConfigure(gpsPort, &gpsSerialPortConfig);
             gpsSetState(GPS_CONFIGURE);
@@ -875,7 +875,7 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
     gpsPassthroughPortConfig.baudRate = serialConfig->gps_passthrough_baudrate;
     serialPort_t *gpsPassthroughPort = findOpenSerialPort(FUNCTION_GPS_PASSTHROUGH);
     if (gpsPassthroughPort) {
-        serialRelease(gpsPassthroughPort, NULL);
+        serialRelease(gpsPassthroughPort);
         waitForSerialPortToFinishTransmitting(gpsPassthroughPort);
         serialConfigure(gpsPassthroughPort, &gpsPassthroughPortConfig);
     } else {

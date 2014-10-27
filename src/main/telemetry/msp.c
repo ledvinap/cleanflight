@@ -66,7 +66,8 @@ void configureMSPTelemetryPort(void)
 {
     mspTelemetryPort = findOpenSerialPort(FUNCTION_TELEMETRY);
     if (mspTelemetryPort) {
-        serialRelease(mspTelemetryPort, &previousSerialConfig);
+        serialGetConfig(mspTelemetryPort, &previousSerialConfig);
+        serialRelease(mspTelemetryPort);
 
         //waitForSerialPortToFinishTransmitting(mspTelemetryPort); // FIXME locks up the system
 

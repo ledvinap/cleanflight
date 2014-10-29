@@ -24,6 +24,8 @@
 
 #include "common/axis.h"
 #include "common/color.h"
+#include "common/atomic.h"
+#include "drivers/nvic.h"
 
 #include "drivers/system.h"
 #include "drivers/gpio.h"
@@ -422,7 +424,26 @@ void processLoopback(void) {
 #define processLoopback()
 #endif
 
+struct {
+    char data[10];
+} tdat2={{1}};
+
 int main(void) {
+
+    struct {
+        char data[10];
+    } tdat={{0}};
+
+#if 1
+    tdat.data[0]++;
+    tdat2.data[0]++;
+    ATOMIC_BLOCK_NB(NVIC_BUILD_PRIORITY(2,3)) {
+        ATOMIC_BARRIER(tdat);
+        tdat.data[0]++;
+    }
+    tdat.data[0]++;
+    tdat2.data[0]++;
+#endif
     init();
 
     while (1) {

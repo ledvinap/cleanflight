@@ -115,7 +115,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
     }
     
 // FIXME use inversion on STM32F3
-// TODO - user singlewire mode    
+// TODO - use singlewire mode (supported by 10x and 30x)
     uartReconfigure(self);
 
     // Receive DMA or IRQ

@@ -4,6 +4,7 @@
 #include "platform.h"
 #include "build_config.h"
 #include "common/utils.h"
+#include "common/atomic.h"
 #include "nvic.h"
 #include "system.h"
 
@@ -14,7 +15,6 @@
 #define CALLBACK_MAX 32
 
 callbackRec_t* callbackEntries[CALLBACK_MAX];
-int callbackCount;
 
 #if CALLBACK_MAX>32
 # error "Currently only 32 callbacks are supported"
@@ -46,8 +46,8 @@ void callbackInit(void)
     memset(callbackFree, 0xff, sizeof(callbackTriggers));
     for(int i=0;i<CALLBACK_MAX;i++)
         callbackEntries[i]=&callbackEmptyRec;
-    callbackCount=0;
-    NVIC_SetPriority(PendSV_IRQn, 0x0f);  // lowest priority
+    // there are THREE ways to represent priority. This function expects lower __NVIC_PRIO_BITS
+    NVIC_SetPriority(PendSV_IRQn, NVIC_PRIO_CALLBACK >> (8 - __NVIC_PRIO_BITS));  
 }
 
 void callbackRegister(callbackRec_t *self, callbackFun_t *fn)
@@ -63,28 +63,22 @@ void callbackRegister(callbackRec_t *self, callbackFun_t *fn)
 
 void callbackRelease(callbackRec_t *self)
 {
-    callbackTriggers[0] &= ~(1 << self->id);         // clear trigger if set
+    __sync_fetch_and_and(&callbackTriggers[0], ~(1 << self->id));         // clear trigger if set
     callbackEntries[self->id]=&callbackEmptyRec;     // remove entry
     callbackFree[0] |= 1 << self->id;                // mark his position as free
 }
 
 void callbackTrigger(callbackRec_t *self)
 {
-    uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(MAX_IRQ_PRIORITY, MAX_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
-    callbackTriggers[0] |= 1 << self->id;
-    __set_BASEPRI(saved_basepri);
+    __sync_fetch_and_or(&callbackTriggers[0],  1 << self->id);
     SCB->ICSR=SCB_ICSR_PENDSVSET;
 }
 
+// this should be called only at callback priority
 static void callbackCall(void) {
     while(callbackTriggers[0]) {
         uint8_t idx=31-__builtin_clz(callbackTriggers[0]);
-        // TODO - use some atomic macro. Disabling interrupts is probably OK here
-        uint8_t saved_basepri = __get_BASEPRI();
-        __set_BASEPRI(NVIC_BUILD_PRIORITY(MAX_IRQ_PRIORITY, MAX_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
-        callbackTriggers[0]&=~(1<<idx);
-        __set_BASEPRI(saved_basepri);
+        __sync_fetch_and_and(&callbackTriggers[0], ~(1<<idx));
         callbackEntries[idx]->fn(callbackEntries[idx]);
     }
 }

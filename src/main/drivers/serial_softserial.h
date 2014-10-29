@@ -44,21 +44,15 @@ typedef struct softSerial_s {
     timerInputRec_t  rxTimerCh;
     timerQueueRec_t  rxTimerQ;
     callbackRec_t    rxCallback;
-    uint16_t         rxStartRef;                            // timestamp of startbit edge
-    uint16_t         rxInternalBuffer;                    // includes start and stop bits
-    int8_t           rxBitIndex;                           
 
     timerOutputRec_t txTimerCh;
     callbackRec_t    txCallback;
     
-    bool             directionTx;                         // current direction for singlewire mode 
     bool             directionRxOnDone;                   // switch to rx mode when all data are transmitted
     
     uint16_t         transmissionErrors;
     uint16_t         receiveErrors;
 } softSerial_t;
-
-extern softSerial_t softSerialPorts[];
 
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t* config);
 

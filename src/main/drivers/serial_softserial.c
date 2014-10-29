@@ -142,7 +142,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     if(mode & MODE_TX) {
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh, 
-                        self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY),
+                        self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
                         &self->txCallback, (mode&MODE_INVERTED?0:TIMEROUT_START_HI)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
         state|=STATE_TX;
     }
@@ -158,7 +158,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerIn_Config(&self->rxTimerCh, 
-                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_RX, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY), 
+                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_RX, NVIC_PRIO_TIMER, 
                        &self->rxCallback, &self->rxTimerQ, 
                        ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) 
                        | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE) 
@@ -199,7 +199,7 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
 }
 
 
-// update state of port. MAsks are passed to this function so atomic update is possible and 
+// update state of port. Masks are passed to this function so atomic update is possible and 
 // caller does not need to care about locking
 void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
@@ -207,7 +207,7 @@ void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_
     
     // elevate priority to CALLBACK to prevent race with serial handlers
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(CALLBACK_IRQ_PRIORITY, CALLBACK_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
+    __set_BASEPRI(NVIC_PRIO_CALLBACK); asm volatile ("" ::: "memory");
     portState_t newState = (self->port.state & andMask) | orMask;
     if(newState & STATE_RX_WHENTXDONE) {
         // first check if there is something in buffer. 
@@ -406,7 +406,7 @@ void softSerialPutc(serialPort_t *instance, uint8_t ch)
         self->port.txBufferHead = nxt;
         // elevate priority to callback level
         uint8_t saved_basepri=__get_BASEPRI();
-        __set_BASEPRI(NVIC_BUILD_PRIORITY(CALLBACK_IRQ_PRIORITY, CALLBACK_IRQ_SUBPRIORITY));  asm volatile ("" ::: "memory");  
+        __set_BASEPRI(NVIC_PRIO_CALLBACK);  asm volatile ("" ::: "memory");  
         softSerialTryTx(self);
         __set_BASEPRI(saved_basepri);   
     }

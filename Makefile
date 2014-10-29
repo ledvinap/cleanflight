@@ -48,8 +48,8 @@ SRC_DIR		 = $(ROOT)/src/main
 OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
-INCLUDE_DIRS = $(SRC_DIR)
-LINKER_DIR   = $(ROOT)/src/main/target
+INCLUDE_DIRS	 = $(SRC_DIR)
+LINKER_DIR       = $(ROOT)/src/main/target
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
@@ -249,6 +249,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/timer_input.c \
 		   drivers/timer_output.c \
 		   drivers/timer_queue.c \
+		   drivers/timer_stm32f10x.c \
 		   hardware_revision.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -313,6 +314,7 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/timer_input.c \
 		   drivers/timer_output.c \
 		   drivers/timer_queue.c \
+		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
@@ -349,6 +351,7 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/timer_input.c \
 		   drivers/timer_output.c \
 		   drivers/timer_queue.c \
+		   drivers/timer_stm32f10x.c \
 		   $(COMMON_SRC)
 
 CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
@@ -374,6 +377,7 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/timer_input.c \
 		   drivers/timer_output.c \
 		   drivers/timer_queue.c \
+		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
@@ -399,6 +403,7 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/timer_input.c \
 		   drivers/timer_output.c \
 		   drivers/timer_queue.c \
+		   drivers/timer_stm32f30x.c \
 		   vcp/hw_config.c \
 		   vcp/stm32_it.c \
 		   vcp/usb_desc.c \
@@ -455,7 +460,7 @@ SIZE		 = arm-none-eabi-size
 #
 
 ifeq ($(DEBUG),GDB)
-OPTIMIZE	 = -O1
+OPTIMIZE	 = -Os
 LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
 else
 OPTIMIZE	 = -Os

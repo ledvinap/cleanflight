@@ -112,7 +112,7 @@ void timerOut_QCommit(timerOutputRec_t *self)
         return;
     // we need to to be atomic here
     register uint8_t saved_basepri= __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY));
+    __set_BASEPRI(NVIC_PRIO_TIMER);
     // and force compiler to discard any value read outside of atomic section
     asm volatile ("" ::: "memory"); 
     if(self->flags&TIMEROUT_RUNNING) {

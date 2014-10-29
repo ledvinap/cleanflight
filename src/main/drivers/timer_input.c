@@ -142,7 +142,7 @@ void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture)
 bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
     bool ret;
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory"); 
+    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory"); 
     if(self->qhead==self->qtail) { // wait only in queue is empty
         self->flags|=TIMERIN_TIMEOUT_FIRST;
         if(self->flags&TIMERIN_QUEUE_DUALTIMER)
@@ -159,7 +159,7 @@ bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
 // only on/off implemented now
 void timerIn_SetBuffering(timerInputRec_t *self, short buffer) {
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory"); 
+    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory"); 
     if(buffer) {
         self->flags|=TIMERIN_QUEUE_BUFFER;
     } else {

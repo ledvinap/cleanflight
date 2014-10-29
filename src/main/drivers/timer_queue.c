@@ -47,7 +47,7 @@ void timerQueue_Init(void)
     timerQueue.isrHead=timerQueue.isrTail=0;
     timerQueue.timCCR=timerChCCR(timHw);
     timerQueue.timCNT=&timHw->tim->CNT;
-    timerChInit(timHw, TYPE_TIMER, NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY));
+    timerChInit(timHw, TYPE_TIMER, NVIC_PRIO_TIMER);
     timerChConfigOC(timHw, false, false);
     timerChCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
     callbackRegister(&timerQueue.callback, timerQueue_CallbackEvent);
@@ -79,7 +79,7 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
 void timerQueue_Release(timerQueueRec_t *self) 
 {
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(CALLBACK_IRQ_PRIORITY, CALLBACK_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
+    __set_BASEPRI(NVIC_PRIO_CALLBACK); asm volatile ("" ::: "memory");
     if(self->flags&TIMERQUEUE_FLAG_QUEUED)
         timerQueue_QueueDelete(self);
     self->flags &= ~TIMERQUEUE_FLAG_QUEUED;
@@ -91,7 +91,7 @@ void timerQueue_Release(timerQueueRec_t *self)
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory");
+    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
     // update time if called multiple times
     self->timeISR=*timerQueue.timCNT+timeout; 
     if(!self->inIsrQueue) {

@@ -172,8 +172,8 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriori
         NVIC_InitTypeDef NVIC_InitStructure;
         
         NVIC_InitStructure.NVIC_IRQChannel = timHw->irq;
-        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_SPLIT_PRIORITY_BASE(irqPriority);
-        NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_SPLIT_PRIORITY_SUB(irqPriority);
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(irqPriority);
+        NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(irqPriority);
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure); 
         
@@ -197,7 +197,7 @@ void timerChOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *
 static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef* tim) {
     timerOvrHandlerRec_t **chain=&cfg->overflowCallbackActive;
     register uint8_t saved_basepri= __get_BASEPRI();
-    __set_BASEPRI(NVIC_BUILD_PRIORITY(TIMER_IRQ_PRIORITY, TIMER_IRQ_SUBPRIORITY)); asm volatile ("" ::: "memory"); 
+    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory"); 
     for(int i=0;i<CC_CHANNELS_PER_TIMER;i++)
         if(cfg->overflowCallback[i]) {
             *chain=cfg->overflowCallback[i];

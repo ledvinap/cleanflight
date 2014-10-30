@@ -80,12 +80,11 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
 // maybe use some flag to mark callback as deleted
 void timerQueue_Release(timerQueueRec_t *self) 
 {
-    uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_CALLBACK); asm volatile ("" ::: "memory");
-    if(self->flags&TIMERQUEUE_FLAG_QUEUED)
-        timerQueue_QueueDelete(self);
-    self->flags &= ~TIMERQUEUE_FLAG_QUEUED;
-    __set_BASEPRI(saved_basepri);
+    ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
+        if(self->flags&TIMERQUEUE_FLAG_QUEUED)
+            timerQueue_QueueDelete(self);
+        self->flags &= ~TIMERQUEUE_FLAG_QUEUED;
+    }
 }
 
 

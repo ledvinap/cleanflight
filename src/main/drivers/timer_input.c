@@ -5,6 +5,7 @@
 
 #include "platform.h"
 #include "common/utils.h"
+#include "common/atomic.h"
 #include "callback.h"
 #include "system.h"
 #include "nvic.h"
@@ -143,32 +144,26 @@ void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture)
 // return true if timeout is armed, false is something already happened and caller should check again
 
 bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
-    bool ret;
-    uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
-    if(self->qhead==self->qtail) { // wait only in queue is empty
-        self->flags|=TIMERIN_TIMEOUT_FIRST;
-        if(self->flags&TIMERIN_QUEUE_DUALTIMER)
-            timerChITConfigDualLo(self->timHw, ENABLE);   // TODO - check that IT flag is cleared correctly
-                                                          // (it is cleared by reading corresponding CCR on store)
-        ret=true;
-    } else {
-        ret=false;
+    ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
+        ATOMIC_BARRIER(*self);
+        if(self->qhead==self->qtail) { // wait only in queue is empty
+            self->flags|=TIMERIN_TIMEOUT_FIRST;
+            if(self->flags&TIMERIN_QUEUE_DUALTIMER)
+                timerChITConfigDualLo(self->timHw, ENABLE);   // TODO - check that IT flag is cleared correctly
+            // (it is cleared by reading corresponding CCR on store)
+            return true;
+        }
     }
-    __set_BASEPRI(saved_basepri);
-    return ret;
+    return false;
 }
 
 // only on/off implemented now
 void timerIn_SetBuffering(timerInputRec_t *self, short buffer) {
-    uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
     if(buffer) {
-        self->flags|=TIMERIN_QUEUE_BUFFER;
+        ATOMIC_OR(&self->flags, TIMERIN_QUEUE_BUFFER);
     } else {
-        self->flags&=~TIMERIN_QUEUE_BUFFER;
+        ATOMIC_AND(&self->flags, ~TIMERIN_QUEUE_BUFFER);
     }
-    __set_BASEPRI(saved_basepri);
 }
 
 

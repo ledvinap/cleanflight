@@ -45,9 +45,11 @@ static inline void pinDbgToggle(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 
 void pinDebugInit(void);
 
-#define __UNIQL_CONCAT2(x,y) x ## y
-#define __UNIQL_CONCAT(x,y) __UNIQL_CONCAT2(x,y)
-#define __UNIQL(x) __UNIQL_CONCAT(x,__LINE__)
+#ifndef __UNIQL
+# define __UNIQL_CONCAT2(x,y) x ## y
+# define __UNIQL_CONCAT(x,y) __UNIQL_CONCAT2(x,y)
+# define __UNIQL(x) __UNIQL_CONCAT(x,__LINE__)
+#endif
 
 // assert pin for duration of enclosing block (local variable scope)
 #define PIN_DBG_BLOCK(def)                                              \

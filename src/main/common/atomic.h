@@ -41,13 +41,23 @@ static inline uint8_t __basepriSetRetVal(uint8_t prio)
 // ideally this would only protect stucture passed as parameter, but gcc is curently creating almost full barrier
 //   check resulting assembly. Typing to volatile pointer is probably better in time-critical sections
 // this macro can be used only ONCE PER LINE, but multiple uses per block should be fine
+
+#ifndef __UNIQL
+# define __UNIQL_CONCAT2(x,y) x ## y
+# define __UNIQL_CONCAT(x,y) __UNIQL_CONCAT2(x,y)
+# define __UNIQL(x) __UNIQL_CONCAT(x,__LINE__)
+#endif
+
+
 #define ATOMIC_BARRIER(data)                                            \
-    __extension__ void  __CONCAT(__barrierEnd, __LINE__)(typeof(data) **__d) { \
+    __extension__ void  __UNIQL(__barrierEnd)(typeof(data) **__d) {     \
         __asm__ volatile ("" : : "m" (**__d));                          \
     }                                                                   \
-    typeof(data)  __attribute__((__cleanup__(__CONCAT(__barrierEnd, __LINE__)))) *__CONCAT(__barrier, __LINE__) = &data; \
-                  __asm__ volatile ("" : "=m" (*__CONCAT(__barrier, __LINE__)))
+    typeof(data)  __attribute__((__cleanup__(__UNIQL(__barrierEnd)))) *__UNIQL(__barrier) = &data; \
+    __asm__ volatile ("" : "=m" (*__UNIQL(__barrier)))
 
 // This is just palceholder to mark protected structures where other (optimized) synchronization is used
 #define ATOMIC_BARRIER_DUMMY(data)
 
+#define ATOMIC_OR(ptr, val) __sync_fetch_and_or(ptr, val)
+#define ATOMIC_AND(ptr, val) __sync_fetch_and_and(ptr, val)

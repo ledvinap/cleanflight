@@ -55,14 +55,14 @@ void callbackRegister(callbackRec_t *self, callbackFun_t *fn)
 
 void callbackRelease(callbackRec_t *self)
 {
-    __sync_fetch_and_and(&callbackTriggers[0], ~(1 << self->id));         // clear trigger if set
+    ATOMIC_AND(&callbackTriggers[0], ~(1 << self->id));         // clear trigger if set
     callbackEntries[self->id]=&callbackEmptyRec;     // remove entry
     callbackFree[0] |= 1 << self->id;                // mark his position as free
 }
 
 void callbackTrigger(callbackRec_t *self)
 {
-    __sync_fetch_and_or(&callbackTriggers[0],  1 << self->id);
+    ATOMIC_OR(&callbackTriggers[0],  1 << self->id);
     SCB->ICSR=SCB_ICSR_PENDSVSET;
 }
 
@@ -70,7 +70,7 @@ void callbackTrigger(callbackRec_t *self)
 static void callbackCall(void) {
     while(callbackTriggers[0]) {
         uint8_t idx=31-__builtin_clz(callbackTriggers[0]);
-        __sync_fetch_and_and(&callbackTriggers[0], ~(1<<idx));
+        ATOMIC_AND(&callbackTriggers[0], ~(1<<idx));
         callbackEntries[idx]->fn(callbackEntries[idx]);
     }
 }

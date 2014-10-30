@@ -22,6 +22,7 @@
 
 #include "platform.h"
 #include "common/utils.h"
+#include "common/atomic.h"
 
 #include "nvic.h"
 
@@ -197,15 +198,14 @@ void timerChOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *
 // some synchronization mechanism is neccesary to avoid disturbing other channels (BASEPRI used now)
 static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef* tim) {
     timerOvrHandlerRec_t **chain=&cfg->overflowCallbackActive;
-    register uint8_t saved_basepri= __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
-    for(int i=0;i<CC_CHANNELS_PER_TIMER;i++)
-        if(cfg->overflowCallback[i]) {
-            *chain=cfg->overflowCallback[i];
-            chain=&cfg->overflowCallback[i]->next;
-        }
-    *chain=NULL;
-    __set_BASEPRI(saved_basepri);
+    ATOMIC_BLOCK(NVIC_PRIO_TIMER) {
+        for(int i=0;i<CC_CHANNELS_PER_TIMER;i++)
+            if(cfg->overflowCallback[i]) {
+                *chain=cfg->overflowCallback[i];
+                chain=&cfg->overflowCallback[i]->next;
+            }
+        *chain=NULL;
+    }
     // enable or disable IRQ
     TIM_ITConfig(tim, TIM_IT_Update, cfg->overflowCallbackActive?ENABLE:DISABLE);
 }

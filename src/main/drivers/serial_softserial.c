@@ -26,6 +26,7 @@
 #include "build_config.h"
 
 #include "common/utils.h"
+#include "common/atomic.h"
 
 #include "nvic.h"
 #include "system.h"
@@ -205,46 +206,45 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
 void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
     softSerial_t* self=container_of(serial, softSerial_t, port);
-    
+
     // elevate priority to CALLBACK to prevent race with serial handlers
-    uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_CALLBACK); asm volatile ("" ::: "memory");
-    portState_t newState = (self->port.state & andMask) | orMask;
-    if(newState & STATE_RX_WHENTXDONE) {
-        // first check if there is something in buffer. 
-        if((self->port.state & STATE_TX)   // only if transmitter is already enabled. It should be possible to prepare data
-           && isSoftSerialTransmitBufferEmpty(&self->port) && (timerOut_QLen(&self->txTimerCh) == 0)) {
-            // Return to RX immediately 
-            newState &= ~STATE_TX;
-            newState |= STATE_RX;
-        } else {
-            self->directionRxOnDone = true;
+    ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
+        portState_t newState = (self->port.state & andMask) | orMask;
+        if(newState & STATE_RX_WHENTXDONE) {
+            // first check if there is something in buffer. 
+            if((self->port.state & STATE_TX)   // only if transmitter is already enabled. It should be possible to prepare data
+               && isSoftSerialTransmitBufferEmpty(&self->port) && (timerOut_QLen(&self->txTimerCh) == 0)) {
+                // Return to RX immediately
+                newState &= ~STATE_TX;
+                newState |= STATE_RX;
+            } else {
+                self->directionRxOnDone = true;
+            }
+        }
+
+        // release channels first
+        if(!(newState & STATE_TX) && (self->port.state & STATE_TX)) {
+            timerOut_Release(&self->txTimerCh);
+            self->port.state &= ~STATE_TX;
+        }
+        if(!(newState & STATE_RX) && (self->port.state & STATE_RX)) {
+            timerIn_Release(&self->rxTimerCh);
+            self->port.state &= ~STATE_RX;
+        }
+
+        // and setup newly enabled direction
+        if((newState & STATE_RX) && !(self->port.state & STATE_RX)) {
+            timerIn_Restart(&self->rxTimerCh);
+            self->directionRxOnDone = false;
+            self->port.state |= STATE_RX;
+        }
+        if((newState & STATE_TX) && !(self->port.state & STATE_TX)) {
+            timerOut_Restart(&self->txTimerCh);
+            self->port.state |= STATE_TX;
+            // if we have something in buffer, start transmission immediately
+            softSerialTryTx(self);
         }
     }
-        
-    // release channels first
-    if(!(newState & STATE_TX) && (self->port.state & STATE_TX)) {
-        timerOut_Release(&self->txTimerCh);
-        self->port.state &= ~STATE_TX;
-    }
-    if(!(newState & STATE_RX) && (self->port.state & STATE_RX)) {
-        timerIn_Release(&self->rxTimerCh);
-        self->port.state &= ~STATE_RX;
-    }
-
-    // and setup newwly enabled direction
-    if((newState & STATE_RX) && !(self->port.state & STATE_RX)) {
-        timerIn_Restart(&self->rxTimerCh);
-        self->directionRxOnDone = false;
-        self->port.state |= STATE_RX;
-    }
-    if((newState & STATE_TX) && !(self->port.state & STATE_TX)) {
-        timerOut_Restart(&self->txTimerCh);
-        self->port.state |= STATE_TX;
-        // if we have something in buffer, start transmission immediately
-        softSerialTryTx(self);
-    }
-    __set_BASEPRI(saved_basepri);
 }
 
 void softSerialTxCallback(callbackRec_t *cb)
@@ -407,10 +407,10 @@ void softSerialPutc(serialPort_t *instance, uint8_t ch)
         self->port.txBuffer[self->port.txBufferHead] = ch;
         self->port.txBufferHead = nxt;
         // elevate priority to callback level
-        uint8_t saved_basepri=__get_BASEPRI();
-        __set_BASEPRI(NVIC_PRIO_CALLBACK);  asm volatile ("" ::: "memory");  
-        softSerialTryTx(self);
-        __set_BASEPRI(saved_basepri);   
+        ATOMIC_BLOCK_NB(NVIC_PRIO_CALLBACK) {
+            ATOMIC_BARRIER(*self);
+            softSerialTryTx(self);
+        }
     }
 }
 

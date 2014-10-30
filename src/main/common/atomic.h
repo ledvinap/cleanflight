@@ -35,18 +35,19 @@ static inline uint8_t __basepriSetRetVal(uint8_t prio)
 // Run block with elevated BASEPRI, but do not create any memory barrier.
 #define ATOMIC_BLOCK_NB(prio) for ( uint8_t __basepri_save __attribute__((__cleanup__(__basepriRestore))) = __get_BASEPRI(), \
                                     __ToDo = __basepriSetRetVal(prio); __ToDo ; __ToDo = 0 ) \
-        
-// Create memory barrier at the beginning (all data must be reread from structure) 
+
+// Create memory barrier at the beginning (all data must be reread from structure)
 // and end of block (all data must be written, but may be cached in register for subsequent use)
 // ideally this would only protect stucture passed as parameter, but gcc is curently creating almost full barrier
-//   check resulting assembly. Typing to volatile pointer is probably better in time-critical sections 
+//   check resulting assembly. Typing to volatile pointer is probably better in time-critical sections
 // this macro can be used only ONCE PER LINE, but multiple uses per block should be fine
 #define ATOMIC_BARRIER(data)                                            \
-    __extension__ void  __barrierEnd##__LINE__(typeof(data) **__d) {      \
+    __extension__ void  __CONCAT(__barrierEnd, __LINE__)(typeof(data) **__d) { \
         __asm__ volatile ("" : : "m" (**__d));                          \
     }                                                                   \
-    typeof(data)  __attribute__((__cleanup__(__barrierEnd##__LINE__))) *__barier = &data; \
-                  __asm__ volatile ("" : "=m" (*__barier))
+    typeof(data)  __attribute__((__cleanup__(__CONCAT(__barrierEnd, __LINE__)))) *__CONCAT(__barrier, __LINE__) = &data; \
+                  __asm__ volatile ("" : "=m" (*__CONCAT(__barrier, __LINE__)))
 
-// This is just palceholder to mark places where other (optimized) synchronization is used 
+// This is just palceholder to mark protected structures where other (optimized) synchronization is used
 #define ATOMIC_BARRIER_DUMMY(data)
+

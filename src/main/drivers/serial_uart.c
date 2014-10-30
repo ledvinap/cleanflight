@@ -102,7 +102,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
     // callback works for IRQ-based RX ONLY
     self->port.rxCallback = config->rxCallback;
     self->port.baudRate = config->baudRate;          // TODO - recalculate actual baudrate
-    
+
     // setup initial port state
     self->port.state = 0;
     if(config->mode & MODE_RX) {
@@ -300,7 +300,7 @@ void uartPutc(serialPort_t *serial, uint8_t ch)
 
     self->port.txBuffer[self->port.txBufferHead] = ch;
     self->port.txBufferHead = (self->port.txBufferHead + 1) & (self->port.txBufferSize - 1);
-    
+
     if (self->port.mode & MODE_U_DMATX) {
         if (!(self->txDMAChannel->CCR & 1))
             uartStartTxDMA(self);

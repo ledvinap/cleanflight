@@ -5,6 +5,8 @@
 
 #include "platform.h"
 #include "common/utils.h"
+#include "common/atomic.h"
+
 #include "callback.h"
 #include "nvic.h"
 #include "system.h"
@@ -90,16 +92,17 @@ void timerQueue_Release(timerQueueRec_t *self)
 
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
-    uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
-    // update time if called multiple times
-    self->timeISR=*timerQueue.timCNT+timeout; 
-    if(!self->inIsrQueue) {
-        timerQueue.isr[timerQueue.isrHead]=self;
-        timerQueue.isrHead=(timerQueue.isrHead+1)%TIMERQUEUE_ISRQUEUE_LEN;
-        self->inIsrQueue=true;
+    ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
+        ATOMIC_BARRIER(*self);
+        ATOMIC_BARRIER(timerQueue);
+        // update time if called multiple times
+        self->timeISR=*timerQueue.timCNT+timeout; 
+        if(!self->inIsrQueue) {
+            timerQueue.isr[timerQueue.isrHead]=self;
+            timerQueue.isrHead=(timerQueue.isrHead+1)%TIMERQUEUE_ISRQUEUE_LEN;
+            self->inIsrQueue=true;
+        }
     }
-    __set_BASEPRI(saved_basepri);
     callbackTrigger(&timerQueue.callback);
 }
 

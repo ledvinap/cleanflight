@@ -46,6 +46,7 @@
 #include "drivers/light_led.h"
 #include "drivers/sound_beeper.h"
 #include "drivers/inverter.h"
+#include "drivers/pin_debug.h"
 
 #include "flight/flight.h"
 #include "flight/mixer.h"
@@ -181,6 +182,8 @@ void init(void)
 
     delay(100);
 
+    pinDebugInit();
+
     timerInit();  // timer must be initialized before any channel is allocated
 
     ledInit();
@@ -286,9 +289,9 @@ void init(void)
 #endif
 
     callbackInit();
-    
+
     timerQueue_Init();
-    
+
     serialInit(&masterConfig.serialConfig);
 
     memset(&pwm_params, 0, sizeof(pwm_params));
@@ -407,7 +410,6 @@ void init(void)
 void processLoopback(void) {
     static uint32_t t=0;
     if (loopbackPort) {
-        digitalToggle(GPIOA, Pin_0);
         if(isSerialTransmitBufferEmpty(loopbackPort) && t<millis()) {
             t=millis()+100;
 //            serialPrint(loopbackPort, "\x55\xaa");
@@ -424,26 +426,7 @@ void processLoopback(void) {
 #define processLoopback()
 #endif
 
-struct {
-    char data[10];
-} tdat2={{1}};
-
 int main(void) {
-
-    struct {
-        char data[10];
-    } tdat={{0}};
-
-#if 1
-    tdat.data[0]++;
-    tdat2.data[0]++;
-    ATOMIC_BLOCK_NB(NVIC_BUILD_PRIORITY(2,3)) {
-        ATOMIC_BARRIER(tdat);
-        tdat.data[0]++;
-    }
-    tdat.data[0]++;
-    tdat2.data[0]++;
-#endif
     init();
 
     while (1) {

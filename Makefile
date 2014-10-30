@@ -8,7 +8,7 @@
 # Makefile for building the cleanflight firmware.
 #
 # Invoke this with 'make help' to see the list of supported targets.
-# 
+#
 
 ###############################################################################
 # Things that the user might override on the commandline
@@ -176,6 +176,7 @@ COMMON_SRC	 = build_config.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
 		   drivers/system.c \
+		   drivers/pin_debug.c \
 		   io/beeper.c \
 		   io/rc_controls.c \
 		   io/rc_curves.c \
@@ -460,7 +461,7 @@ SIZE		 = arm-none-eabi-size
 #
 
 ifeq ($(DEBUG),GDB)
-OPTIMIZE	 = -Os
+OPTIMIZE	 = -O1
 LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
 else
 OPTIMIZE	 = -Os

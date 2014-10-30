@@ -38,6 +38,7 @@
 #include "drivers/timer_queue.h"
 #include "drivers/serial.h"
 #include "io/serial.h"
+#include "drivers/pin_debug.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -222,6 +223,7 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
     rcvd<<=8;
     rcvd|=data&0xff;
     if(rcvd==((0x7e<<8)|DATA_ID_VARIO) && telemPktQueueHead()!=NULL) {
+        pinDbgHi(DBP_TELEMETRY_SPORT_REPLAYWAIT);
         timerQueue_Start(&telemetrySPortTimerQ, 100);
     }
 }
@@ -229,6 +231,7 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
 void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
 {
     UNUSED(cb);
+    pinDbgLo(DBP_TELEMETRY_SPORT_REPLAYWAIT);
     uint8_t *pkt=telemPktQueueHead();
     if(!pkt) return;
     serialSetDirection(sPortPort, STATE_TX);

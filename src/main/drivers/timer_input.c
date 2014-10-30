@@ -8,6 +8,7 @@
 #include "callback.h"
 #include "system.h"
 #include "nvic.h"
+#include "pin_debug.h"
 
 #include "timer.h"
 #include "timer_queue.h"
@@ -44,16 +45,16 @@ void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channel
     } else {
         timerChInit(timHw, owner, priority);
         self->CCR=timerChCCR(timHw);
-        timerChCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);        
+        timerChCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);
     }
-    timerIn_Restart(self);    
+    timerIn_Restart(self);
 }
 
 void timerIn_Release(timerInputRec_t* self)
 {
     if(self->flags&TIMERIN_QUEUE_DUALTIMER)
         timerChConfigCallbacksDual(self->timHw, NULL, NULL, NULL);
-    else 
+    else
         timerChConfigCallbacks(self->timHw, NULL, NULL);
 }
 
@@ -65,12 +66,12 @@ void timerIn_Restart(timerInputRec_t* self)
         timerChConfigGPIO(timHw, (self->flags&TIMERIN_IPD)?Mode_IPD:Mode_IPU);
         timerChConfigCallbacksDual(timHw, &self->edgeLoCb, &self->edgeHiCb, NULL);
     } else {
-        if(self->flags&TIMERIN_RISING) 
+        if(self->flags&TIMERIN_RISING)
             self->flags&=~TIMERIN_FLAG_HIGH;
-        else 
+        else
             self->flags|=TIMERIN_FLAG_HIGH;
         timerChConfigIC(timHw, self->flags&TIMERIN_RISING, 0);
-        timerChConfigGPIO(timHw, (self->flags&TIMERIN_IPD)?Mode_IPD:Mode_IPU); 
+        timerChConfigGPIO(timHw, (self->flags&TIMERIN_IPD)?Mode_IPD:Mode_IPU);
         timerChConfigCallbacks(timHw, &self->edgeLoCb, NULL);
     }
 }
@@ -93,22 +94,24 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
     // store received value into buffer
     self->queue[self->qhead]=capture;
     self->qhead=nxt;
-    
+
     // start timer if requested
     if(self->flags&TIMERIN_TIMEOUT_FIRST) {
         self->flags&=~TIMERIN_TIMEOUT_FIRST;
+        pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
         timerQueue_Start(self->timer, (capture-self->tim->CNT)+self->timeout);
     }
-    if(!(self->flags&TIMERIN_QUEUE_BUFFER) 
+    if(!(self->flags&TIMERIN_QUEUE_BUFFER)
        || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN-1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
         callbackTrigger(self->callback);
-    } 
+    }
 }
 
 void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeLoCb);
     if(self->flags&TIMERIN_TIMEOUT_FIRST) {
         self->flags&=~TIMERIN_TIMEOUT_FIRST;
+        pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
         timerQueue_Start(self->timer, (capture-self->tim->CNT)+self->timeout);
         timerChITConfigDualLo(self->timHw, DISABLE);
     }
@@ -117,8 +120,8 @@ void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture)
 void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeHiCb);
     // two captured values are ready now
-    unsigned nxt=(self->qhead+2)%TIMERIN_QUEUE_LEN; 
-    if(nxt==(self->qtail&~1)) {  
+    unsigned nxt=(self->qhead+2)%TIMERIN_QUEUE_LEN;
+    if(nxt==(self->qtail&~1)) {
         // both edges are discarded, so queue stays consistent
         // wake receiver, queue is full
         callbackTrigger(self->callback);
@@ -128,7 +131,7 @@ void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture)
     self->queue[self->qhead+1]=capture;  // or self->CCR[3] if 16bit CCR / CCR[1] if 32bit ccr.
     self->qhead=nxt;
 
-    if(!(self->flags&TIMERIN_QUEUE_BUFFER) 
+    if(!(self->flags&TIMERIN_QUEUE_BUFFER)
        || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN-1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
         callbackTrigger(self->callback);
     }
@@ -142,11 +145,11 @@ void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture)
 bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
     bool ret;
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory"); 
+    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
     if(self->qhead==self->qtail) { // wait only in queue is empty
         self->flags|=TIMERIN_TIMEOUT_FIRST;
         if(self->flags&TIMERIN_QUEUE_DUALTIMER)
-            timerChITConfigDualLo(self->timHw, ENABLE);   // TODO - check that IT flag is cleared correctly 
+            timerChITConfigDualLo(self->timHw, ENABLE);   // TODO - check that IT flag is cleared correctly
                                                           // (it is cleared by reading corresponding CCR on store)
         ret=true;
     } else {
@@ -159,7 +162,7 @@ bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
 // only on/off implemented now
 void timerIn_SetBuffering(timerInputRec_t *self, short buffer) {
     uint8_t saved_basepri = __get_BASEPRI();
-    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory"); 
+    __set_BASEPRI(NVIC_PRIO_TIMER); asm volatile ("" ::: "memory");
     if(buffer) {
         self->flags|=TIMERIN_QUEUE_BUFFER;
     } else {

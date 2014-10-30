@@ -32,6 +32,7 @@
 #include "gpio.h"
 #include "timer.h"
 #include "callback.h"
+#include "pin_debug.h"
 
 #include "pwm_mapping.h"
 
@@ -249,11 +250,9 @@ void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_
 void softSerialTxCallback(callbackRec_t *cb)
 {
     softSerial_t *self=container_of(cb, softSerial_t, txCallback);;
-    digitalToggle(GPIOA, Pin_0);
     softSerialTryTx(self);
 
     if(self->directionRxOnDone && timerOut_QLen(&self->txTimerCh)==0) {
-        digitalToggle(GPIOA, Pin_0);
         softSerialUpdateState(&self->port, ~STATE_RXTX, STATE_RX);
     }
 }
@@ -331,12 +330,14 @@ static inline int16_t cmp16(uint16_t a, uint16_t b)
 void softSerialRxProcess(softSerial_t *self)
 {
     uint16_t capture0, capture1, symbolStart, symbolEnd;
+    PIN_DBG_BLOCK(DBP_SOFTSERIAL_RXPROCESS);
     do { // return here if late edge was caught
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
             symbolEnd=symbolStart+self->symbolLength;   // end if in middle of last stopbit
             if(timerIn_QLen(&self->rxTimerCh)<SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol was received to prevent problems with timerCnt overflow
                && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
+                pinDbgHi(DBP_SOFTSERIAL_RXWAIT_SYMBOL);
                 timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
                 return;   // symbol is not finished yet
             }
@@ -382,6 +383,7 @@ void softSerialRxCallback(callbackRec_t *cb)
 void softSerialRxTimeoutEvent(timerQueueRec_t *tq_ref)
 {
     softSerial_t* self=container_of(tq_ref, softSerial_t, rxTimerQ);
+    pinDbgLo(DBP_SOFTSERIAL_RXWAIT_SYMBOL);
     softSerialRxProcess(self);
 }
 

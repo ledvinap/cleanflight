@@ -183,9 +183,10 @@ void timerIn_QPop(timerInputRec_t* self)
 }
 
 // queue position must be be always even when using these functions
+// this will return first edge and bogus second edge if only only half-pulse is in queue
 bool timerIn_QPeek2(timerInputRec_t* self, uint16_t* capture1, uint16_t* capture2)
 {
-    if(self->qhead==(self->qtail&~1))
+    if(self->qhead==self->qtail)
         return false;
     *capture1=self->queue[self->qtail];
     *capture2=self->queue[self->qtail+1];  // access is aligned, so this is OK

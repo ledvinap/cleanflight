@@ -259,17 +259,17 @@ void softSerialTxCallback(callbackRec_t *cb)
 
 // this function must be called at least on CALLBACK basepri
 void softSerialTryTx(softSerial_t* self) {
-    while(!isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?  
-          && timerOut_QSpace(&self->txTimerCh) > ((self->port.mode & MODE_SBUS) ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS)) {  // we need space for whole byte 
+    while(!isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?
+          && timerOut_QSpace(&self->txTimerCh) > ((self->port.mode & MODE_SBUS) ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS)) {  // we need space for whole byte
 
     
         uint16_t byteToSend = self->port.txBuffer[self->port.txBufferTail];
-        self->port.txBufferTail=(self->port.txBufferTail+1)%self->port.txBufferSize; 
+        self->port.txBufferTail=(self->port.txBufferTail+1)%self->port.txBufferSize;
         
         if(self->port.mode & MODE_SBUS) {
             byteToSend |= (__builtin_parity(byteToSend))<<SYM_DATA_BITS;      // parity bit
             byteToSend |= 0x03 << (SYM_DATA_BITS+1);                           // 2x stopbit
-            byteToSend<<=1;                                                    // startbit      
+            byteToSend<<=1;                                                    // startbit
         } else {
             byteToSend|=1<<SYM_DATA_BITS;                                      // stopbit
             byteToSend<<=1;                                                    // startbit
@@ -334,6 +334,7 @@ void softSerialRxProcess(softSerial_t *self)
     do { // return here if late edge was caught
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
+            // maybe capture 1 is invalid here, but if enough time passed, it means wrong symbol (break) anyway
             symbolEnd=symbolStart+self->symbolLength;   // end if in middle of last stopbit
             if(timerIn_QLen(&self->rxTimerCh)<SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol was received to prevent problems with timerCnt overflow
                && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
@@ -341,43 +342,52 @@ void softSerialRxProcess(softSerial_t *self)
                 timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
                 return;   // symbol is not finished yet
             }
-            symbolStart-=((self->bitTime / 2) >> 8); // offset startbit edge to get correct rounding
-            uint16_t rxShiftRegister=0xffff;
-            int bitIdxLast=-1;    
-            int bitIdx0=0;        // edge from 1 to 0 (and position of startbit)
-            int bitIdx1;          // edge from 0 to 1
-            // jump inside loop - startbit is always at known position
-            timerIn_QPop2(&self->rxTimerCh);
-            goto edge1;
-            while(timerIn_QPeek2(&self->rxTimerCh, &capture0, &capture1)) {
-                if(cmp16(capture0, symbolEnd)>0) {
-                    // this edge is in next symbol, process received data
-                    break;
-                }
+            if(timerIn_QLen(&self->rxTimerCh)>1) {  // continue only if second edge was found
+                symbolStart-=((self->bitTime / 2) >> 8); // offset startbit edge to get correct rounding
+                uint16_t rxShiftRegister=0xffff;
+                int bitIdxLast=-1;
+                int bitIdx0=0;        // edge from 1 to 0 (and position of startbit)
+                int bitIdx1;          // edge from 0 to 1
+                // jump inside loop - startbit is always at known position
                 timerIn_QPop2(&self->rxTimerCh);
-                bitIdx0=((unsigned long)((capture0-symbolStart)&0xffff)*self->invBitTime)>>16;
-            edge1:
-                bitIdx1=((unsigned long)((capture1-symbolStart)&0xffff)*self->invBitTime)>>16;
-
-                if(bitIdxLast>=bitIdx0 || bitIdx0>=bitIdx1) {
-                    // invalid bit interval or repeated edge in same bit
-                    rxShiftRegister&=~0x8000;  // non-transmitted bits are used as error flags, TODO - symbolic constants
-                    break;
+                goto edge1;
+                while(timerIn_QPeek2(&self->rxTimerCh, &capture0, &capture1)) {
+                    if(cmp16(capture0, symbolEnd)>0) {
+                        // this edge is in next symbol, process received data
+                        break;
+                    }
+                    timerIn_QPop2(&self->rxTimerCh);
+                    bitIdx0=((unsigned long)((capture0-symbolStart)&0xffff)*self->invBitTime)>>16;
+                edge1:
+                    bitIdx1=((unsigned long)((capture1-symbolStart)&0xffff)*self->invBitTime)>>16;
+                    
+                    if(bitIdxLast>=bitIdx0 || bitIdx0>=bitIdx1) {
+                        // invalid bit interval or repeated edge in same bit
+                        rxShiftRegister&=~0x8000;  // non-transmitted bits are used as error flags, TODO - symbolic constants
+                        break;
+                    }
+                    bitIdxLast=bitIdx1;
+                    rxShiftRegister&=~(0xffff<<bitIdx0);   // clear all bits >= bitIdx0
+                    rxShiftRegister|=0xffff<<bitIdx1;      // set all bits >= bitIdx1
                 }
-                bitIdxLast=bitIdx1;
-                rxShiftRegister&=~(0xffff<<bitIdx0);   // clear all bits >= bitIdx0
-                rxShiftRegister|=0xffff<<bitIdx1;      // set all bits >= bitIdx1
+                softSerialStoreByte(self, rxShiftRegister);
+            } else {
+                // only one edge in queue, must be break condition
+                // dualtimer mode is not active
+                // we can't setup edge timeout
+                // disable buffering and wait for next edge, it will gen handled on next invocation
+                // TODO - find some better way to handle this
+                timerIn_SetBuffering(&self->rxTimerCh, 0);
+                return;
             }
-            softSerialStoreByte(self, rxShiftRegister);
         }
-        // no data in queue, setup edge timeout
-    } while(!timerIn_ArmEdgeTimeout(&self->rxTimerCh));   // maybe goto will be more readable here ... 
+    } while(!timerIn_ArmEdgeTimeout(&self->rxTimerCh));   // maybe goto will be more readable here ...
 }
 
 void softSerialRxCallback(callbackRec_t *cb)
 {
     softSerial_t *self=container_of(cb, softSerial_t, rxCallback);
-    softSerialRxProcess(self); 
+    softSerialRxProcess(self);
 }
 
 void softSerialRxTimeoutEvent(timerQueueRec_t *tq_ref)

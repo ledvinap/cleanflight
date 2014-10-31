@@ -149,8 +149,9 @@ bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
         if(self->qhead==self->qtail) { // wait only in queue is empty
             self->flags|=TIMERIN_TIMEOUT_FIRST;
             if(self->flags&TIMERIN_QUEUE_DUALTIMER)
-                timerChITConfigDualLo(self->timHw, ENABLE);   // TODO - check that IT flag is cleared correctly
-            // (it is cleared by reading corresponding CCR on store)
+                timerChITConfigDualLo(self->timHw, ENABLE);
+            // TODO - check that IT flag is cleared correctly
+            //  it is cleared by reading corresponding CCR on store
             return true;
         }
     }

@@ -113,9 +113,7 @@ void timerOut_QCommit(timerOutputRec_t *self)
     // we need to to be atomic here
     ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
         ATOMIC_BARRIER(*self);
-        // and force compiler to discard any value read outside of atomic section
-        asm volatile ("" ::: "memory"); 
-    
+
         if(self->flags&TIMEROUT_RUNNING) {
             if(self->qhead==self->qtail) { // last interval in progress
                 self->flags|=TIMEROUT_RESTART;
@@ -132,7 +130,7 @@ void timerOut_QCommit(timerOutputRec_t *self)
             *self->timCCR=self->tim->CNT+2;     // not sure what happens when CNT is written into CCR. This should work fine (we have at lease 72 ticks to spare)
             // TODO - maybe we missed compare because higher priority IRQ was served here
             // we should retry unless CCR<CNT or irq flag is set
-            // this will work is timer interrupt high enough
+            // this will work is timer interrupt high enough (current case)
             // or we could disable all interrupts, ideally only for read/write instruction
             // [same assumption is in IRQ handler]
             self->qhead=self->qheadUnc;

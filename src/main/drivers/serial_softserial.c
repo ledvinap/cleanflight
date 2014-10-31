@@ -143,12 +143,12 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     }
     if(mode & MODE_TX) {
         callbackRegister(&self->txCallback, softSerialTxCallback);
-        timerOut_Config(&self->txTimerCh, 
+        timerOut_Config(&self->txTimerCh,
                         self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
                         &self->txCallback, (mode&MODE_INVERTED?0:TIMEROUT_START_HI)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
         state|=STATE_TX;
     }
-    if(mode & MODE_HALFDUPLEX) {  
+    if(mode & MODE_HALFDUPLEX) {
         // release tx channel in halfduplex mode before configuring RX (timer may be shared)
         // TODO - correctly handle pin in halfduplex on two pins
         timerOut_Release(&self->txTimerCh);
@@ -159,29 +159,29 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         // Or fail to open port - could be safer when DMA is used (much higher processor load can be dangerous)
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
-        timerIn_Config(&self->rxTimerCh, 
-                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_RX, NVIC_PRIO_TIMER, 
-                       &self->rxCallback, &self->rxTimerQ, 
-                       ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0) 
-                       | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE) 
-                       | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0) 
+        timerIn_Config(&self->rxTimerCh,
+                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_RX, NVIC_PRIO_TIMER,
+                       &self->rxCallback, &self->rxTimerQ,
+                       ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0)
+                       | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE)
+                       | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0)
                        | TIMERIN_QUEUE_BUFFER);
         self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit (make it configurable)
         state|=STATE_RX;
         callbackTrigger(&self->rxCallback);                                  // setup timeouts correctly
-    } 
+    }
     self->port.state=state;
 }
 
 void softSerialRelease(serialPort_t *serial)
 {
     softSerial_t *self=container_of(serial, softSerial_t, port);
-   
+
     portMode_t mode=self->port.mode;
 
     softSerialUpdateState(&self->port, 0, 0);  // disable RX and TX first
     self->port.state=0;
-    
+
     if(mode & MODE_TX) {
         callbackRelease(&self->txCallback);
     }
@@ -201,7 +201,7 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
 }
 
 
-// update state of port. Masks are passed to this function so atomic update is possible and 
+// update state of port. Masks are passed to this function so atomic update is possible and
 // caller does not need to care about locking
 void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
@@ -211,7 +211,7 @@ void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_
     ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
         portState_t newState = (self->port.state & andMask) | orMask;
         if(newState & STATE_RX_WHENTXDONE) {
-            // first check if there is something in buffer. 
+            // first check if there is something in buffer.
             if((self->port.state & STATE_TX)   // only if transmitter is already enabled. It should be possible to prepare data
                && isSoftSerialTransmitBufferEmpty(&self->port) && (timerOut_QLen(&self->txTimerCh) == 0)) {
                 // Return to RX immediately
@@ -262,10 +262,10 @@ void softSerialTryTx(softSerial_t* self) {
     while(!isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?
           && timerOut_QSpace(&self->txTimerCh) > ((self->port.mode & MODE_SBUS) ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS)) {  // we need space for whole byte
 
-    
+
         uint16_t byteToSend = self->port.txBuffer[self->port.txBufferTail];
         self->port.txBufferTail=(self->port.txBufferTail+1)%self->port.txBufferSize;
-        
+
         if(self->port.mode & MODE_SBUS) {
             byteToSend |= (__builtin_parity(byteToSend))<<SYM_DATA_BITS;      // parity bit
             byteToSend |= 0x03 << (SYM_DATA_BITS+1);                           // 2x stopbit
@@ -274,7 +274,7 @@ void softSerialTryTx(softSerial_t* self) {
             byteToSend|=1<<SYM_DATA_BITS;                                      // stopbit
             byteToSend<<=1;                                                    // startbit
         }
-        
+
         // we need to enque odd number of intervals
         // there is toggle on start of each interval, first interval starts in idle state
         unsigned bitPos=0;
@@ -321,7 +321,7 @@ void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
 }
 
 // TODO
-static inline int16_t cmp16(uint16_t a, uint16_t b) 
+static inline int16_t cmp16(uint16_t a, uint16_t b)
 {
     return a-b;
 }
@@ -360,7 +360,7 @@ void softSerialRxProcess(softSerial_t *self)
                     bitIdx0=((unsigned long)((capture0-symbolStart)&0xffff)*self->invBitTime)>>16;
                 edge1:
                     bitIdx1=((unsigned long)((capture1-symbolStart)&0xffff)*self->invBitTime)>>16;
-                    
+
                     if(bitIdxLast>=bitIdx0 || bitIdx0>=bitIdx1) {
                         // invalid bit interval or repeated edge in same bit
                         rxShiftRegister&=~0x8000;  // non-transmitted bits are used as error flags, TODO - symbolic constants
@@ -410,7 +410,7 @@ void softSerialPutc(serialPort_t *instance, uint8_t ch)
 
     uint16_t nxt=(self->port.txBufferHead + 1) & (self->port.txBufferSize - 1);
     if(nxt == self->port.txBufferTail) {
-        // TODO - buffer is full ...  we could wait (if outside of isr), but that could break something important. 
+        // TODO - buffer is full ...  we could wait (if outside of isr), but that could break something important.
         // only log error end discard character now
         self->transmissionErrors++;
     } else {

@@ -78,7 +78,7 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
 
 // TODO - caller must make sure that nothing will start this callback during release now
 // maybe use some flag to mark callback as deleted
-void timerQueue_Release(timerQueueRec_t *self) 
+void timerQueue_Release(timerQueueRec_t *self)
 {
     ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
         if(self->flags&TIMERQUEUE_FLAG_QUEUED)
@@ -95,7 +95,7 @@ void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
         ATOMIC_BARRIER(*self);
         ATOMIC_BARRIER(timerQueue);
         // update time if called multiple times
-        self->timeISR=*timerQueue.timCNT+timeout; 
+        self->timeISR=*timerQueue.timCNT+timeout;
         if(!self->inIsrQueue) {
             timerQueue.isr[timerQueue.isrHead]=self;
             timerQueue.isrHead=(timerQueue.isrHead+1)%TIMERQUEUE_ISRQUEUE_LEN;

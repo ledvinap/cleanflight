@@ -5,6 +5,8 @@
 
 #include "pin_debug.h"
 
+#ifdef PINDEBUG
+
 struct {
     bool enable;
     GPIO_TypeDef *gpio;
@@ -16,7 +18,8 @@ struct {
     {DBG_PIN_4},
 };
 
-void pinDebugInit(void) {
+void pinDebugInit(void) 
+{
     for(unsigned i=0; i < ARRAYLEN(pinDebugPins); i++) {
         gpio_config_t cfg;
         cfg.pin = pinDebugPins[i].pin;
@@ -28,3 +31,13 @@ void pinDebugInit(void) {
         digitalLo(pinDebugPins[i].gpio, pinDebugPins[i].pin);
     }
 }
+
+bool pinDebugIsPinUsed(GPIO_TypeDef* gpio, uint16_t pin)
+{
+    for(int i=0;i<ARRAYLEN(pinDebugPins);i++)
+        if((pinDebugPins[i].gpio == gpio) && (pinDebugPins[i].pin & pin))
+            return true;
+    return false;
+}
+
+#endif

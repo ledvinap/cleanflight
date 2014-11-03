@@ -223,7 +223,7 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
     rcvd<<=8;
     rcvd|=data&0xff;
     if(rcvd==((0x7e<<8)|DATA_ID_VARIO) && telemPktQueueHead()!=NULL) {
-        pinDbgHi(DBP_TELEMETRY_SPORT_REPLAYWAIT);
+        pinDbgHi(DBP_TELEMETRY_SPORT_REPLYWAIT);
         timerQueue_Start(&telemetrySPortTimerQ, 100);
     }
 }
@@ -231,7 +231,7 @@ void telemetrySPortSerialRxCharCallback(uint16_t data)
 void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
 {
     UNUSED(cb);
-    pinDbgLo(DBP_TELEMETRY_SPORT_REPLAYWAIT);
+    pinDbgLo(DBP_TELEMETRY_SPORT_REPLYWAIT);
     uint8_t *pkt=telemPktQueueHead();
     if(!pkt) return;
     serialSetDirection(sPortPort, STATE_TX);

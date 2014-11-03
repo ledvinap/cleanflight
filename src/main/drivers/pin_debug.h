@@ -1,4 +1,3 @@
-
 #pragma once
 
 // simple pin-debug support
@@ -8,8 +7,20 @@
 // there is no guarantee that this works, only that it will not break anything in production build
 // usability is preffered to portability/corectness/etc
 
+
+#define DBP_TIMER                            DBG_PIN_1
+#define DBP_CALLBACK                         DBG_PIN_2
+
+#define DBP_SOFTSERIAL_RXPROCESS             DBG_PIN_3     // in softSerialRxProcess
+#define DBP_SOFTSERIAL_RXWAIT_SYMBOL         DBG_PIN_4     // waiting for whole symbol to arrive
+#define DBP_TIMERINPUT_EDGEDELAY             DBG_PIN_4     // waiting for whole symbol to arrive
+
 #include <stdbool.h>
 #include <stdint.h>
+#include "build_config.h"
+
+#ifdef PINDEBUG
+
 #include "gpio.h"
 
 #define DBG_PIN_1 true, GPIOB, Pin_6             // PWM11
@@ -19,14 +30,7 @@
 
 #define DBG_NONE false, 0, 0
 
-#define DBP_TIMER                            DBG_PIN_1
-#define DBP_CALLBACK                         DBG_PIN_2
-
-#define DBP_SOFTSERIAL_RXPROCESS             DBG_PIN_3     // in softSerialRxProcess
-#define DBP_SOFTSERIAL_RXWAIT_SYMBOL         DBG_PIN_4     // waiting for whole symbol to arrive
-#define DBP_TIMERINPUT_EDGEDELAY             DBG_PIN_4     // waiting for whole symbol to arrive
-
-#define DBP_TELEMETRY_SPORT_REPLAYWAIT       DBG_NONE
+#define DBP_TELEMETRY_SPORT_REPLYWAIT        DBG_NONE
 
 static inline void pinDbgHi(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 {
@@ -44,6 +48,7 @@ static inline void pinDbgToggle(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 }
 
 void pinDebugInit(void);
+bool pinDebugIsPinUsed(GPIO_TypeDef* gpio, uint16_t pin);
 
 #ifndef __UNIQL
 # define __UNIQL_CONCAT2(x,y) x ## y
@@ -56,4 +61,17 @@ void pinDebugInit(void);
     __extension__ void  __UNIQL(__pinDbgBlockEnd)(char *u __attribute__ ((unused))) {  pinDbgLo(def); } \
     char  __attribute__((__cleanup__(__UNIQL(__pinDbgBlockEnd))))       \
     __UNIQL(__pinDbgBlock);                                             \
-    pinDbgHi(def);
+    pinDbgHi(def)
+
+#else
+// dummy versions when pindebug is not enabled
+#define pinDbgHi(...) do {} while(0)
+#define pinDbgLo(...) do {} while(0)
+#define pinDbgToggle(...) do {} while(0)
+#define PIN_DBG_BLOCK(...) do {} while(0)
+
+static inline void pinDebugInit(void) {}
+static inline bool pinDebugIsPinUsed(GPIO_TypeDef* gpio, uint16_t pin) { UNUSED(gpio); UNUSED(pin); return false; }
+
+#endif
+

@@ -135,15 +135,15 @@ static void ppmInit(void)
     ppmDev.tracking     = false;
 }
 
-static void ppmOverflowCallback(timerOvrHandlerRec_t* self_, uint16_t capture)
+static void ppmOverflowCallback(timerOvrHandlerRec_t* cbRec, uint16_t capture)
 {
-    UNUSED(self_);
+    UNUSED(cbRec);
     ppmDev.largeCounter += capture + 1;
 }
 
-static void ppmEdgeCallback(timerCCHandlerRec_t* self_, uint16_t capture)
+static void ppmEdgeCallback(timerCCHandlerRec_t* cbRec, uint16_t capture)
 {
-    UNUSED(self_);
+    UNUSED(cbRec);
     int32_t i;
 
     /* Shift the last measurement out */
@@ -221,10 +221,10 @@ static void ppmEdgeCallback(timerCCHandlerRec_t* self_, uint16_t capture)
 
 #define MAX_MISSED_PWM_EVENTS 10
 
-static void pwmOverflowCallback(timerOvrHandlerRec_t* self_, uint16_t capture)
+static void pwmOverflowCallback(timerOvrHandlerRec_t* cbRec, uint16_t capture)
 {
     UNUSED(capture);
-    pwmInputPort_t *pwmInputPort = container_of(self_, pwmInputPort_t, overflowCb);
+    pwmInputPort_t *pwmInputPort = container_of(cbRec, pwmInputPort_t, overflowCb);
 
     if (++pwmInputPort->missedEvents > MAX_MISSED_PWM_EVENTS) {
         if (pwmInputPort->state == 0) {
@@ -234,9 +234,9 @@ static void pwmOverflowCallback(timerOvrHandlerRec_t* self_, uint16_t capture)
     }
 }
 
-static void pwmEdgeCallback(timerCCHandlerRec_t *self_, uint16_t capture)
+static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, uint16_t capture)
 {
-    pwmInputPort_t *pwmInputPort = container_of(self_, pwmInputPort_t, edgeCb);
+    pwmInputPort_t *pwmInputPort = container_of(cbRec, pwmInputPort_t, edgeCb);
     const timerHardware_t *timerHardwarePtr = pwmInputPort->timerHardware;
 
     if (pwmInputPort->state == 0) {

@@ -34,7 +34,7 @@ void pinDebugInit(void)
 
 bool pinDebugIsPinUsed(GPIO_TypeDef* gpio, uint16_t pin)
 {
-    for(int i=0;i<ARRAYLEN(pinDebugPins);i++)
+    for(unsigned i = 0;i < ARRAYLEN(pinDebugPins); i++)
         if((pinDebugPins[i].gpio == gpio) && (pinDebugPins[i].pin & pin))
             return true;
     return false;

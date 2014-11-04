@@ -61,7 +61,7 @@ typedef struct {
     uint8_t outputEnable;
     GPIO_Mode gpioInputMode;
 #ifdef STM32F303
-    uint8_t gpioPinSource;
+    uint8_t gpioPinSource;             // TODO - this can be removed and pinSource calculated from pin
     uint8_t alternateFunction;
 #endif
 } timerHardware_t;
@@ -86,7 +86,7 @@ typedef enum {
     TYPE_TIMER
 } channelType_t;
 
-//void timerConfigure(const timerHardware_t *timHw, uint16_t period, uint8_t mhz);
+void timerConfigure(const timerHardware_t *timHw, uint16_t period, uint8_t mhz);  // This interface should be replaced.
 
 void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);
 void timerChConfigICDual(const timerHardware_t* timHw, bool polarityRising, unsigned inputFilterSamples);
@@ -106,7 +106,6 @@ void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
 void timerChClearCCFlag(const timerHardware_t* timHw);
 
 void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority);
-//void timerConfigHandled(const timerHardware_t *timHw); // TODO?
 
 void timerInit(void);
 void timerStart(void);

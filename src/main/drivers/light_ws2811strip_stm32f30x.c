@@ -103,7 +103,7 @@ void ws2811LedStripHardwareInit(void)
 
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel3_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_WS2811_DMA);
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = WS2811_DMA_IRQ_SUBPRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_WS2811_DMA);
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 

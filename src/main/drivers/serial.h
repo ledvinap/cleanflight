@@ -18,6 +18,8 @@
 #pragma once
 
 // port mode is set when port is open and can't be changed (reopen port if neccesary)
+// there are about 64 bits for customization, so it should be enough for some time
+// change this to configuration structure (possibly with bitfields) if this is going out of control
 typedef enum portMode_t {
     MODE_RX           = 1 << 0,
     MODE_TX           = 1 << 1,
@@ -26,16 +28,23 @@ typedef enum portMode_t {
     MODE_HALFDUPLEX   = 1 << 3,
     MODE_SINGLEWIRE   = 1 << 4,
     MODE_INVERTED     = 1 << 5,
+// driver specific modes below
+// serial should work regardless of settings
 // softserial specific
     MODE_S_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
 // uart specific
     MODE_U_DMARX      = 1 << 7, // use USART RX DMA if available
     MODE_U_DMATX      = 1 << 8, // use USART TX DMA if available
+
+// default modes if no specific features are needed
+    MODE_DEFAULT_FAST  = MODE_S_DUALTIMER | MODE_U_DMARX | MODE_U_DMATX,
+    MODE_DEFAULT_SMALL = 0,
 } portMode_t;
 
 
 
-// port state is used to indicate (and change) state of open port.
+// port state is used to indicate (and change) state of open port
+// some port functions can be triggered by bit in this field
 typedef enum {
     // port direction
     STATE_TX             = 1 << 0,
@@ -46,22 +55,9 @@ typedef enum {
     STATE_TX_DELAY       = 1 << 3,  // TODO - not implemented
 } portState_t;
 
-// operations that can be invoked on serial port
-// some of theese oparations are wrapped with serialXxx function
-typedef enum {
-    CMD_CONFIGURE,     // (const serialPortConfig_t* config)
-    CMD_GET_CONFIG,    // (serialPortConfig_t* config)
-    CMD_RELEASE,       // (void)
-    CMD_ENABLE_STATE,  // (portState_t)
-    CMD_DISABLE_STATE, // (portState_t)
-    CMD_SET_DIRECTION, // (portState_t, only TX/RX)
-
-} portCommand_t;
-
 typedef void serialReceiveCallback(uint16_t data);   // used by serial drivers to return frames to app
 
 typedef struct serialPort {
-
     const struct serialPortVTable *vTable;
 
     uint8_t identifier;
@@ -82,7 +78,7 @@ typedef struct serialPort {
     serialReceiveCallback *rxCallback;
 } serialPort_t;
 
-// this structure holds all serial port configuration (GET_CONFIG/RELEASE/CONFIGURE must work)
+// this structure holds all serial port configuration (GetConfig/Release/Configure must return port to functional state)
 typedef struct  {
     portMode_t mode;
     uint32_t baudRate;
@@ -124,5 +120,5 @@ void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config);
 // change serial state, bits not in keepMask are reset(&), then bits in setmask are set (|)
 void serialUpdateState(serialPort_t *serial, portState_t keepMask, portState_t setMask);
 
-// convenience wrapper to serialUpdateState
+// convenience wrapper to serialUpdateState. Not implemented by vTable
 void serialSetDirection(serialPort_t *instance, portState_t state);

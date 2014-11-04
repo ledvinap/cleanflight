@@ -1,7 +1,8 @@
 #pragma once
 
-// (TODO) - keep track of used DMA channels here
+// (TODO) keep track of used DMA channels here
 // It should be possible to dynamically allocate DMA channels according to configuration
+// theese constants are not used now in souce code .. 
 
 #if defined(STM32F10x)
 
@@ -19,5 +20,5 @@
 #define DMA_USART2_RX DMA1_Channel6
 #define DMA_WS2811 DMA1_Channel3
 
-#ensif
+#endif
 

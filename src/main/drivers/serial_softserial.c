@@ -75,13 +75,6 @@ static void resetBuffers(softSerial_t *self)
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t *config)
 {
     softSerial_t *self = &(softSerialPorts[portIndex]);
-// TODO debug
-    gpio_config_t cfg;
-    
-    cfg.pin = Pin_0|Pin_8;
-    cfg.mode = Mode_Out_PP;
-    cfg.speed = Speed_10MHz;
-    gpioInit(GPIOA, &cfg);
 #ifdef USE_SOFTSERIAL1
     if (portIndex == SOFTSERIAL1) {
         self->rxTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_RX_HARDWARE]);
@@ -145,18 +138,21 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh,
                         self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
-                        &self->txCallback, (mode&MODE_INVERTED?0:TIMEROUT_START_HI)|TIMEROUT_WAKEONEMPTY|TIMEROUT_WAKEONLOW);
+                        &self->txCallback, 
+                        ((mode & MODE_INVERTED) ? 0 : TIMEROUT_IDLE_HI)
+                        | ((mode & MODE_SINGLEWIRE) ? TIMEROUT_RELEASEMODE_INPUT : 0)
+                        | TIMEROUT_WAKEONEMPTY | TIMEROUT_WAKEONLOW);
         state|=STATE_TX;
     }
     if(mode & MODE_HALFDUPLEX) {
         // release tx channel in halfduplex mode before configuring RX (timer may be shared)
-        // TODO - correctly handle pin in halfduplex on two pins
         timerOut_Release(&self->txTimerCh);
         state &= ~STATE_TX;
     }
     if(mode & MODE_RX) {
-        // TODO - in dualtimer case whe should chech that second channel is available and fallback to single-channel mode in neccesary
-        // Or fail to open port - could be safer when DMA is used (much higher processor load can be dangerous)
+        // TODO - in dualtimer case whe should check that second channel is available and fallback to single-channel mode in neccesary
+        // Or fail to open port, that could be safer when DMA is used (much higher processor load can be dangerous)
+        // timer channel allocation has to be implemented/finished first
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerIn_Config(&self->rxTimerCh,
@@ -164,7 +160,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
                        &self->rxCallback, &self->rxTimerQ,
                        ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0)
                        | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE)
-                       | ((mode & MODE_INVERTED) ? TIMERIN_IPD : 0)
+                       | ((mode & MODE_INVERTED) ? 0 : TIMERIN_IPU)
                        | TIMERIN_QUEUE_BUFFER);
         self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit (make it configurable)
         state|=STATE_RX;
@@ -320,7 +316,6 @@ void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
     }
 }
 
-// TODO
 static inline int16_t cmp16(uint16_t a, uint16_t b)
 {
     return a-b;
@@ -334,26 +329,27 @@ void softSerialRxProcess(softSerial_t *self)
     do { // return here if late edge was caught
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
-            // maybe capture 1 is invalid here, but if enough time passed, it means wrong symbol (break) anyway
-            symbolEnd=symbolStart+self->symbolLength;   // end if in middle of last stopbit
-            if(timerIn_QLen(&self->rxTimerCh)<SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol was received to prevent problems with timerCnt overflow
-               && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
+            // maybe capture1 is invalid here, but if enough time passed, it means wrong symbol (break) anyway
+            symbolEnd=symbolStart+self->symbolLength;   // symbolLength is to center of last stopbit
+            if(timerIn_QLen(&self->rxTimerCh)<SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol is waiting to prevent problems with timerCnt overflow
+               && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {     
                 pinDbgHi(DBP_SOFTSERIAL_RXWAIT_SYMBOL);
-                timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
+                timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit 
+                // TODO - configure this additional delay and make it bitrate dependent too)
                 return;   // symbol is not finished yet
             }
-            if(timerIn_QLen(&self->rxTimerCh)>1) {  // continue only if second edge was found
+            if(timerIn_QLen(&self->rxTimerCh)>1) {       // continue only if second edge was found
                 symbolStart-=((self->bitTime / 2) >> 8); // offset startbit edge to get correct rounding
                 uint16_t rxShiftRegister=0xffff;
                 int bitIdxLast=-1;
-                int bitIdx0=0;        // edge from 1 to 0 (and position of startbit)
-                int bitIdx1;          // edge from 0 to 1
+                int bitIdx0=0;                           // edge from 1 to 0 (and position of startbit)
+                int bitIdx1;                             // edge from 0 to 1
                 // jump inside loop - startbit is always at known position
                 timerIn_QPop2(&self->rxTimerCh);
                 goto edge1;
                 while(timerIn_QPeek2(&self->rxTimerCh, &capture0, &capture1)) {
                     if(cmp16(capture0, symbolEnd)>0) {
-                        // this edge is in next symbol, process received data
+                        // this edge is in next symbol, all bits for current symbol are ready
                         break;
                     }
                     timerIn_QPop2(&self->rxTimerCh);
@@ -363,7 +359,7 @@ void softSerialRxProcess(softSerial_t *self)
 
                     if(bitIdxLast>=bitIdx0 || bitIdx0>=bitIdx1) {
                         // invalid bit interval or repeated edge in same bit
-                        rxShiftRegister&=~0x8000;  // non-transmitted bits are used as error flags, TODO - symbolic constants
+                        rxShiftRegister&=~0x8000;  // non-transmitted bits are used as error flags, TODO - use symbolic constants
                         break;
                     }
                     bitIdxLast=bitIdx1;
@@ -372,13 +368,14 @@ void softSerialRxProcess(softSerial_t *self)
                 }
                 softSerialStoreByte(self, rxShiftRegister);
             } else {
-                // only one edge in queue, must be break condition
-                // dualtimer mode is not active
-                // we can't setup edge timeout
-                // disable buffering and wait for next edge, it will gen handled on next invocation
-                // TODO - find some better way to handle this
-                timerIn_SetBuffering(&self->rxTimerCh, 0);
-                return;
+                // only one edge in queue, it must be break condition (RX is still low)
+                // dualtimer mode is not active (dualtimer triggers on 0->1 edge)
+                // we can't simply ArmEdgeTimeout() here - input is still in wrong state, there is edge in queue
+                // so reset input queue (and setup trigger edge). We can discard edge here, but that should not hurt
+                // anything (sender must assume we need short timer after break to recover)
+                timerIn_Reset(&self->rxTimerCh);
+                softSerialStoreByte(self, 0);    // TODO - pass BREAK condition here
+                // check queue again, then arm (correct) timeout
             }
         }
     } while(!timerIn_ArmEdgeTimeout(&self->rxTimerCh));   // maybe goto will be more readable here ...

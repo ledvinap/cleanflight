@@ -8,7 +8,7 @@
 #define TIMERIN_RISING            0x0010    // start capture on rising edge
 #define TIMERIN_POLARITY_TOGGLE   0x0100    // Capture both edges (toggle polarity on each capture)
 #define TIMERIN_QUEUE_BUFFER      0x0200    // only wake processissing when buffer is above high mark
-#define TIMERIN_IPD               0x0400    // Configure input as pulldown
+#define TIMERIN_IPU               0x0400    // Configure input as pullup
 #define TIMERIN_QUEUE_DUALTIMER   0x0800    // use two timers for capture
 #define TIMERIN_TIMEOUT_FIRST     0x1000    // start timeout on first edge (and clear this flag)
 
@@ -39,6 +39,9 @@ void timerIn_QPop(timerInputRec_t *self);
 bool timerIn_QPeek2(timerInputRec_t *self, uint16_t *capture1, uint16_t *capture2); 
 void timerIn_QPop2(timerInputRec_t *self);
 int timerIn_QLen(timerInputRec_t* self);
+
 void timerIn_SetBuffering(timerInputRec_t *self, short buffer);
 bool timerIn_ArmEdgeTimeout(timerInputRec_t* self);
+void timerIn_Reset(timerInputRec_t* self);
+
 uint16_t timerIn_getTimCNT(timerInputRec_t *self);

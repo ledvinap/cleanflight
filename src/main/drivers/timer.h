@@ -21,7 +21,6 @@
 
 #include "callback.h"
 
-// TODO - get rid of this
 #define TIM_N(i) (1<<(i))
 
 #include "target_timer.h"

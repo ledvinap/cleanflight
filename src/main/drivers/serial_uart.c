@@ -55,7 +55,7 @@ static void uartReconfigure(uartPort_t *self)
         USART_InitStructure.USART_Mode |= USART_Mode_Rx;
     if (self->port.state & STATE_TX)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
-    
+
     USART_Init(self->USARTx, &USART_InitStructure);
 }
 
@@ -63,12 +63,11 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
 {
     uartPort_t *self;
 
-    // TODO - this is hack to enable old behavior
+    // TODO - this is hack to enable old behavior. Use predefined defaults for callers that don't need to be specific here
+    // Or maybe alow user to override per-port defaults by CLI
     serialPortConfig_t config_local=*config_;  // copy config, original may be in ROM
     serialPortConfig_t *config=&config_local;
     config->mode |= MODE_U_DMARX | MODE_U_DMATX;
-    
-
 
 #ifdef INVERTER
     if (config->mode & MODE_INVERTED && USARTx == INVERTER_USART) {
@@ -115,7 +114,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
     }
     
 // FIXME use inversion on STM32F3
-// TODO - use singlewire mode (supported by 10x and 30x)
+// TODO - use singlewire mode (supported both by 10x and 30x)
     uartReconfigure(self);
 
     // Receive DMA or IRQ
@@ -182,7 +181,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
     return &self->port;
 }
 
-// TODO - this function will need critical section if extended serial functions are implemented
+// this function will need critical section if extended serial functions are implemented
 void uartUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
@@ -234,7 +233,7 @@ void uartStartTxDMA(uartPort_t *self)
     self->txDMAChannel->CMAR = (uint32_t)&self->port.txBuffer[self->port.txBufferTail];
     // TODO - data passed to DMA transfer are 'released' from queue immediately and could be overwritten. txBufferTail should be moved only after transfer is complete
     //  but beware that whole queue may be pending then. half interrupt can help
-    // usart_write does not check buffer space anyway now ... 
+    // usart_write does not check buffer space anyway now ...
     if (self->port.txBufferHead > self->port.txBufferTail) {
         self->txDMAChannel->CNDTR = self->port.txBufferHead - self->port.txBufferTail;
         self->port.txBufferTail = self->port.txBufferHead;
@@ -274,7 +273,7 @@ void uartIrqHandler(uartPort_t *self)
         }
     }
 #ifdef STM32F303
-    // TODO - is this really neccesary?
+    // TODO - is this really neccesary? 
     if (flags & USART_FLAG_ORE)
     {
         USART_ClearITPendingBit (self->USARTx, USART_IT_ORE);

@@ -54,13 +54,12 @@ void timerQueue_Init(void)
     timerChCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
     callbackRegister(&timerQueue.callback, timerQueue_CallbackEvent);
     timerChConfigCallbacks(timHw, &timerQueue.compareCb, NULL);
-    
 }
 
-// compare two timestamps circular timestamps. 
-// result is negative when a<b, positive when a>b and zero if times are equal .. 
-
-static inline int16_t tq_cmp_val(uint16_t a, uint16_t b) 
+// compare circular timestamps.
+// result is negative when a<b, positive when a>b and zero if times are equal ..
+// this can be improved by considering shorter 'history' interval (return int, add 2^16 is result is < CONST)
+static inline int16_t tq_cmp_val(uint16_t a, uint16_t b)
 {
     return a-b;
 }
@@ -76,8 +75,6 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
     self->flags=0;
 }
 
-// TODO - caller must make sure that nothing will start this callback during release now
-// maybe use some flag to mark callback as deleted
 void timerQueue_Release(timerQueueRec_t *self)
 {
     ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
@@ -86,8 +83,6 @@ void timerQueue_Release(timerQueueRec_t *self)
         self->flags &= ~TIMERQUEUE_FLAG_QUEUED;
     }
 }
-
-
 
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
@@ -112,20 +107,20 @@ static int timerQueue_QueueInsert(timerQueueRec_t *rec)
     unsigned parent, child;
     child = timerQueue.heapLen++;
     while(child) {
-        parent=(child - 1)/2;
-        if(tq_cmp(timerQueue.heap[parent], rec)<=0) break;
+        parent = (child - 1) / 2;
+        if(tq_cmp(timerQueue.heap[parent], rec) <=0 ) break;
         timerQueue.heap[child] = timerQueue.heap[parent];
-        child=parent;
+        child = parent;
     }
     timerQueue.heap[child] = rec;
-    rec->flags|=TIMERQUEUE_FLAG_QUEUED;
+    rec->flags |= TIMERQUEUE_FLAG_QUEUED;
     return child;
 }
 
 static void timerQueue_QueueDelete(timerQueueRec_t *rec)
 {
-    for(unsigned i=0;i<timerQueue.heapLen;i++)
-        if(timerQueue.heap[i]==rec) {
+    for(unsigned i = 0; i < timerQueue.heapLen; i++)
+        if(timerQueue.heap[i] == rec) {
             timerQueue_QueueDeleteIdx(i);
             return;
         }
@@ -133,15 +128,15 @@ static void timerQueue_QueueDelete(timerQueueRec_t *rec)
 // remove element at given index from queue
 static void timerQueue_QueueDeleteIdx(unsigned parent)
 {
-    if(timerQueue.heapLen==0) return; 
+    if(timerQueue.heapLen == 0) return;
     unsigned child;
     timerQueueRec_t *last=timerQueue.heap[--timerQueue.heapLen];
     timerQueue.heap[parent]->flags&=~TIMERQUEUE_FLAG_QUEUED;
     while ((child = (2*parent)+1) < timerQueue.heapLen) {
         if (child + 1 < timerQueue.heapLen
-            && tq_cmp(timerQueue.heap[child], timerQueue.heap[child+1])>=0)
+            && tq_cmp(timerQueue.heap[child], timerQueue.heap[child+1]) >=0)
             ++child;
-        if(tq_cmp(last, timerQueue.heap[child])<=0) 
+        if(tq_cmp(last, timerQueue.heap[child]) <= 0)
             break;
         timerQueue.heap[parent] = timerQueue.heap[child];
         parent = child;
@@ -154,12 +149,12 @@ void timerQueue_TimerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
     UNUSED(self_);
     UNUSED(compare);
     // Only trigger callback here. Queue operations may be slow
-    callbackTrigger(&timerQueue.callback); 
+    callbackTrigger(&timerQueue.callback);
 }
 
 // callback function for timer queue
 // - enqueue new handlers
-// - trigger expired handlers 
+// - trigger expired handlers
 // - prepare new timer compare event
 // this function must be run on callbbak (pendSv) interrupt priority. It is not reentrant
 void timerQueue_CallbackEvent(callbackRec_t *cb)
@@ -184,7 +179,7 @@ void timerQueue_EnqueuePending(void)
     }
 }
 
-void timerQueue_Run(void) 
+void timerQueue_Run(void)
 {
 check_again:
     // trigger all due timers, removing them from queue
@@ -193,7 +188,7 @@ check_again:
         timerQueue_QueueDeleteIdx(0);                              // remove timer from queue first, so it is posible reinsert it in callback function
         rec->callbackFn(rec);                                      // call regitered function
     }
-    // replan timer    
+    // replan timer
     if(timerQueue.heapLen) {
         timerChClearCCFlag(timerHardware+TIMER_QUEUE_CHANNEL); // maybe we will enable interrupt
         *timerQueue.timCCR=timerQueue.heap[0]->time;

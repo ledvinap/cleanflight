@@ -523,24 +523,14 @@ _TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17)
 void timerInit(void)
 {
     memset(timerConfig, 0, sizeof (timerConfig));
-
-// TODO - DEBUG
-    {
-        gpio_config_t cfg;
-
-        cfg.pin = Pin_9;
-        cfg.mode = Mode_Out_PP;
-        cfg.speed = Speed_10MHz;
-        gpioInit(GPIOB, &cfg);
-    }
-    // call target-specific initialization routine
+    // call target-specific initialization routine (enable peripheral clocks, etc)
     timerInitTarget();
 #ifdef CC3D
-    GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);
+    GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);  // TODO - move this to timerInitTarget
 #endif
 
 
-#ifdef STM32F303xC
+#ifdef STM32F303xC // TODO - use for all F30X, compute pinsource at runtime
     for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
         const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
         GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);
@@ -567,22 +557,22 @@ void timerInit(void)
 
 // finish configuring timers after allocation phase
 // start timers
+// Work in progress - initialization routine must be modified/verified to start correctly without timers
 void timerStart(void)
 {
 #if 0
-    for(unsigned timer=0;timer<USED_TIMER_COUNT;timer++) {
-        int priority=-1;
-        int irq=-1;
-        for(unsigned hwc=0;hwc<USABLE_TIMER_CHANNEL_COUNT;hwc++)
-            if(timerChannelInfo[hwc].type!=TYPE_FREE && timerHardware[hwc].tim==usedTimers[timer]) {
+    for(unsigned timer = 0; timer < USED_TIMER_COUNT; timer++) {
+        int priority = -1;
+        int irq = -1;
+        for(unsigned hwc = 0; hwc < USABLE_TIMER_CHANNEL_COUNT; hwc++)
+            if(timerChannelInfo[hwc].type != TYPE_FREE && timerHardware[hwc].tim == usedTimers[timer]) {
                 // TODO - move IRQ to timer info
                 irq=timerHardware[hwc].irq;
-
             }
         // TODO - aggregate required timer paramaters
         configTimeBase(usedTimers[timer], 0, 1);
         TIM_Cmd(usedTimers[timer],  ENABLE);
-        if(priority>=0) {  // maybe none of the channels was configured
+        if(priority >=0 ) {  // maybe none of the channels was configured
             NVIC_InitTypeDef NVIC_InitStructure;
 
             NVIC_InitStructure.NVIC_IRQChannel = irq;

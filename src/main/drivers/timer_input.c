@@ -59,20 +59,22 @@ void timerIn_Release(timerInputRec_t* self)
         timerChConfigCallbacks(self->timHw, NULL, NULL);
 }
 
+// we assume that no IRQs can interfere, timerChConfigCallbacksmust protect self correctly
 void timerIn_Restart(timerInputRec_t* self)
 {
     const timerHardware_t* timHw=self->timHw;
-    if(self->flags&TIMERIN_QUEUE_DUALTIMER) {
-        timerChConfigICDual(timHw, self->flags&TIMERIN_RISING, 0);
-        timerChConfigGPIO(timHw, (self->flags&TIMERIN_IPD)?Mode_IPD:Mode_IPU);
+
+    if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
+        timerChConfigICDual(timHw, self->flags & TIMERIN_RISING, 0);
+        timerChConfigGPIO(timHw, (self->flags & TIMERIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacksDual(timHw, &self->edgeLoCb, &self->edgeHiCb, NULL);
     } else {
         if(self->flags&TIMERIN_RISING)
             self->flags&=~TIMERIN_FLAG_HIGH;
         else
             self->flags|=TIMERIN_FLAG_HIGH;
-        timerChConfigIC(timHw, self->flags&TIMERIN_RISING, 0);
-        timerChConfigGPIO(timHw, (self->flags&TIMERIN_IPD)?Mode_IPD:Mode_IPU);
+        timerChConfigIC(timHw, self->flags & TIMERIN_RISING, 0);
+        timerChConfigGPIO(timHw, (self->flags & TIMERIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacks(timHw, &self->edgeLoCb, NULL);
     }
 }
@@ -81,39 +83,39 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeLoCb);
 
     // check buffer space first
-    unsigned nxt=(self->qhead+1)%TIMERIN_QUEUE_LEN;
-    if(nxt==self->qtail) {
+    unsigned nxt=(self->qhead + 1) % TIMERIN_QUEUE_LEN;
+    if(nxt == self->qtail) {
         // do not change polarity if queue is full. Next edge will be ignored
         // this way buffer stays synchronized
         return;
     }
     // toggle polarity if requested
-    if(self->flags&TIMERIN_POLARITY_TOGGLE) {
-        self->flags^=TIMERIN_FLAG_HIGH;
-        timerChICPolarity(self->timHw, !(self->flags&TIMERIN_FLAG_HIGH));
+    if(self->flags & TIMERIN_POLARITY_TOGGLE) {
+        self->flags ^= TIMERIN_FLAG_HIGH;
+        timerChICPolarity(self->timHw, !(self->flags & TIMERIN_FLAG_HIGH));
     }
     // store received value into buffer
     self->queue[self->qhead]=capture;
     self->qhead=nxt;
 
     // start timer if requested
-    if(self->flags&TIMERIN_TIMEOUT_FIRST) {
-        self->flags&=~TIMERIN_TIMEOUT_FIRST;
+    if(self->flags & TIMERIN_TIMEOUT_FIRST) {
+        self->flags &= ~TIMERIN_TIMEOUT_FIRST;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
-        timerQueue_Start(self->timer, (capture-self->tim->CNT)+self->timeout);
+        timerQueue_Start(self->timer, (capture-self->tim->CNT) + self->timeout);
     }
     if(!(self->flags&TIMERIN_QUEUE_BUFFER)
-       || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN-1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
+       || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN - 1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
         callbackTrigger(self->callback);
     }
 }
 
 void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeLoCb);
-    if(self->flags&TIMERIN_TIMEOUT_FIRST) {
-        self->flags&=~TIMERIN_TIMEOUT_FIRST;
+    if(self->flags & TIMERIN_TIMEOUT_FIRST) {
+        self->flags &= ~TIMERIN_TIMEOUT_FIRST;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
-        timerQueue_Start(self->timer, (capture-self->tim->CNT)+self->timeout);
+        timerQueue_Start(self->timer, (capture - self->tim->CNT) + self->timeout);
         timerChITConfigDualLo(self->timHw, DISABLE);
     }
 }
@@ -121,19 +123,19 @@ void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture)
 void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeHiCb);
     // two captured values are ready now
-    unsigned nxt=(self->qhead+2)%TIMERIN_QUEUE_LEN;
-    if(nxt==(self->qtail&~1)) {
+    unsigned nxt = (self->qhead + 2) % TIMERIN_QUEUE_LEN;
+    if(nxt == (self->qtail & ~1)) {
         // both edges are discarded, so queue stays consistent
         // wake receiver, queue is full
         callbackTrigger(self->callback);
         return;
     }
-    self->queue[self->qhead]=*self->CCR;
-    self->queue[self->qhead+1]=capture;  // or self->CCR[3] if 16bit CCR / CCR[1] if 32bit ccr.
-    self->qhead=nxt;
+    self->queue[self->qhead] = *self->CCR;
+    self->queue[self->qhead + 1] = capture;  // or self->CCR[3] if 16bit CCR / CCR[1] if 32bit ccr.
+    self->qhead = nxt;
 
-    if(!(self->flags&TIMERIN_QUEUE_BUFFER)
-       || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN-1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
+    if(!(self->flags & TIMERIN_QUEUE_BUFFER)
+       || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN - 1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
         callbackTrigger(self->callback);
     }
 }
@@ -143,12 +145,13 @@ void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture)
 // normal mode - triggered by first captured edge (setup trigger accordingly)
 // return true if timeout is armed, false is something already happened and caller should check again
 
-bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
+bool timerIn_ArmEdgeTimeout(timerInputRec_t* self)
+{
     ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
         ATOMIC_BARRIER(*self);
-        if(self->qhead==self->qtail) { // wait only in queue is empty
-            self->flags|=TIMERIN_TIMEOUT_FIRST;
-            if(self->flags&TIMERIN_QUEUE_DUALTIMER)
+        if(self->qhead == self->qtail) { // wait only in queue is empty
+            self->flags |= TIMERIN_TIMEOUT_FIRST;
+            if(self->flags & TIMERIN_QUEUE_DUALTIMER)
                 timerChITConfigDualLo(self->timHw, ENABLE);
             // TODO - check that IT flag is cleared correctly
             //  it is cleared by reading corresponding CCR on store
@@ -156,6 +159,21 @@ bool timerIn_ArmEdgeTimeout(timerInputRec_t* self) {
         }
     }
     return false;
+}
+
+void timerIn_Reset(timerInputRec_t* self)
+{
+    ATOMIC_BLOCK(NVIC_PRIO_TIMER) {
+        if(!(self->flags & TIMERIN_QUEUE_DUALTIMER)) {
+            if(self->flags & TIMERIN_RISING)
+                self->flags &= ~TIMERIN_FLAG_HIGH;
+            else
+                self->flags |= TIMERIN_FLAG_HIGH;
+            timerChICPolarity(self->timHw, !(self->flags & TIMERIN_FLAG_HIGH));
+        }
+        self->qhead = self->qtail = 0;  // we assume that caller knows that tail will jump.
+        // Use self->qhead=self->qtail if there are multiple consumers
+    }
 }
 
 // only on/off implemented now
@@ -170,37 +188,37 @@ void timerIn_SetBuffering(timerInputRec_t *self, short buffer) {
 
 bool timerIn_QPeek(timerInputRec_t* self, uint16_t* capture, uint16_t* flags)
 {
-    if(self->qhead==self->qtail)
+    if(self->qhead == self->qtail)
         return false;
-    *capture=self->queue[self->qtail];
-    *flags=(self->qtail&1)?0:TIMERIN_FLAG_HIGH;
-    self->qtail=(self->qtail+1)%TIMERIN_QUEUE_LEN;
+    *capture = self->queue[self->qtail];
+    *flags = (self->qtail&1) ? 0 : TIMERIN_FLAG_HIGH;
+    self->qtail = (self->qtail + 1) % TIMERIN_QUEUE_LEN;
     return true;
 }
 
 void timerIn_QPop(timerInputRec_t* self)
 {
-    self->qtail=(self->qtail+1)%TIMERIN_QUEUE_LEN;
+    self->qtail=(self->qtail + 1) % TIMERIN_QUEUE_LEN;
 }
 
 // queue position must be be always even when using these functions
 // this will return first edge and bogus second edge if only only half-pulse is in queue
 bool timerIn_QPeek2(timerInputRec_t* self, uint16_t* capture1, uint16_t* capture2)
 {
-    if(self->qhead==self->qtail)
+    if(self->qhead == self->qtail)
         return false;
-    *capture1=self->queue[self->qtail];
-    *capture2=self->queue[self->qtail+1];  // access is aligned, so this is OK
+    *capture1 = self->queue[self->qtail];
+    *capture2 = self->queue[self->qtail + 1];  // access is aligned, so this is OK
     return true;
 }
 
 void timerIn_QPop2(timerInputRec_t* self)
 {
-    self->qtail=(self->qtail+2)%TIMERIN_QUEUE_LEN;
+    self->qtail = (self->qtail + 2) % TIMERIN_QUEUE_LEN;
 }
 
 int timerIn_QLen(timerInputRec_t* self) {
-    return (self->qhead-self->qtail)&(TIMERIN_QUEUE_LEN-1);
+    return (self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN - 1);
 }
 
 uint16_t timerIn_getTimCNT(timerInputRec_t *self) {

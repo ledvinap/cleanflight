@@ -4,14 +4,15 @@
 #define TIMEROUT_QUEUE_LEN 32
 #define TIMEROUT_QUEUE_LOW 5
 
-#define TIMEROUT_RUNNING       0x0100
-#define TIMEROUT_START_HI      0x0200          // output is inverted
-#define TIMEROUT_WAKEONEMPTY   0x0400          // wake caller on last interval end
-#define TIMEROUT_WAKEONLOW     0x0800          // wake caller on last interval end
-#define TIMEROUT_RESTART       0x1000          // interval was inserted in last period, restart transmission in IRQ
+#define TIMEROUT_RUNNING            0x0001          // timer is running (stopped after end of last interval)
+#define TIMEROUT_RESTART            0x0002          // interval was inserted in last period, restart transmission in IRQ
+#define TIMEROUT_IDLE_HI            0x0200          // idle state is high (timer starts in idle mode, this mode is set on release)
+#define TIMEROUT_RELEASEMODE_INPUT  0x0400          // set pin input mode on release (set to PP when not set)
+#define TIMEROUT_WAKEONEMPTY        0x0800          // wake caller on last interval end
+#define TIMEROUT_WAKEONLOW          0x1000          // wake caller when there is TIMEROUT_QUEUE_LOW elements in queue
 
 
-typedef struct timerOutputRec {
+typedef struct timerOutputRec_s {
     uint16_t queue[TIMEROUT_QUEUE_LEN];
     unsigned qhead;                             // queue head used for sending data
     unsigned qheadUnc;                          // index of uncommitted data head

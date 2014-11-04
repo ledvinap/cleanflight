@@ -41,9 +41,17 @@ void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, chann
 
 void timerOut_Release(timerOutputRec_t* self)
 {
-    self->flags&=~(TIMEROUT_RUNNING|TIMEROUT_RESTART);
+    self->flags &= ~(TIMEROUT_RUNNING | TIMEROUT_RESTART);
     timerChConfigCallbacks(self->timHw, NULL, NULL);
-    timerChConfigIC(self->timHw, false, 0);   // tristate channel - TODO - check pullup/pulldown
+    if(self->flags & TIMEROUT_RELEASEMODE_INPUT) {
+        timerChConfigGPIO(self->timHw, (self->flags & TIMEROUT_IDLE_HI) ? Mode_IPU : Mode_IPD);  
+    } else {
+        if(self->flags & TIMEROUT_IDLE_HI)  // TODO - move this to IO driver
+            digitalHi(self->timHw->gpio, self->timHw->pin);
+        else
+            digitalLo(self->timHw->gpio, self->timHw->pin);
+        timerChConfigGPIO(self->timHw, Mode_Out_PP);
+    }
 }
 
 void timerOut_Restart(timerOutputRec_t* self)
@@ -51,7 +59,7 @@ void timerOut_Restart(timerOutputRec_t* self)
     self->qhead=self->qheadUnc=self->qtail=0;
     self->qtailWake=~0;
     
-    timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_START_HI);
+    timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_IDLE_HI);
     timerChConfigGPIO(self->timHw, Mode_AF_PP);
     timerChConfigCallbacks(self->timHw, &self->compareCb, NULL);
 }

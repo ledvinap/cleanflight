@@ -104,7 +104,7 @@ LoopFillZerobss:
 /* Atollic update, branch LoopForever */
 LoopForever:
     b LoopForever
-
+    
 .equ	RCC_APB2ENR,	0x40021018   // HJI - TC bootloader entry on reset mod
 .equ	GPIO_AFIO_MASK,	0x00000009   // HJI - TC bootloader entry on reset mod
 .equ	GPIOB_CRL,	    0x40010C00   // HJI - TC bootloader entry on reset mod
@@ -116,27 +116,27 @@ Reboot_Loader:                       // HJI - TC bootloader entry on reset mod
 	    ldr	r6, =RCC_APB2ENR         // HJI - TC bootloader entry on reset mod
 	    ldr	r0, =GPIO_AFIO_MASK      // HJI - TC bootloader entry on reset mod
 	    str	R0, [r6];                // HJI - TC bootloader entry on reset mod
-
+        
         // MAPR pt1                  // HJI - TC bootloader entry on reset mod
         ldr     r0, =AFIO_MAPR       // HJI - TC bootloader entry on reset mod
         ldr     r1, [r0]             // HJI - TC bootloader entry on reset mod
         bic     r1, r1, #0x0F000000  // HJI - TC bootloader entry on reset mod
         str     r1, [r0]             // HJI - TC bootloader entry on reset mod
-
+        
         // MAPR pt2                  // HJI - TC bootloader entry on reset mod
         lsls    r1, r0, #9           // HJI - TC bootloader entry on reset mod
         str     r1, [r0]             // HJI - TC bootloader entry on reset mod
-
+        
         // BRR                       // HJI - TC bootloader entry on reset mod
         ldr     r4, =GPIOB_BRR       // HJI - TC bootloader entry on reset mod
         movs    r0, #0x18            // HJI - TC bootloader entry on reset mod
         str     r0, [r4]             // HJI - TC bootloader entry on reset mod
-
+        
         // CRL                       // HJI - TC bootloader entry on reset mod
         ldr     r1, =GPIOB_CRL       // HJI - TC bootloader entry on reset mod
         ldr     r0, =0x44433444      // HJI - TC bootloader entry on reset mod
         str     r0, [r1]             // HJI - TC bootloader entry on reset mod
-
+        
         // Reboot to ROM             // HJI - TC bootloader entry on reset mod
         ldr     r0, =0x1FFFF000      // HJI - TC bootloader entry on reset mod
         ldr     sp,[r0, #0]          // HJI - TC bootloader entry on reset mod

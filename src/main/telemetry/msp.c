@@ -38,11 +38,9 @@
 
 static telemetryConfig_t *telemetryConfig;
 
-#define MSP_TELEMETRY_BAUDRATE 19200 // TODO make this configurable
-
 static serialPort_t *mspTelemetryPort;
 
-static const serialPortConfig_t mspTelemetrySerialPortConfig = { .mode = MODE_TX|MODE_RX, .baudRate = MSP_TELEMETRY_BAUDRATE };  
+static const serialPortConfig_t mspTelemetrySerialPortConfig = { .mode = MODE_TX|MODE_RX, .baudRate =  19200 };  
 
 void initMSPTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
@@ -81,7 +79,7 @@ void configureMSPTelemetryPort(void)
 
 uint32_t getMSPTelemetryProviderBaudRate(void)
 {
-    return MSP_TELEMETRY_BAUDRATE;
+    return mspTelemetrySerialPortConfig.baudRate;
 }
 
 #endif

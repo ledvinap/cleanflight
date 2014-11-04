@@ -42,7 +42,7 @@
 typedef struct timerConfig_s {
     timerCCHandlerRec_t* edgeCallback[CC_CHANNELS_PER_TIMER];
     timerOvrHandlerRec_t* overflowCallback[CC_CHANNELS_PER_TIMER];
-    timerOvrHandlerRec_t* overflowCallbackActive; // null-terminated linkded list of active overflow callbacks    
+    timerOvrHandlerRec_t* overflowCallbackActive; // null-terminated linkded list of active overflow callbacks
 } timerConfig_t;
 timerConfig_t timerConfig[USED_TIMER_COUNT];
 
@@ -61,7 +61,7 @@ timerInfo_t timerInfo[USED_TIMER_COUNT];
 
 static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
 {
-#define _CASE_SHF 10           // amount we can safely shift timer address to the right. gcc will throw error if some timers overlap 
+#define _CASE_SHF 10           // amount we can safely shift timer address to the right. gcc will throw error if some timers overlap
 #define _CASE_(tim, index) case ((unsigned)tim >> _CASE_SHF): return index; break
 #define _CASE(i) _CASE_(TIM##i##_BASE, TIMER_INDEX(i))
 
@@ -123,7 +123,7 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #endif
 #if USED_TIMERS & TIM_N(17)
     _DEF(17),
-#endif    
+#endif
 #undef _DEF
 };
 
@@ -162,10 +162,10 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriori
     unsigned channel=timHw-timerHardware;
     if(channel>=USABLE_TIMER_CHANNEL_COUNT)
         return;
-    
+
     timerChannelInfo[channel].type=type;
     unsigned timer=lookupTimerIndex(timHw->tim);
-    if(timer>=USED_TIMER_COUNT) 
+    if(timer>=USED_TIMER_COUNT)
         return;
     if(irqPriority<timerInfo[timer].priority) {
         configTimeBase(usedTimers[timer], 0, 1);

@@ -18,7 +18,7 @@ struct {
     {DBG_PIN_4},
 };
 
-void pinDebugInit(void) 
+void pinDebugInit(void)
 {
     for(unsigned i=0; i < ARRAYLEN(pinDebugPins); i++) {
         gpio_config_t cfg;

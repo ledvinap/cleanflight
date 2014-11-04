@@ -59,14 +59,14 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
 
     uartPort_t *self = &uartPort1;
     self->port.vTable = &uartVTable;
-    
+
     self->port.baudRate = config->baudRate;
-    
+
     self->port.rxBuffer = rx1Buffer;
     self->port.txBuffer = tx1Buffer;
     self->port.rxBufferSize = UART1_RX_BUFFER_SIZE;
     self->port.txBufferSize = UART1_TX_BUFFER_SIZE;
-    
+
     self->USARTx = USART1;
 
     self->txDMAPeripheralBaseAddr = (uint32_t)&self->USARTx->DR;
@@ -133,14 +133,14 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
 
     uartPort_t *self = &uartPort2;
     self->port.vTable = &uartVTable;
-    
+
     self->port.baudRate = config->baudRate;
-    
+
     self->port.rxBufferSize = UART2_RX_BUFFER_SIZE;
     self->port.txBufferSize = UART2_TX_BUFFER_SIZE;
     self->port.rxBuffer = rx2Buffer;
     self->port.txBuffer = tx2Buffer;
-    
+
     self->USARTx = USART2;
 
     self->txDMAPeripheralBaseAddr = (uint32_t)&self->USARTx->DR;

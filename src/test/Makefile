@@ -87,7 +87,7 @@ $(OBJECT_DIR)/gtest_main.a : $(OBJECT_DIR)/gtest-all.o $(OBJECT_DIR)/gtest_main.
 # includes in test dir must override includes in user dir
 TEST_INCLUDE_DIRS := $(TEST_DIR) \
 	$(USER_INCLUDE_DIR)
-	
+
 
 TEST_CFLAGS	 = $(addprefix -I,$(TEST_INCLUDE_DIRS))
 

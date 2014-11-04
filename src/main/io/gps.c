@@ -197,7 +197,7 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
     // no callback - buffer will be consumed in gpsThread()
     gpsSerialPortConfig.baudRate=gpsInitData[gpsData.baudrateIndex].baudrate;
     gpsSerialPortConfig.mode=mode;
-    
+
     gpsPort = openSerialPort(FUNCTION_GPS, &gpsSerialPortConfig);
     if (!gpsPort) {
         featureClear(FEATURE_GPS);

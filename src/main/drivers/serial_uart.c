@@ -112,14 +112,14 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
         self->port.state |= STATE_TX;
         self->port.mode |= MODE_TX;
     }
-    
+
 // FIXME use inversion on STM32F3
 // TODO - use singlewire mode (supported both by 10x and 30x)
     uartReconfigure(self);
 
     // Receive DMA or IRQ
     DMA_InitTypeDef DMA_InitStructure;
-    
+
     if (self->port.mode & MODE_RX) {
         if (self->rxDMAChannel && config->mode & MODE_U_DMARX) {
             DMA_StructInit(&DMA_InitStructure);
@@ -130,7 +130,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
             DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
             DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
             DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-            
+
             DMA_InitStructure.DMA_BufferSize = self->port.rxBufferSize;
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
@@ -159,7 +159,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
             DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
             DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
             DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-            
+
             DMA_InitStructure.DMA_BufferSize = self->port.txBufferSize;
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
@@ -190,7 +190,7 @@ void uartUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMa
     uartReconfigure(self);
 }
 
-void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config) 
+void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
     // just call reconfigure now. keep this in sync with uartRelease
@@ -273,7 +273,7 @@ void uartIrqHandler(uartPort_t *self)
         }
     }
 #ifdef STM32F303
-    // TODO - is this really neccesary? 
+    // TODO - is this really neccesary?
     if (flags & USART_FLAG_ORE)
     {
         USART_ClearITPendingBit (self->USARTx, USART_IT_ORE);
@@ -281,7 +281,7 @@ void uartIrqHandler(uartPort_t *self)
 #endif
 }
 
-// interface implemenatition 
+// interface implemenatition
 
 bool isUartTransmitBufferEmpty(serialPort_t *serial)
 {
@@ -339,10 +339,10 @@ int uartGetc(serialPort_t *serial)
 
 const struct serialPortVTable uartVTable = {
     .isTransmitBufferEmpty = isUartTransmitBufferEmpty,
-    .putc = uartPutc,    
+    .putc = uartPutc,
     .totalBytesWaiting = uartTotalBytesWaiting,
     .getc = uartGetc,
-    
+
     .release = uartRelease,
     .configure = uartConfigure,
     .getConfig = uartGetConfig,

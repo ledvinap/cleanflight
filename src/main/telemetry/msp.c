@@ -40,7 +40,7 @@ static telemetryConfig_t *telemetryConfig;
 
 static serialPort_t *mspTelemetryPort;
 
-static const serialPortConfig_t mspTelemetrySerialPortConfig = { .mode = MODE_TX|MODE_RX, .baudRate =  19200 };  
+static const serialPortConfig_t mspTelemetrySerialPortConfig = { .mode = MODE_TX|MODE_RX, .baudRate =  19200 };
 
 void initMSPTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {

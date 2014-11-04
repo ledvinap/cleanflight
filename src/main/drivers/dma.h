@@ -2,7 +2,7 @@
 
 // (TODO) keep track of used DMA channels here
 // It should be possible to dynamically allocate DMA channels according to configuration
-// theese constants are not used now in souce code .. 
+// theese constants are not used now in souce code ..
 
 #if defined(STM32F10x)
 

@@ -373,14 +373,14 @@ void init(void)
 #endif
 
     // start all timers
-    timerStart();                
+    timerStart();
 
     ENABLE_STATE(SMALL_ANGLE);
     DISABLE_ARMING_FLAG(PREVENT_ARMING);
 
 #ifdef SOFTSERIAL_LOOPBACK
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
-    static serialPortConfig_t loopbackPortConfig = { 
+    static serialPortConfig_t loopbackPortConfig = {
         .mode = MODE_RXTX,
         .baudRate = 115200,
     };

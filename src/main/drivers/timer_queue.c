@@ -14,7 +14,7 @@
 #include "timer.h"
 #include "timer_queue.h"
 
-/* 
+/*
    Timeout generator for timerIn. Could be extended to support other timming tasks.
    Implemented as binary heap
  */
@@ -69,7 +69,7 @@ static inline int16_t tq_cmp(const timerQueueRec_t *a, timerQueueRec_t *b)
     return tq_cmp_val(a->time, b->time);
 }
 
-void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn) 
+void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
 {
     self->callbackFn=callbackFn;
     self->flags=0;
@@ -192,7 +192,7 @@ check_again:
     if(timerQueue.heapLen) {
         timerChClearCCFlag(timerHardware+TIMER_QUEUE_CHANNEL); // maybe we will enable interrupt
         *timerQueue.timCCR=timerQueue.heap[0]->time;
-        if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT)<0) { 
+        if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT)<0) {
             // it is possible that we filled CCR too late. Run callbacks again immediately
             goto check_again;
         }

@@ -39,7 +39,7 @@ void callbackInit(void)
     for(int i=0;i<CALLBACK_MAX;i++)
         callbackEntries[i]=&callbackEmptyRec;
     // there are THREE ways to represent priority. This function expects lower __NVIC_PRIO_BITS
-    NVIC_SetPriority(PendSV_IRQn, NVIC_PRIO_CALLBACK >> (8 - __NVIC_PRIO_BITS));  
+    NVIC_SetPriority(PendSV_IRQn, NVIC_PRIO_CALLBACK >> (8 - __NVIC_PRIO_BITS));
 }
 
 void callbackRegister(callbackRec_t *self, callbackFun_t *fn)

@@ -55,7 +55,7 @@ typedef enum {
     CMD_ENABLE_STATE,  // (portState_t)
     CMD_DISABLE_STATE, // (portState_t)
     CMD_SET_DIRECTION, // (portState_t, only TX/RX)
-    
+
 } portCommand_t;
 
 typedef void serialReceiveCallback(uint16_t data);   // used by serial drivers to return frames to app
@@ -67,7 +67,7 @@ typedef struct serialPort {
     uint8_t identifier;
     portMode_t mode;
     portState_t state;
-    
+
     uint32_t baudRate;
 
     uint32_t rxBufferSize;              // must be power of two
@@ -89,7 +89,7 @@ typedef struct  {
     serialReceiveCallback *rxCallback;
 } serialPortConfig_t;
 
-// use this to initialize structure used to store port config. CMD_CONFIGURE can be safely called with it 
+// use this to initialize structure used to store port config. CMD_CONFIGURE can be safely called with it
 #define SERIAL_CONFIG_INIT_EMPTY { .mode=0 }
 
 struct serialPortVTable {
@@ -98,7 +98,7 @@ struct serialPortVTable {
 
     int (*totalBytesWaiting)(serialPort_t *instance);
     int (*getc)(serialPort_t *instance);
-    
+
     void (*release)(serialPort_t *instance);
     void (*configure)(serialPort_t *instance, const serialPortConfig_t* config);
     void (*getConfig)(serialPort_t *instance, serialPortConfig_t* config);

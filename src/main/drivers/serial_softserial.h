@@ -36,7 +36,7 @@ typedef struct softSerial_s {
 
     const timerHardware_t *txTimerHardware;
     volatile uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
-    
+
     uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point
     uint32_t         invBitTime;                          // inverse bit time, scaled to 16.16
     uint16_t         symbolLength;                        // length of whole symbol (start+parity+stop-0.5)
@@ -47,9 +47,9 @@ typedef struct softSerial_s {
 
     timerOutputRec_t txTimerCh;
     callbackRec_t    txCallback;
-    
+
     bool             directionRxOnDone;                   // switch to rx mode when all data are transmitted
-    
+
     uint16_t         transmissionErrors;
     uint16_t         receiveErrors;
 } softSerial_t;

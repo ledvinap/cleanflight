@@ -1,6 +1,6 @@
  #pragma once
 
-#define TIMERQUEUE_FLAG_QUEUED 1       // timer is in timer queue 
+#define TIMERQUEUE_FLAG_QUEUED 1       // timer is in timer queue
 #define TIMERQUEUE_FLAG_ISR    2       // timer is in fast part of timer heap
 
 struct timerQueueRec_s;

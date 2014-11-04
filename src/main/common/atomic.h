@@ -55,7 +55,7 @@ static inline uint8_t __basepriSetRetVal(uint8_t prio)
 // Create memory barrier at the beginning (all data must be reread from structure)
 // and end of block (all data must be written, but may be cached in register for subsequent use)
 // ideally this would only protect stucture passed as parameter, but gcc is curently creating almost full barrier
-// check resulting assembly. 
+// check resulting assembly.
 // this macro can be used only ONCE PER LINE, but multiple uses per block should be fine
 
 #ifndef __UNIQL

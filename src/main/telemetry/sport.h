@@ -18,7 +18,7 @@
 #pragma once
 
 void handleSPortTelemetry(void);
-void checkSPortTelemetryState(void); 
+void checkSPortTelemetryState(void);
 void initSPortTelemetry(telemetryConfig_t *telemetryConfig);
 void configureSPortTelemetryPort(void);
 void freeSPortTelemetryPort(void);

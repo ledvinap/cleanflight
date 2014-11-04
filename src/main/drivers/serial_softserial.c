@@ -95,7 +95,7 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortCo
 void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 {
     softSerial_t *self=container_of(serial, softSerial_t, port);
-    
+
     uint32_t baud=config->baudRate;
     portMode_t mode=config->mode;
     portState_t state=0;
@@ -111,9 +111,9 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     if(mode & MODE_HALFDUPLEX) {
         mode |= MODE_RXTX;
         if(self->txTimerHardware != self->rxTimerHardware)
-            mode |= MODE_S_DUALTIMER;     // we have two channels, so use them 
+            mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
     }
-    
+
     self->port.baudRate = baud;
     self->port.mode = mode;
     self->port.rxCallback = config->rxCallback;
@@ -122,12 +122,12 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 
     self->transmissionErrors = 0;
     self->receiveErrors = 0;
-    
+
     self->bitTime=(1000000<<8)/baud;                             // fractional number of timer ticks per bit, 24.8 fixed point
     self->invBitTime=((long long)baud<<16)/1000000;              // scaled inverse bit time. Used to to get bit number (multiplication is faster)
-    int symbolBits = mode & MODE_SBUS ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS; 
+    int symbolBits = mode & MODE_SBUS ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS;
     self->symbolLength = (self->bitTime * (2 * symbolBits - 1) / 2) >> 8;  //  symbol ends in middle of last stopbit
-    
+
 
     if(mode & MODE_SINGLEWIRE) {
         // in sinlgewire we start in RX mode
@@ -138,7 +138,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh,
                         self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
-                        &self->txCallback, 
+                        &self->txCallback,
                         ((mode & MODE_INVERTED) ? 0 : TIMEROUT_IDLE_HI)
                         | ((mode & MODE_SINGLEWIRE) ? TIMEROUT_RELEASEMODE_INPUT : 0)
                         | TIMEROUT_WAKEONEMPTY | TIMEROUT_WAKEONLOW);
@@ -332,9 +332,9 @@ void softSerialRxProcess(softSerial_t *self)
             // maybe capture1 is invalid here, but if enough time passed, it means wrong symbol (break) anyway
             symbolEnd=symbolStart+self->symbolLength;   // symbolLength is to center of last stopbit
             if(timerIn_QLen(&self->rxTimerCh)<SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol is waiting to prevent problems with timerCnt overflow
-               && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {     
+               && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd)<0) {
                 pinDbgHi(DBP_SOFTSERIAL_RXWAIT_SYMBOL);
-                timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit 
+                timerQueue_Start(&self->rxTimerQ, symbolEnd-timerIn_getTimCNT(&self->rxTimerCh)+20);  // add some time to wait for next startbit
                 // TODO - configure this additional delay and make it bitrate dependent too)
                 return;   // symbol is not finished yet
             }

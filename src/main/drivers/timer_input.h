@@ -17,7 +17,7 @@ struct timerQueueRec_s;
 typedef struct timerInputRec_s {
     uint16_t queue[TIMERIN_QUEUE_LEN];
     unsigned qhead;                         // don't use shorter type until gcc is fixed. 4.8.4 extends to 32bit before each operation
-    unsigned qtail;                         // this value must be even in dualtimer mode 
+    unsigned qtail;                         // this value must be even in dualtimer mode
     uint32_t flags;
     const timerHardware_t* timHw;
     TIM_TypeDef *tim;
@@ -36,7 +36,7 @@ void timerIn_Polarity(timerInputRec_t *self , uint16_t tim_ICPolarity);
 
 bool timerIn_QPeek(timerInputRec_t *self, uint16_t *capture, uint16_t *flags);
 void timerIn_QPop(timerInputRec_t *self);
-bool timerIn_QPeek2(timerInputRec_t *self, uint16_t *capture1, uint16_t *capture2); 
+bool timerIn_QPeek2(timerInputRec_t *self, uint16_t *capture1, uint16_t *capture2);
 void timerIn_QPop2(timerInputRec_t *self);
 int timerIn_QLen(timerInputRec_t* self);
 

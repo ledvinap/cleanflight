@@ -299,7 +299,7 @@ static void resetConf(void)
     featureSet(FEATURE_SOFTSERIAL);
     featureSet(FEATURE_TELEMETRY);
     featureSet(FEATURE_RX_MSP);
-    
+
     // global settings
     masterConfig.current_profile_index = 0;     // default profile
     masterConfig.gyro_cmpf_factor = 600;        // default MWC

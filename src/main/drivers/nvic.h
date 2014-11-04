@@ -3,7 +3,7 @@
 
 #define NVIC_PRIORITY_GROUPING NVIC_PriorityGroup_2
 
-// can't use 0 
+// can't use 0
 #define NVIC_PRIO_MAX                      NVIC_BUILD_PRIORITY(0, 1)
 #define NVIC_PRIO_TIMER                    NVIC_BUILD_PRIORITY(0, 1)
 #define NVIC_PRIO_BARO_EXT                 NVIC_BUILD_PRIORITY(0x0f, 0x0f)

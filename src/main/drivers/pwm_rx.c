@@ -270,7 +270,7 @@ void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
     timerChInit(timerHardwarePtr, TYPE_PWMINPUT, NVIC_PRIO_TIMER);
     timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
     timerChConfigIC(timerHardwarePtr, true, 0);
-    
+
     timerChCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
     timerChOvrHandlerInit(&self->overflowCb, pwmOverflowCallback);
     timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
@@ -290,10 +290,10 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     timerChInit(timerHardwarePtr, TYPE_PPMINPUT, NVIC_PRIO_TIMER);
     timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
     timerChConfigIC(timerHardwarePtr, true, 0);
-    
+
     timerChCCHandlerInit(&self->edgeCb, ppmEdgeCallback);
     timerChOvrHandlerInit(&self->overflowCb, ppmOverflowCallback);
-    
+
     timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
 }
 

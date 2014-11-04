@@ -44,7 +44,7 @@ void timerOut_Release(timerOutputRec_t* self)
     self->flags &= ~(TIMEROUT_RUNNING | TIMEROUT_RESTART);
     timerChConfigCallbacks(self->timHw, NULL, NULL);
     if(self->flags & TIMEROUT_RELEASEMODE_INPUT) {
-        timerChConfigGPIO(self->timHw, (self->flags & TIMEROUT_IDLE_HI) ? Mode_IPU : Mode_IPD);  
+        timerChConfigGPIO(self->timHw, (self->flags & TIMEROUT_IDLE_HI) ? Mode_IPU : Mode_IPD);
     } else {
         if(self->flags & TIMEROUT_IDLE_HI)  // TODO - move this to IO driver
             digitalHi(self->timHw->gpio, self->timHw->pin);
@@ -58,7 +58,7 @@ void timerOut_Restart(timerOutputRec_t* self)
 {
     self->qhead=self->qheadUnc=self->qtail=0;
     self->qtailWake=~0;
-    
+
     timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_IDLE_HI);
     timerChConfigGPIO(self->timHw, Mode_AF_PP);
     timerChConfigCallbacks(self->timHw, &self->compareCb, NULL);
@@ -84,7 +84,7 @@ void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
                 callbackTrigger(self->callback);
         } else {
             self->flags&=~TIMEROUT_RUNNING;
-            if(self->flags&TIMEROUT_WAKEONEMPTY) 
+            if(self->flags&TIMEROUT_WAKEONEMPTY)
                 callbackTrigger(self->callback);
             // TODO - may disable channel irq here
         }
@@ -93,7 +93,7 @@ void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
 
 short timerOut_QLen(timerOutputRec_t *self)
 {
-    return (self->qhead-self->qtail)&(TIMEROUT_QUEUE_LEN-1); 
+    return (self->qhead-self->qtail)&(TIMEROUT_QUEUE_LEN-1);
 }
 
 short timerOut_QSpace(timerOutputRec_t *self)
@@ -104,15 +104,15 @@ short timerOut_QSpace(timerOutputRec_t *self)
 bool timerOut_QPush(timerOutputRec_t *self, uint16_t delta, uint16_t flags)
 {
     UNUSED(flags);
-    uint8_t nxt=(self->qheadUnc+1)%TIMEROUT_QUEUE_LEN;   
+    uint8_t nxt=(self->qheadUnc+1)%TIMEROUT_QUEUE_LEN;
     if(nxt==self->qtail) {       // caller should check for this!
         return false;
     }
     self->queue[self->qheadUnc]=delta;
     self->qheadUnc=nxt;
-    
+
     return true;
-} 
+}
 
 void timerOut_QCommit(timerOutputRec_t *self)
 {

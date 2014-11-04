@@ -33,7 +33,7 @@ typedef uint32_t timSR_t;
 typedef uint16_t timCCR_t;
 typedef uint16_t timCCER_t;
 typedef uint16_t timSR_t;
-#else 
+#else
 # error "Unknown CPU defined"
 #endif
 
@@ -80,9 +80,9 @@ typedef enum {
     TYPE_SOFTSERIAL_RXTX,        // bidirectional pin for softserial
     TYPE_SOFTSERIAL_AUXTIMER,    // timer channel is used for softserial. No IO function on pin
     TYPE_ADC,
-    TYPE_SERIAL_RX,             
+    TYPE_SERIAL_RX,
     TYPE_SERIAL_TX,
-    TYPE_SERIAL_RXTX, 
+    TYPE_SERIAL_RXTX,
     TYPE_TIMER
 } channelType_t;
 

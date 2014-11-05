@@ -100,8 +100,10 @@ static uint8_t hottMsgCrc;
 
 #define HOTT_CRC_SIZE (sizeof(hottMsgCrc))
 
-#define HOTT_BAUDRATE 19200
-static const serialPortConfig_t hottSerialPortConfig = { .mode = MODE_RXTX, .baudRate = HOTT_BAUDRATE };
+static const serialPortConfig_t hottSerialPortConfig = {
+    .mode = MODE_RXTX | MODE_DEFAULT_SMALL,
+    .baudRate = 19200
+};
 
 
 static serialPort_t *hottPort;
@@ -220,15 +222,15 @@ static inline void hottEAMUpdateBattery(HOTT_EAM_MSG_t *hottEAMMessage)
 
 static inline void hottEAMUpdateCurrentMeter(HOTT_EAM_MSG_t *hottEAMMessage)
 {
-	int32_t amp = amperage / 10;
-	hottEAMMessage->current_L = amp & 0xFF;
+    int32_t amp = amperage / 10;
+    hottEAMMessage->current_L = amp & 0xFF;
     hottEAMMessage->current_H = amp >> 8;
 }
 
 static inline void hottEAMUpdateBatteryDrawnCapacity(HOTT_EAM_MSG_t *hottEAMMessage)
 {
-	int32_t mAh = mAhDrawn / 10;
-	hottEAMMessage->batt_cap_L = mAh & 0xFF;
+    int32_t mAh = mAhDrawn / 10;
+    hottEAMMessage->batt_cap_L = mAh & 0xFF;
     hottEAMMessage->batt_cap_H = mAh >> 8;
 }
 
@@ -471,6 +473,6 @@ void handleHoTTTelemetry(void)
 }
 
 uint32_t getHoTTTelemetryProviderBaudRate(void) {
-    return HOTT_BAUDRATE;
+    return hottSerialPortConfig.baudRate;
 }
 #endif

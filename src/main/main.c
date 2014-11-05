@@ -381,7 +381,7 @@ void init(void)
 #ifdef SOFTSERIAL_LOOPBACK
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
     static serialPortConfig_t loopbackPortConfig = {
-        .mode = MODE_RXTX,
+        .mode = MODE_RXTX | MODE_DEFAULT_FAST,
         .baudRate = 115200,
     };
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);

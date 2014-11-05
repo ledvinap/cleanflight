@@ -53,9 +53,11 @@
 #include "telemetry/frsky.h"
 
 static serialPort_t *frskyPort;
-#define FRSKY_BAUDRATE 9600
 
-static const serialPortConfig_t frskySerialPortConfig = { .mode = MODE_TX, .baudRate = 9600 };
+static const serialPortConfig_t frskySerialPortConfig = {
+    .mode = MODE_TX,
+    .baudRate = 9600
+};
 
 static telemetryConfig_t *telemetryConfig;
 
@@ -495,6 +497,6 @@ void handleFrSkyTelemetry(void)
 }
 
 uint32_t getFrSkyTelemetryProviderBaudRate(void) {
-    return FRSKY_BAUDRATE;
+    return frskySerialPortConfig.baudRate;
 }
 #endif

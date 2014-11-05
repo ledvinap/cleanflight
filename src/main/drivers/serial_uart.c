@@ -63,12 +63,6 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
 {
     uartPort_t *self;
 
-    // TODO - this is hack to enable old behavior. Use predefined defaults for callers that don't need to be specific here
-    // Or maybe alow user to override per-port defaults by CLI
-    serialPortConfig_t config_local=*config_;  // copy config, original may be in ROM
-    serialPortConfig_t *config=&config_local;
-    config->mode |= MODE_U_DMARX | MODE_U_DMATX;
-
 #ifdef INVERTER
     if (config->mode & MODE_INVERTED && USARTx == INVERTER_USART) {
         // Enable hardware inverter if available.

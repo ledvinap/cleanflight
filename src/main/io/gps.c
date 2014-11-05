@@ -865,7 +865,7 @@ static bool gpsNewFrameUBLOX(uint8_t data)
     return parsed;
 }
 
-static serialPortConfig_t gpsPassthroughPortConfig = { .mode = MODE_RXTX };
+static serialPortConfig_t gpsPassthroughPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
 
 gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
 {

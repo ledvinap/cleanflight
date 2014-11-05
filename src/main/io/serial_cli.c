@@ -100,7 +100,7 @@ extern uint16_t cycleTime; // FIXME dependency on mw.c
 
 static serialPort_t *cliPort;
 
-static serialPortConfig_t cliPortConfig = { .mode = MODE_RXTX };
+static serialPortConfig_t cliPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
 
 // signal that we're in cli mode
 uint8_t cliMode = 0;

@@ -53,7 +53,7 @@ static uint16_t spektrumReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t ch
 
 static serialPort_t *spektrumPort;
 static const serialPortConfig_t spektrumPortConfig = {
-    .mode = MODE_RX,
+    .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_RXDMA), // don't enable DMA, we need rxCallback
     .baudRate = 115200,
     .rxCallback = spektrumDataReceive,
 };

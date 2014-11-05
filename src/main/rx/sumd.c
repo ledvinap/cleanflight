@@ -46,7 +46,7 @@ static serialPort_t *sumdPort;
 
 static void sumdDataReceive(uint16_t c);
 static const serialPortConfig_t sumdPortConfig = {
-    .mode = MODE_RX,
+    .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_RXDMA),  // don't enable DMA, we need rxCallback
     .baudRate = 115200,
     .rxCallback = sumdDataReceive
 };

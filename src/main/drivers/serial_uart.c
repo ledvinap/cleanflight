@@ -59,7 +59,7 @@ static void uartReconfigure(uartPort_t *self)
     USART_Init(self->USARTx, &USART_InitStructure);
 }
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config_)
+serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 {
     uartPort_t *self;
 

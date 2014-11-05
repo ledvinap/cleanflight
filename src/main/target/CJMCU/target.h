@@ -61,3 +61,5 @@
 #define SENSORS_SET (SENSOR_ACC | SENSOR_MAG)
 
 #define SERIAL_RX
+
+#define USABLE_TIMER_CHANNEL_COUNT (14+1)   // must be in sync with NAZE, see target_io.h and target_timer.h

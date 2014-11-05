@@ -61,3 +61,5 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+
+#define USABLE_TIMER_CHANNEL_COUNT (14+1)   // must be in sync with STM32F3DISCOVERY, see target_io.h and target_timer.h

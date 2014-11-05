@@ -523,7 +523,7 @@ _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
 _TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);       // timer can't be shared
 # endif
 # ifdef STM32F303xC
-#  if USED_TIMERS & TIM_N(16);
+#  if USED_TIMERS & TIM_N(16)
 _TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
 #  else
 _TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 1);       // timer16 is not used
@@ -546,11 +546,11 @@ _TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
 _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
 #endif
 #if defined(STM32F303xC) && ((USED_TIMERS & (TIM_N(1)|TIM_N(16))) == (TIM_N(16)))
-_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16)    // only timer16 is used, not timer1
+_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16);    // only timer16 is used, not timer1
 #endif
 
 #if USED_TIMERS & TIM_N(17)
-_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17)
+_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17);
 #endif
 
 
@@ -560,15 +560,12 @@ void timerInit(void)
     memset(timerConfig, 0, sizeof (timerConfig));
     // call target-specific initialization routine (enable peripheral clocks, etc)
     timerInitTarget();
-#ifdef CC3D
-    GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);  // TODO - move this to timerInitTarget
-#endif
 
-
-#ifdef STM32F303xC // TODO - use for all F30X, compute pinsource at runtime
+#ifdef STM32F303xC
     for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
         const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
-        GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);
+        if(timerHardwarePtr->alternateFunction != 0xff)
+            GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);
     }
 #endif
 

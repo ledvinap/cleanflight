@@ -29,6 +29,7 @@
 
 
 #include "drivers/system.h"
+#include "common/utils.h"
 
 #include "serial.h"
 #include "serial_usb_vcp.h"
@@ -36,30 +37,63 @@
 
 #define USB_TIMEOUT  50
 
-static vcpPort_t vcpPort;
+static usbVcpPort_t vcpPort;
+extern const struct serialPortVTable usbVcpVTable;
 
-void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate)
+void usbVcpUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
     // TODO implement
 }
 
-void usbVcpSetMode(serialPort_t *instance, portMode_t mode)
+void usbVcpConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 {
     // TODO implement
 }
 
-bool isUsbVcpTransmitBufferEmpty(serialPort_t *instance)
+void usbVcpRelease(serialPort_t *serial)
 {
+    // TODO implement
+}
+
+void usbVcpGetConfig(serialPort_t *serial, serialPortConfig_t* config)
+{
+    usbVcpPort_t *self = container_of(serial, usbVcpPort_t, port);
+
+    config->baudRate = self->port.baudRate;  // TODO - use actual baudrate
+    config->mode = self->port.mode;
+    config->rxCallback = self->port.rxCallback;
+}
+
+bool isUsbVcpTransmitBufferEmpty(serialPort_t *serial)
+{
+    UNUSED(serial);
     return true;
 }
 
-uint8_t usbVcpAvailable(serialPort_t *instance)
+void usbVcpPutc(serialPort_t *serial, uint8_t c)
 {
-    return receiveLength & 0xFF; // FIXME use uint32_t return type everywhere
+    UNUSED(serial);
+    uint32_t txed;
+    uint32_t start = millis();
+
+    if (!(usbIsConnected() && usbIsConfigured())) {
+        return;
+    }
+
+    do {
+        txed = CDC_Send_DATA((uint8_t*)&c, 1);
+    } while (txed < 1 && (millis() - start < USB_TIMEOUT));
 }
 
-uint8_t usbVcpRead(serialPort_t *instance)
+int usbVcpTotalBytesWaiting(serialPort_t *serial)
 {
+    UNUSED(serial);
+    return receiveLength;
+}
+
+int usbVcpGetc(serialPort_t *serial)
+{
+    UNUSED(serial);
     uint8_t buf[1];
 
     uint32_t rxed = 0;
@@ -71,26 +105,9 @@ uint8_t usbVcpRead(serialPort_t *instance)
     return buf[0];
 }
 
-void usbVcpWrite(serialPort_t *instance, uint8_t c)
-{
-    uint32_t txed;
-    uint32_t start = millis();
-
-    if (!(usbIsConnected() && usbIsConfigured())) {
-        return;
-    }
-
-    do {
-        txed = CDC_Send_DATA((uint8_t*)&c, 1);
-    } while (txed < 1 && (millis() - start < USB_TIMEOUT));
-
-}
-
-const struct serialPortVTable usbVTable[] = { { usbVcpWrite, usbVcpAvailable, usbVcpRead, usbVcpSetBaudRate, isUsbVcpTransmitBufferEmpty, usbVcpSetMode } };
-
 serialPort_t *usbVcpOpen(void)
 {
-    vcpPort_t *s;
+    usbVcpPort_t *s;
 
     Set_System();
     Set_USBClock();
@@ -98,7 +115,20 @@ serialPort_t *usbVcpOpen(void)
     USB_Init();
 
     s = &vcpPort;
-    s->port.vTable = usbVTable;
+    s->port.vTable = &usbVcpVTable;
 
-    return (serialPort_t *)s;
+    return &s->port;
 }
+
+const struct serialPortVTable usbVcpVTable = {
+    .isTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,
+    .putc = usbVcpPutc,
+    .totalBytesWaiting = usbVcpTotalBytesWaiting,
+    .getc = usbVcpGetc,
+
+    .release = usbVcpRelease,
+    .configure = usbVcpConfigure,
+    .getConfig = usbVcpGetConfig,
+    .updateState = usbVcpUpdateState
+};
+

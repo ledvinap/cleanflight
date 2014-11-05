@@ -184,16 +184,16 @@ void USART2_IRQHandler(void)
 // USART3
 uartPort_t *serialUSART3(const serialPortConfig_t *config)
 {
-    uartPort_t *s;
+    uartPort_t *self;
     static volatile uint8_t rx3Buffer[UART3_RX_BUFFER_SIZE];
     static volatile uint8_t tx3Buffer[UART3_TX_BUFFER_SIZE];
     gpio_config_t gpio;
     NVIC_InitTypeDef NVIC_InitStructure;
 
-    s = &uartPort3;
-    self->port.vTable = uartVTable;
+    self = &uartPort3;
+    self->port.vTable = &uartVTable;
 
-    self->port.baudRate = baudRate;
+    self->port.baudRate = config->baudRate;
 
     self->port.rxBuffer = rx3Buffer;
     self->port.txBuffer = tx3Buffer;
@@ -215,11 +215,11 @@ uartPort_t *serialUSART3(const serialPortConfig_t *config)
     gpio.speed = Speed_2MHz;
     gpio.pin = USART3_TX_PIN;
     gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (config->mode & MODE_TX)
         gpioInit(USART3_GPIO, &gpio);
     gpio.pin = USART3_RX_PIN;
     gpio.mode = Mode_IPU;
-    if (mode & MODE_RX)
+    if (config->mode & MODE_RX)
         gpioInit(USART3_GPIO, &gpio);
 
     // RX/TX Interrupt
@@ -229,7 +229,7 @@ uartPort_t *serialUSART3(const serialPortConfig_t *config)
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    return s;
+    return self;
 }
 
 // USART2 Rx/Tx IRQ Handler

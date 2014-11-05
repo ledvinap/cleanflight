@@ -63,7 +63,7 @@ void callbackRelease(callbackRec_t *self)
 void callbackTrigger(callbackRec_t *self)
 {
     ATOMIC_OR(&callbackTriggers[0],  1 << self->id);
-    SCB->ICSR=SCB_ICSR_PENDSVSET;
+    SCB->ICSR=SCB_ICSR_PENDSVSET_Msk;
 }
 
 // this should be called only at callback priority

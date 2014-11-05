@@ -60,3 +60,5 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+
+#define USABLE_TIMER_CHANNEL_COUNT (18+1)

@@ -71,7 +71,7 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
     GPIO_InitTypeDef  GPIO_InitStructure;
 
     s = &uartPort1;
-    s->port.vTable = uartVTable;
+    s->port.vTable = &uartVTable;
 
     s->port.baudRate = config->baudRate;
 
@@ -139,7 +139,7 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
     GPIO_InitTypeDef  GPIO_InitStructure;
 
     s = &uartPort2;
-    s->port.vTable = uartVTable;
+    s->port.vTable = &uartVTable;
 
     s->port.baudRate = config->baudRate;
 

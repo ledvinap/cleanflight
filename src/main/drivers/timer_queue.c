@@ -27,7 +27,7 @@ struct {
     timerQueueRec_t* isr[TIMERQUEUE_ISRQUEUE_LEN];
     unsigned isrHead, isrTail;
     volatile timCCR_t *timCCR;
-    volatile uint16_t *timCNT;
+    volatile timCNT_t *timCNT;
     timerCCHandlerRec_t compareCb;
     callbackRec_t callback;
 } timerQueue;

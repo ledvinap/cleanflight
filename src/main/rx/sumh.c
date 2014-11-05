@@ -47,7 +47,7 @@ static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 static serialPort_t *sumhPort;
 static const serialPortConfig_t sumhConfig = {
-    .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_RXDMA),  // don't enable DMA, we need rxCallback
+    .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_DMARX),  // don't enable DMA, we need rxCallback
     .baudRate = 115200,
     .rxCallback = sumhDataReceive
 };

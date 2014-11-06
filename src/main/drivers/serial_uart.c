@@ -39,6 +39,7 @@
 static void uartReconfigure(uartPort_t *self)
 {
     USART_InitTypeDef USART_InitStructure;
+    USART_Cmd(self->USARTx, DISABLE);
 
     USART_InitStructure.USART_BaudRate = self->port.baudRate;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -57,6 +58,7 @@ static void uartReconfigure(uartPort_t *self)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
 
     USART_Init(self->USARTx, &USART_InitStructure);
+    USART_Cmd(self->USARTx, ENABLE);
 }
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
@@ -200,7 +202,6 @@ void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     if(self->port.mode & MODE_TX)
         self->port.state |= STATE_TX;
     uartReconfigure(self);
-    USART_Cmd(self->USARTx, ENABLE);
 }
 
 void uartRelease(serialPort_t *serial)

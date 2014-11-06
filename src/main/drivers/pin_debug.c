@@ -20,7 +20,7 @@ struct {
 
 void pinDebugInit(void)
 {
-    for(unsigned i=0; i < ARRAYLEN(pinDebugPins); i++) {
+    for(unsigned i = 0; i < ARRAYLEN(pinDebugPins); i++) {
         gpio_config_t cfg;
         cfg.pin = pinDebugPins[i].pin;
         cfg.mode = Mode_Out_PP;

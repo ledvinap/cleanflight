@@ -25,27 +25,27 @@ void timerIn_dualCaptureEventStore( timerCCHandlerRec_t *self_, uint16_t capture
 struct timerQueueRec_s;
 
 // check buffer length assumption
-#if TIMERIN_QUEUE_LEN & (TIMERIN_QUEUE_LEN-1)
+#if TIMERIN_QUEUE_LEN & (TIMERIN_QUEUE_LEN - 1)
 # error "TIMERIN_QUEUE_LEN must be power of 2"
 #endif
 
 void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channelType_t owner, int priority, callbackRec_t *callback, struct timerQueueRec_s* timer, uint16_t flags)
 {
-    self->timHw=timHw;
-    self->tim=timHw->tim;
-    self->flags=flags;
-    self->callback=callback;
-    self->timer=timer;
-    self->timeout=0;
-    if(self->flags&TIMERIN_QUEUE_DUALTIMER) {
+    self->timHw = timHw;
+    self->tim = timHw->tim;
+    self->flags = flags;
+    self->callback = callback;
+    self->timer = timer;
+    self->timeout = 0;
+    if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
         // todo - mark second channel as used
         timerChInit(timHw, owner, priority);
-        self->CCR=timerChCCRLo(timHw);
+        self->CCR = timerChCCRLo(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_dualCaptureEventStart);
         timerChCCHandlerInit(&self->edgeHiCb, timerIn_dualCaptureEventStore);
     } else {
         timerChInit(timHw, owner, priority);
-        self->CCR=timerChCCR(timHw);
+        self->CCR = timerChCCR(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);
     }
     timerIn_Restart(self);
@@ -62,17 +62,17 @@ void timerIn_Release(timerInputRec_t* self)
 // we assume that no IRQs can interfere, timerChConfigCallbacksmust protect self correctly
 void timerIn_Restart(timerInputRec_t* self)
 {
-    const timerHardware_t* timHw=self->timHw;
+    const timerHardware_t* timHw = self->timHw;
 
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
         timerChConfigICDual(timHw, self->flags & TIMERIN_RISING, 0);
         timerChConfigGPIO(timHw, (self->flags & TIMERIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacksDual(timHw, &self->edgeLoCb, &self->edgeHiCb, NULL);
     } else {
-        if(self->flags&TIMERIN_RISING)
-            self->flags&=~TIMERIN_FLAG_HIGH;
+        if(self->flags & TIMERIN_RISING)
+            self->flags &= ~TIMERIN_FLAG_HIGH;
         else
-            self->flags|=TIMERIN_FLAG_HIGH;
+            self->flags |= TIMERIN_FLAG_HIGH;
         timerChConfigIC(timHw, self->flags & TIMERIN_RISING, 0);
         timerChConfigGPIO(timHw, (self->flags & TIMERIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacks(timHw, &self->edgeLoCb, NULL);
@@ -80,10 +80,10 @@ void timerIn_Restart(timerInputRec_t* self)
 }
 
 void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
-    timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeLoCb);
+    timerInputRec_t* self = container_of(self_, timerInputRec_t, edgeLoCb);
 
     // check buffer space first
-    unsigned nxt=(self->qhead + 1) % TIMERIN_QUEUE_LEN;
+    unsigned nxt = (self->qhead + 1) % TIMERIN_QUEUE_LEN;
     if(nxt == self->qtail) {
         // do not change polarity if queue is full. Next edge will be ignored
         // this way buffer stays synchronized
@@ -95,14 +95,14 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
         timerChICPolarity(self->timHw, !(self->flags & TIMERIN_FLAG_HIGH));
     }
     // store received value into buffer
-    self->queue[self->qhead]=capture;
-    self->qhead=nxt;
+    self->queue[self->qhead] = capture;
+    self->qhead = nxt;
 
     // start timer if requested
     if(self->flags & TIMERIN_TIMEOUT_FIRST) {
         self->flags &= ~TIMERIN_TIMEOUT_FIRST;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
-        timerQueue_Start(self->timer, (capture-self->tim->CNT) + self->timeout);
+        timerQueue_Start(self->timer, (capture - self->tim->CNT) + self->timeout);
     }
     if(!(self->flags&TIMERIN_QUEUE_BUFFER)
        || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN - 1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
@@ -111,7 +111,7 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
 }
 
 void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture) {
-    timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeLoCb);
+    timerInputRec_t* self = container_of(self_, timerInputRec_t, edgeLoCb);
     if(self->flags & TIMERIN_TIMEOUT_FIRST) {
         self->flags &= ~TIMERIN_TIMEOUT_FIRST;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
@@ -121,7 +121,7 @@ void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture)
 }
 
 void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture) {
-    timerInputRec_t* self=container_of(self_, timerInputRec_t, edgeHiCb);
+    timerInputRec_t* self = container_of(self_, timerInputRec_t, edgeHiCb);
     // two captured values are ready now
     unsigned nxt = (self->qhead + 2) % TIMERIN_QUEUE_LEN;
     if(nxt == (self->qtail & ~1)) {
@@ -198,7 +198,7 @@ bool timerIn_QPeek(timerInputRec_t* self, uint16_t* capture, uint16_t* flags)
 
 void timerIn_QPop(timerInputRec_t* self)
 {
-    self->qtail=(self->qtail + 1) % TIMERIN_QUEUE_LEN;
+    self->qtail = (self->qtail + 1) % TIMERIN_QUEUE_LEN;
 }
 
 // queue position must be be always even when using these functions

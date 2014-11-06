@@ -407,10 +407,10 @@ void init(void)
 
 #ifdef SOFTSERIAL_LOOPBACK
 void processLoopback(void) {
-    static uint32_t t=0;
+    static uint32_t t = 0;
     if (loopbackPort) {
         if(isSerialTransmitBufferEmpty(loopbackPort) && t<millis()) {
-            t=millis()+100;
+            t = millis() + 100;
 //            serialPrint(loopbackPort, "\x55\xaa");
 //            serialPrint(loopbackPort, "______________________________________________________________________\r\n");
         }

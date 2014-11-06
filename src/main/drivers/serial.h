@@ -49,7 +49,7 @@ typedef enum {
     // port direction
     STATE_TX             = 1 << 0,
     STATE_RX             = 1 << 1,
-    STATE_RXTX           = STATE_RX|STATE_TX,
+    STATE_RXTX           = STATE_RX | STATE_TX,
     // function flags
     STATE_RX_WHENTXDONE  = 1 << 2,  // TODO - implemented only for softserial
     STATE_TX_DELAY       = 1 << 3,  // TODO - not implemented
@@ -86,7 +86,7 @@ typedef struct  {
 } serialPortConfig_t;
 
 // use this to initialize structure used to store port config. CMD_CONFIGURE can be safely called with it
-#define SERIAL_CONFIG_INIT_EMPTY { .mode=0 }
+#define SERIAL_CONFIG_INIT_EMPTY { .mode = 0 }
 
 struct serialPortVTable {
     bool (*isTransmitBufferEmpty)(serialPort_t *instance);

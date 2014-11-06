@@ -1,7 +1,7 @@
 #pragma once
 
 #define TIMERIN_QUEUE_LEN 32
-#define TIMERIN_QUEUE_HIGH (TIMERIN_QUEUE_LEN-5-1)  // high mark for queue, flush if queue content is longer
+#define TIMERIN_QUEUE_HIGH (TIMERIN_QUEUE_LEN - 5 - 1)  // high mark for queue, flush if queue content is longer
 
 #define TIMERIN_FLAG_HIGH         0x0001    // pin is currently high
 

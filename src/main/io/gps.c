@@ -195,8 +195,8 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
         mode = MODE_RX;
 
     // no callback - buffer will be consumed in gpsThread()
-    gpsSerialPortConfig.baudRate=gpsInitData[gpsData.baudrateIndex].baudrate;
-    gpsSerialPortConfig.mode=mode;
+    gpsSerialPortConfig.baudRate = gpsInitData[gpsData.baudrateIndex].baudrate;
+    gpsSerialPortConfig.mode = mode;
 
     gpsPort = openSerialPort(FUNCTION_GPS, &gpsSerialPortConfig);
     if (!gpsPort) {
@@ -214,7 +214,7 @@ void gpsInitNmea(void)
     case GPS_INITIALIZING:
     case GPS_CHANGE_BAUD:
         serialRelease(gpsPort);
-        gpsSerialPortConfig.baudRate=gpsInitData[gpsData.baudrateIndex].baudrate;
+        gpsSerialPortConfig.baudRate = gpsInitData[gpsData.baudrateIndex].baudrate;
         serialConfigure(gpsPort, &gpsSerialPortConfig);
         gpsSetState(GPS_RECEIVING_DATA);
         break;

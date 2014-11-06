@@ -1455,7 +1455,7 @@ void cliInit(serialConfig_t *serialConfig)
 {
     cliPort = findOpenSerialPort(FUNCTION_CLI);
     if (!cliPort) {
-        cliPortConfig.baudRate=serialConfig->cli_baudrate;
+        cliPortConfig.baudRate = serialConfig->cli_baudrate;
         cliPort = openSerialPort(FUNCTION_CLI, &cliPortConfig);
     }
 

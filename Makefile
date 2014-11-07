@@ -56,8 +56,8 @@ VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
 
 ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO MASSIVEF3))
 
-STDPERIPH_DIR		= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
-USBFS_DIR		= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
+STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
+USBFS_DIR	 = $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
 
 USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))

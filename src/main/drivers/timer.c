@@ -56,7 +56,7 @@ typedef struct {
 } timerInfo_t;
 timerInfo_t timerInfo[USED_TIMER_COUNT];
 
-// retunt index of timer in timer table. Lowest timer has index 0
+// return index of timer in timer table. Lowest timer has index 0
 #define TIMER_INDEX(i) BITCOUNT((TIM_N(i)-1)&USED_TIMERS)
 
 static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
@@ -148,14 +148,14 @@ void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz)
     TIM_TimeBaseInit(tim, &TIM_TimeBaseStructure);
 }
 
-// odl interface for PWM inputs. It should be replaced
+// old interface for PWM inputs. It should be replaced
 void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, uint8_t mhz)
 {
     configTimeBase(timerHardwarePtr->tim, period, mhz);
     TIM_Cmd(timerHardwarePtr->tim, ENABLE);
 }
 
-// allocate and configure timer channel. Channels priority is tes to highest priority of channels
+// allocate and configure timer channel. Timner priority is set to highest priority of channels
 void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority)
 {
     unsigned channel = timHw - timerHardware;
@@ -548,12 +548,9 @@ _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
 #if defined(STM32F303xC) && ((USED_TIMERS & (TIM_N(1)|TIM_N(16))) == (TIM_N(16)))
 _TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16);    // only timer16 is used, not timer1
 #endif
-
 #if USED_TIMERS & TIM_N(17)
 _TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17);
 #endif
-
-
 
 void timerInit(void)
 {

@@ -110,7 +110,8 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         mode |= MODE_HALFDUPLEX;
     if(mode & MODE_HALFDUPLEX) {
         mode |= MODE_RXTX;
-        if(self->txTimerHardware != self->rxTimerHardware)
+        if(self->txTimerHardware->tim == self->rxTimerHardware->tim                                       // same timer
+           && self->txTimerHardware->channel == (self->rxTimerHardware->channel ^ TIM_Channel_2) )        // adjacent channels
             mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
     }
 

@@ -14,10 +14,6 @@
 #include "timer.h"
 #include "timer_queue.h"
 
-/*
-   Timeout generator for timerIn. Could be extended to support other timming tasks.
-   Implemented as binary heap
- */
 #define TIMERQUEUE_QUEUE_LEN 8
 #define TIMERQUEUE_ISRQUEUE_LEN 8
 

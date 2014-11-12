@@ -135,13 +135,25 @@ static void ppmInit(void)
     ppmDev.tracking     = false;
 }
 
+<<<<<<< variant A
 static void ppmOverflowCallback(timerOvrHandlerRec_t* cbRec, uint16_t capture)
+>>>>>>> variant B
+static void ppmOverflowCallback(timerOvrHandlerRec_t* cbRec, captureCompare_t capture)
+####### Ancestor
+static void ppmOverflowCallback(uint8_t port, captureCompare_t capture)
+======= end
 {
     UNUSED(cbRec);
     ppmDev.largeCounter += capture + 1;
 }
 
+<<<<<<< variant A
 static void ppmEdgeCallback(timerCCHandlerRec_t* cbRec, uint16_t capture)
+>>>>>>> variant B
+static void ppmEdgeCallback(timerCCHandlerRec_t* cbRec, captureCompare_t capture)
+####### Ancestor
+static void ppmEdgeCallback(uint8_t port, captureCompare_t capture)
+======= end
 {
     UNUSED(cbRec);
     int32_t i;
@@ -221,7 +233,13 @@ static void ppmEdgeCallback(timerCCHandlerRec_t* cbRec, uint16_t capture)
 
 #define MAX_MISSED_PWM_EVENTS 10
 
+<<<<<<< variant A
 static void pwmOverflowCallback(timerOvrHandlerRec_t* cbRec, uint16_t capture)
+>>>>>>> variant B
+static void pwmOverflowCallback(timerOvrHandlerRec_t* cbRec, captureCompare_t capture)
+####### Ancestor
+static void pwmOverflowCallback(uint8_t port, captureCompare_t capture)
+======= end
 {
     UNUSED(capture);
     pwmInputPort_t *pwmInputPort = container_of(cbRec, pwmInputPort_t, overflowCb);
@@ -234,7 +252,13 @@ static void pwmOverflowCallback(timerOvrHandlerRec_t* cbRec, uint16_t capture)
     }
 }
 
+<<<<<<< variant A
 static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, uint16_t capture)
+>>>>>>> variant B
+static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, captureCompare_t capture)
+####### Ancestor
+static void pwmEdgeCallback(uint8_t port, captureCompare_t capture)
+======= end
 {
     pwmInputPort_t *pwmInputPort = container_of(cbRec, pwmInputPort_t, edgeCb);
     const timerHardware_t *timerHardwarePtr = pwmInputPort->timerHardware;

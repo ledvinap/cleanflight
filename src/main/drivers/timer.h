@@ -21,7 +21,7 @@
 
 #include "callback.h"
 
-#define TIM_N(i) (1<<(i))
+#define TIM_N(i) (1 << (i))
 
 #include "target_timer.h"
 
@@ -39,7 +39,7 @@ typedef uint16_t timCNT_t;
 # error "Unknown CPU defined"
 #endif
 
-// use different types from capture and overflow - multiple overflow handlers can be implemented as linked list, etc.
+// use different types from capture and overflow - multiple overflow handlers are implemented as linked list
 struct timerCCHandlerRec_s;
 struct timerOvrHandlerRec_s;
 typedef void timerCCHandlerCallback(struct timerCCHandlerRec_s* self, uint16_t capture);

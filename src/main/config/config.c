@@ -202,8 +202,16 @@ void resetFlight3DConfig(flight3DConfig_t *flight3DConfig)
 
 void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 {
+<<<<<<< variant A
     telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_SPORT;
     telemetryConfig->frsky_inversion = MODE_INVERTED;
+>>>>>>> variant B
+    telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_FRSKY;
+    telemetryConfig->telemetry_inversion = SERIAL_NOT_INVERTED;
+####### Ancestor
+    telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_FRSKY;
+    telemetryConfig->frsky_inversion = SERIAL_NOT_INVERTED;
+======= end
     telemetryConfig->telemetry_switch = 0;
     telemetryConfig->gpsNoFixLatitude = 0;
     telemetryConfig->gpsNoFixLongitude = 0;

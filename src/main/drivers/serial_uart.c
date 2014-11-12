@@ -174,6 +174,11 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 
     USART_Cmd(self->USARTx, ENABLE);
 
+    if (mode & MODE_SINGLEWIRE)
+        USART_HalfDuplexCmd(s->USARTx, ENABLE);
+    else
+        USART_HalfDuplexCmd(s->USARTx, DISABLE);
+
     return &self->port;
 }
 

@@ -37,7 +37,7 @@
 #define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
 #define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4
 
-#define TIM_IT_CCx(ch) (TIM_IT_CC1<<((ch)/4))
+#define TIM_IT_CCx(ch) (TIM_IT_CC1 << ((ch) / 4))
 
 typedef struct timerConfig_s {
     timerCCHandlerRec_t* edgeCallback[CC_CHANNELS_PER_TIMER];
@@ -57,7 +57,7 @@ typedef struct {
 timerInfo_t timerInfo[USED_TIMER_COUNT];
 
 // return index of timer in timer table. Lowest timer has index 0
-#define TIMER_INDEX(i) BITCOUNT((TIM_N(i)-1)&USED_TIMERS)
+#define TIMER_INDEX(i) BITCOUNT((TIM_N(i) - 1) & USED_TIMERS)
 
 static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
 {
@@ -91,7 +91,7 @@ static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
 #if USED_TIMERS & TIM_N(17)
         _CASE(17);
 #endif
-    default:  return -1;  // make sure final index is out of range
+    default:  return ~1;  // make sure final index is out of range
     }
 #undef _CASE
 #undef _CASE_
@@ -129,7 +129,7 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 
 static inline uint8_t lookupChannelIndex(const uint16_t channel)
 {
-    return channel>>2;
+    return channel >> 2;
 }
 
 void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz)
@@ -155,7 +155,7 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
     TIM_Cmd(timerHardwarePtr->tim, ENABLE);
 }
 
-// allocate and configure timer channel. Timner priority is set to highest priority of channels
+// allocate and configure timer channel. Timer priority is set to highest priority of its channels
 void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority)
 {
     unsigned channel = timHw - timerHardware;
@@ -207,7 +207,7 @@ static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef* tim) {
         *chain = NULL;
     }
     // enable or disable IRQ
-    TIM_ITConfig(tim, TIM_IT_Update, cfg->overflowCallbackActive?ENABLE:DISABLE);
+    TIM_ITConfig(tim, TIM_IT_Update, cfg->overflowCallbackActive ? ENABLE : DISABLE);
 }
 
 // config edge and overflow callback for channel. Try to avoid overflowCallback, it is a bit expensive
@@ -331,7 +331,7 @@ void timerChConfigIC(const timerHardware_t* timHw, bool polarityRising, unsigned
 }
 
 // configure dual channel input channel for capture
-// polarity is for first Low channel (capture order is always Lo - Hi)
+// polarity is for Low channel (capture order is always Lo - Hi)
 void timerChConfigICDual(const timerHardware_t* timHw, bool polarityRising, unsigned inputFilterTicks)
 {
     TIM_ICInitTypeDef TIM_ICInitStructure;
@@ -420,7 +420,9 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t* timerConfig)
     unsigned tim_status;
     tim_status = tim->SR & tim->DIER;
 #if 1
-    while(tim_status) {                 // flags will be cleared by reading CCR in dual capture, make sure we call handler correctly
+    while(tim_status) {
+        // flags will be cleared by reading CCR in dual capture, make sure we call handler correctly
+        // currrent order is highest bit first. Code should not rely on specific order (it will introduce race conditions anyway)
         unsigned bit = __builtin_clz(tim_status);
         unsigned mask = ~(0x80000000 >> bit);
         tim->SR = mask;
@@ -455,7 +457,7 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t* timerConfig)
         timerOvrHandlerRec_t *cb = timerConfig->overflowCallbackActive;
         while(cb) {
             cb->fn(cb, capture);
-            cb++;
+            cb = cb->next;
         }
     }
     if (tim_status & (int)TIM_IT_CC1) {
@@ -477,7 +479,7 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t* timerConfig)
 #endif
 }
 
-// handler for shared interrupts when both timers need to check
+// handler for shared interrupts when both timers need to check status bits
 #define _TIM_IRQ_HANDLER2(name, i, j)                                   \
     void name(void)                                                     \
     {                                                                   \
@@ -541,6 +543,11 @@ _TIM_IRQ_HANDLER(TIM4_IRQHandler, 4);
 #endif
 #if USED_TIMERS & TIM_N(8)
 _TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
+# if defined(STM32F10X_XL)
+_TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);
+# else  // f10x_hd, f30x
+_TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, 8);
+# endif
 #endif
 #if USED_TIMERS & TIM_N(15)
 _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);

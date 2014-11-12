@@ -419,6 +419,7 @@ void configureFrSkyTelemetryPort(void)
         serialConfigure(frskyPort, &frskySerialPortConfig);
         beginSerialPortFunction(frskyPort, FUNCTION_TELEMETRY);
     } else {
+        // TODO - telemetryConfig->telemetry_inversion needs to be used
         frskyPort = openSerialPort(FUNCTION_TELEMETRY, &frskySerialPortConfig);
     }
 }

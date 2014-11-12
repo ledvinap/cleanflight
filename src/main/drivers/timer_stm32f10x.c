@@ -1,7 +1,8 @@
-
-
 /*
   modified version of StdPeriph function is located here.
+  TODO - what license does apply here?
+  original file was lincesed under MCD-ST Liberty SW License Agreement V2
+  http://www.st.com/software_license_agreement_liberty_v2
 */
 
 #include "stm32f10x.h"

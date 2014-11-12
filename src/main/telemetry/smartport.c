@@ -126,15 +126,18 @@ const uint16_t frSkyDataIdTable[] = {
 };
 
 #define __USE_C99_MATH // for roundf()
-#define SMARTPORT_BAUD 57600
-#define SMARTPORT_UART_MODE MODE_BIDIR
 #define SMARTPORT_SERVICE_DELAY_MS 5 // telemetry requests comes in at roughly 12 ms intervals, keep this under that
 #define SMARTPORT_NOT_CONNECTED_TIMEOUT_MS 7000
 
+serialPortConfig_t smartPortPortConfig = {
+    .mode = MODE_RXTX | MODE_SINGLEWIRE | MODE_HALFDUPLEX | MODE_INVERTED | MODE_DEFAULT_FAST,
+    .baudRate = 57600,
+};
+
+static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
+
 static serialPort_t *smartPortSerialPort; // The 'SmartPort'(tm) Port.
 static telemetryConfig_t *telemetryConfig;
-static portMode_t previousPortMode;
-static uint32_t previousBaudRate;
 extern void serialInit(serialConfig_t *); // from main.c // FIXME remove this dependency
 
 char smartPortState = SPSTATE_UNINITIALIZED;
@@ -219,10 +222,9 @@ void freeSmartPortTelemetryPort(void)
         endSerialPortFunction(smartPortSerialPort, FUNCTION_SMARTPORT_TELEMETRY);
         smartPortState = SPSTATE_DEINITIALIZED;
         serialInit(&masterConfig.serialConfig);
-    }
-    else {
-        serialSetMode(smartPortSerialPort, previousPortMode);
-        serialSetBaudRate(smartPortSerialPort, previousBaudRate);
+    } else {
+        serialRelease(smartPortSerialPort);
+        serialConfigure(smartPortSerialPort, &previousSerialConfig);
         endSerialPortFunction(smartPortSerialPort, FUNCTION_SMARTPORT_TELEMETRY);
         smartPortState = SPSTATE_DEINITIALIZED;
     }
@@ -238,23 +240,17 @@ void configureSmartPortTelemetryPort(void)
 
     smartPortSerialPort = findOpenSerialPort(FUNCTION_SMARTPORT_TELEMETRY);
     if (smartPortSerialPort) {
-        previousPortMode = smartPortSerialPort->mode;
-        previousBaudRate = smartPortSerialPort->baudRate;
-
+        serialGetConfig(smartPortSerialPort, &previousSerialConfig);
+        serialRelease(smartPortSerialPort);
         //waitForSerialPortToFinishTransmitting(smartPortPort); // FIXME locks up the system
-
-        serialSetBaudRate(smartPortSerialPort, SMARTPORT_BAUD);
-        serialSetMode(smartPortSerialPort, SMARTPORT_UART_MODE);
+        serialConfigure(smartPortSerialPort, &smartPortPortConfig);
         beginSerialPortFunction(smartPortSerialPort, FUNCTION_SMARTPORT_TELEMETRY);
     } else {
-        smartPortSerialPort = openSerialPort(FUNCTION_SMARTPORT_TELEMETRY, NULL, SMARTPORT_BAUD, SMARTPORT_UART_MODE, telemetryConfig->telemetry_inversion);
+        smartPortSerialPort = openSerialPort(FUNCTION_SMARTPORT_TELEMETRY, &smartPortPortConfig);
 
         if (smartPortSerialPort) {
             smartPortState = SPSTATE_INITIALIZED;
-            previousPortMode = smartPortSerialPort->mode;
-            previousBaudRate = smartPortSerialPort->baudRate;
-        }
-        else {
+        } else {
             // failed, resume MSP and CLI
             if (isTelemetryPortShared()) {
                 smartPortState = SPSTATE_DEINITIALIZED;
@@ -281,7 +277,7 @@ bool isSmartPortTimedOut(void)
 
 uint32_t getSmartPortTelemetryProviderBaudRate(void)
 {
-    return SMARTPORT_BAUD;
+    return smartPortPortConfig.baudRate;
 }
 
 void handleSmartPortTelemetry(void)
@@ -354,7 +350,7 @@ void handleSmartPortTelemetry(void)
                     tmpui = 0;
                     // the same ID is sent twice, one for longitude, one for latitude
                     // the MSB of the sent uint32_t helps FrSky keep track
-                    // the even/odd bit of our counter helps us keep track                    
+                    // the even/odd bit of our counter helps us keep track
                     if (smartPortIdCnt & 1) {
                         tmpui = tmpi = GPS_coord[LON];
                         if (tmpi < 0) {

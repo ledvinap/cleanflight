@@ -59,7 +59,7 @@ void telemetrySPortSerialRxCharCallback(uint16_t data);
 
 timerQueueRec_t telemetrySPortTimerQ;
 
-serialPortConfig_t sPortPortConfig = { 
+serialPortConfig_t sPortPortConfig = {
     .mode = MODE_RXTX | MODE_SINGLEWIRE | MODE_HALFDUPLEX | MODE_INVERTED | MODE_S_DUALTIMER,
     .baudRate = 57600,
     .rxCallback = telemetrySPortSerialRxCharCallback

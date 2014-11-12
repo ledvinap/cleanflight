@@ -86,7 +86,7 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
     if (config->mode & MODE_TX)
         gpioInit(GPIOA, &gpio);
     gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
+    if (config->mode & MODE_SINGLEWIRE)
         gpioInit(GPIOA, &gpio);
     gpio.pin = Pin_10;
     gpio.mode = Mode_IPU;
@@ -160,7 +160,7 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
     if (config->mode & MODE_TX)
         gpioInit(GPIOA, &gpio);
     gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
+    if (config->mode & MODE_SINGLEWIRE)
         gpioInit(GPIOA, &gpio);
     gpio.pin = Pin_3;
     gpio.mode = Mode_IPU;

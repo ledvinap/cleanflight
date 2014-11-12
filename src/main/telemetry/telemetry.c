@@ -77,7 +77,7 @@ bool canUseTelemetryWithCurrentConfiguration(void)
 
 void initTelemetry()
 {
-    if (isTelemetryProviderSmartPort()) {
+    if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT) {
         telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_SMARTPORT_TELEMETRY, FUNCTION_MSP);
     } else {
         telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_TELEMETRY, FUNCTION_MSP);
@@ -143,11 +143,6 @@ uint32_t getTelemetryProviderBaudRate(void)
     case TELEMETRY_PROVIDER_SPORT:
         return getSPortTelemetryProviderBaudRate();
     }
-
-    if (isTelemetryProviderSmartPort()) {
-        return getSmartPortTelemetryProviderBaudRate();
-    }
-
     return 0;
 }
 

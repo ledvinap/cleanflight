@@ -33,7 +33,7 @@ void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, chann
     self->timCCR = timerChCCR(timHw);
     self->callback = callback;
     self->flags = flags;
-    timerChInit(timHw, owner, priority);
+    timerChInit(timHw, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, priority);
     timerChCCHandlerInit(&self->compareCb, timerOut_timerCompareEvent);
 
     timerOut_Restart(self);

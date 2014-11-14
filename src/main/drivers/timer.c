@@ -48,6 +48,7 @@ timerConfig_t timerConfig[USED_TIMER_COUNT];
 
 typedef struct {
     channelType_t type;
+    channelResources_t resourcesUsed;
 } timerChannelInfo_t;
 timerChannelInfo_t timerChannelInfo[USABLE_TIMER_CHANNEL_COUNT];
 
@@ -156,13 +157,25 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 }
 
 // allocate and configure timer channel. Timer priority is set to highest priority of its channels
-void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority)
+// caller must check if channel is free
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority)
 {
     unsigned channel = timHw - timerHardware;
     if(channel >= USABLE_TIMER_CHANNEL_COUNT)
         return;
 
-    timerChannelInfo[channel].type = type;
+    if(type != TYPE_FREE)   // pass TYPE_FREE to keep old owner
+        timerChannelInfo[channel].type = type;
+
+    timerChannelInfo[channel].resourcesUsed |= resources;
+
+    if(resources & RESOURCE_TIMER_DUAL) {
+        // we must mark other channel too
+        unsigned dualChannel = timerChFindDualChannel(timHw) - timerHardware;
+        if(dualChannel < USABLE_TIMER_CHANNEL_COUNT)
+            timerChannelInfo[dualChannel].resourcesUsed |= RESOURCE_TIMER;
+    }
+
     unsigned timer = lookupTimerIndex(timHw->tim);
     if(timer >= USED_TIMER_COUNT)
         return;
@@ -352,8 +365,6 @@ void timerChConfigICDual(const timerHardware_t *timHw, bool polarityRising, unsi
     TIM_ICInit(timHw->tim, &TIM_ICInitStructure);
 }
 
-
-
 void timerChICPolarity(const timerHardware_t *timHw, bool polarityRising)
 {
     timCCER_t tmpccer = timHw->tim->CCER;
@@ -412,7 +423,22 @@ void timerChConfigOC(const timerHardware_t *timHw, bool outEnable, bool activeHi
     }
 }
 
+const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw)
+{
+    for(unsigned i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++)
+        if(timerHardware[i].tim == timHw->tim
+           && timerHardware[i].channel == (timHw->channel ^ TIM_Channel_2))
+            return &timerHardware[i];
+    return NULL;
+}
 
+channelResources_t timerChGetUsedResources(const timerHardware_t *timHw)
+{
+    unsigned channel = timHw - timerHardware;
+    if(channel < USABLE_TIMER_CHANNEL_COUNT)
+        return timerChannelInfo[channel].resourcesUsed;
+    return 0;
+}
 
 static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 {

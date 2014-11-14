@@ -267,7 +267,7 @@ void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
     self->mode = INPUT_MODE_PWM;
     self->timerHardware = timerHardwarePtr;
 
-    timerChInit(timerHardwarePtr, TYPE_PWMINPUT, NVIC_PRIO_TIMER);
+    timerChInit(timerHardwarePtr, TYPE_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER);
     timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
     timerChConfigIC(timerHardwarePtr, true, 0);
 
@@ -287,7 +287,7 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     self->mode = INPUT_MODE_PPM;
     self->timerHardware = timerHardwarePtr;
 
-    timerChInit(timerHardwarePtr, TYPE_PPMINPUT, NVIC_PRIO_TIMER);
+    timerChInit(timerHardwarePtr, TYPE_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER);
     timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
     timerChConfigIC(timerHardwarePtr, true, 0);
 

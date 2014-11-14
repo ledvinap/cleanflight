@@ -72,6 +72,9 @@ static void resetBuffers(softSerial_t *self)
     self->port.txBufferHead = 0;
 }
 
+// TODO !
+#include "timer.h"
+
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t *config)
 {
     softSerial_t *self = &(softSerialPorts[portIndex]);
@@ -100,20 +103,40 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     portMode_t mode = config->mode;
     portState_t state = 0;
 
-    if(config->mode == 0)   // prevent reconfiguration with empty config
+    if(mode == 0)   // prevent reconfiguration with empty config
         return;
 
     // fix mode if caller got it wrong
     if((mode & MODE_RXTX) == MODE_RXTX && self->txTimerHardware == self->rxTimerHardware)
         mode |= MODE_SINGLEWIRE;
-    if(mode & MODE_SINGLEWIRE)
+    if(mode & MODE_SINGLEWIRE) {
+        self->txTimerHardware = self->rxTimerHardware;  // use RX pin only in singlewire mode
         mode |= MODE_HALFDUPLEX;
-    if(mode & MODE_HALFDUPLEX) {
-        mode |= MODE_RXTX;
-        if(self->txTimerHardware->tim == self->rxTimerHardware->tim                                       // same timer
-           && self->txTimerHardware->channel == (self->rxTimerHardware->channel ^ TIM_Channel_2) )        // adjacent channels
-            mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
     }
+    if(mode & MODE_HALFDUPLEX) {
+        mode |= MODE_RXTX;         // force RxTX mode if halfduplex is specified to limit possible mode combinations
+    }
+
+    // collision with self
+    if(mode & MODE_S_DUALTIMER
+       && !(mode & MODE_HALFDUPLEX)
+       && timerChFindDualChannel(self->rxTimerHardware) == self->txTimerHardware)
+        mode &= ~MODE_S_DUALTIMER;
+
+    // channel is already allocated
+    if(mode & MODE_S_DUALTIMER
+       && timerChGetUsedResources(timerChFindDualChannel(self->rxTimerHardware)) & RESOURCE_TIMER)
+        mode &= ~MODE_S_DUALTIMER;
+
+    // halfduplex on channel pair
+    if(mode & MODE_HALFDUPLEX
+       && timerChFindDualChannel(self->rxTimerHardware) == self->txTimerHardware)
+        mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
+
+    // there is possibility that we claim dual channel that will be neccesary for something else (two serial ports on channel pair)
+    // one possibility is to use week channel allocation and enable dualtimer only after all initialization is done
+    // we can also reclaim channel from other softserial port (release/configure it without dualtimer mode)
+    // for now just remember this when selecting channels
 
     self->port.baudRate = baud;
     self->port.mode = mode;
@@ -129,12 +152,6 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     int symbolBits = mode & MODE_SBUS ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS;
     self->symbolLength = (self->bitTime * (2 * symbolBits - 1) / 2) >> 8;  //  symbol ends in middle of last stopbit
 
-
-    if(mode & MODE_SINGLEWIRE) {
-        // in sinlgewire we start in RX mode
-        // also use RX pin only
-        self->txTimerHardware = self->rxTimerHardware;
-    }
     if(mode & MODE_TX) {
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh,
@@ -151,9 +168,6 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
         state &= ~STATE_TX;
     }
     if(mode & MODE_RX) {
-        // TODO - in dualtimer case whe should check that second channel is available and fallback to single-channel mode in neccesary
-        // Or fail to open port, that could be safer when DMA is used (much higher processor load can be dangerous)
-        // timer channel allocation has to be implemented/finished first
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerIn_Config(&self->rxTimerCh,

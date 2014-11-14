@@ -59,8 +59,10 @@ void timerOut_Restart(timerOutputRec_t* self)
     self->qhead = self->qheadUnc = self->qtail = 0;
     self->qtailWake = ~0;
 
-    timerChConfigOC(self->timHw, true, self->flags&TIMEROUT_IDLE_HI);
+    timerChConfigOC(self->timHw, true, !(self->flags & TIMEROUT_IDLE_HI));
     timerChConfigGPIO(self->timHw, Mode_AF_PP);
+    if(self->timHw->outputEnable)
+        TIM_CtrlPWMOutputs(self->timHw->tim, ENABLE);
     timerChConfigCallbacks(self->timHw, &self->compareCb, NULL);
 }
 

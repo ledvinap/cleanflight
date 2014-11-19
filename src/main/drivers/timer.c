@@ -158,7 +158,7 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 
 // allocate and configure timer channel. Timer priority is set to highest priority of its channels
 // caller must check if channel is free
-void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority)
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency)
 {
     unsigned channel = timHw - timerHardware;
     if(channel >= USABLE_TIMER_CHANNEL_COUNT)
@@ -504,25 +504,25 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
     }
 #endif
 }
-
+#if 1
 // handler for shared interrupts when both timers need to check status bits
 #define _TIM_IRQ_HANDLER2(name, i, j)                                   \
     void name(void)                                                     \
     {                                                                   \
+        pinDbgHi(DBP_TIMER);                                            \
         timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);          \
         timCCxHandler(TIM ## j, &timerConfig[TIMER_INDEX(j)]);          \
+        pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 
-// first instance is for production run, others are for debugging
-// TODO - select correct one by Makefile
-// struct dummy is used to eat semicolon after macro
-# if 0
 #define _TIM_IRQ_HANDLER(name, i)                                       \
     void name(void)                                                     \
     {                                                                   \
+        pinDbgHi(DBP_TIMER);                                            \
         timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);          \
+        pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
-# elseif 0
+#else
 // this will create histogram with timer durations
 #define _TIM_IRQ_HANDLER(name, i)                                      \
     uint32_t dbghist_##name[32];                                       \
@@ -534,16 +534,7 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
         if(start > 31) start = 31;                                         \
         dbghist_##name[start]++;                                       \
     } struct dummy
-# else
-// this wersion will set debugPin during handler
-#define _TIM_IRQ_HANDLER(name, i)                                      \
-    void name(void)                                                    \
-    {                                                                  \
-        pinDbgHi(DBP_TIMER);                                           \
-        timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);         \
-        pinDbgLo(DBP_TIMER);                                           \
-    }  struct dummy
-# endif
+#endif
 
 #if USED_TIMERS & TIM_N(1)
 _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);

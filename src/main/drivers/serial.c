@@ -22,13 +22,17 @@
 
 #include "serial.h"
 
-void serialPutc(serialPort_t *instance, uint8_t ch)
+void serialPrint(serialPort_t *instance, const char *str)
 {
-    instance->vTable->putc(instance, ch);
+    uint8_t ch;
+    while ((ch = *(str++)) != 0) {
+        serialWrite(instance, ch);
+    }
 }
 
-void serialWrite(serialPort_t *instance, uint8_t ch) {
-    serialPutc(instance, ch);
+void serialWrite(serialPort_t *instance, uint8_t ch)
+{
+    instance->vTable->write(instance, ch);
 }
 
 int serialTotalBytesWaiting(serialPort_t *instance)
@@ -36,27 +40,15 @@ int serialTotalBytesWaiting(serialPort_t *instance)
     return instance->vTable->totalBytesWaiting(instance);
 }
 
-int serialGetc(serialPort_t *instance)
-{
-    return instance->vTable->getc(instance);
-}
-
 int serialRead(serialPort_t *instance)
 {
-    return serialGetc(instance);
+    return instance->vTable->read(instance);
 }
+
 
 bool isSerialTransmitBufferEmpty(serialPort_t *instance)
 {
     return instance->vTable->isTransmitBufferEmpty(instance);
-}
-
-void serialPrint(serialPort_t *instance, const char *str)
-{
-    uint8_t ch;
-    while ((ch = *(str++)) != 0) {
-        serialPutc(instance, ch);
-    }
 }
 
 void serialRelease(serialPort_t *instance)

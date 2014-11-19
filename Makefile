@@ -49,15 +49,15 @@ OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
 INCLUDE_DIRS	 = $(SRC_DIR)
-LINKER_DIR       = $(ROOT)/src/main/target
+LINKER_DIR	 = $(ROOT)/src/main/target
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
 
 ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO MASSIVEF3))
 
-STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
-USBFS_DIR	 = $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
+STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
+USBFS_DIR	= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
 
 USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
@@ -173,10 +173,14 @@ COMMON_SRC	 = build_config.c \
 		   flight/imu.c \
 		   flight/mixer.c \
 		   drivers/bus_i2c_soft.c \
+		   drivers/callback.c \
+		   drivers/pin_debug.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
 		   drivers/system.c \
-		   drivers/pin_debug.c \
+		   drivers/timer_input.c \
+		   drivers/timer_output.c \
+		   drivers/timer_queue.c \
 		   io/beeper.c \
 		   io/rc_controls.c \
 		   io/rc_curves.c \
@@ -230,7 +234,6 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/barometer_ms5611.c \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
-		   drivers/callback.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
 		   drivers/gpio_stm32f10x.c \
@@ -248,9 +251,6 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
-		   drivers/timer_input.c \
-		   drivers/timer_output.c \
-		   drivers/timer_queue.c \
 		   drivers/timer_stm32f10x.c \
 		   hardware_revision.c \
 		   $(HIGHEND_SRC) \
@@ -271,7 +271,6 @@ EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/barometer_ms5611.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
-		   drivers/callback.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
 		   drivers/gpio_stm32f10x.c \
@@ -289,9 +288,6 @@ EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
-		   drivers/timer_input.c \
-		   drivers/timer_output.c \
-		   drivers/timer_queue.c \
 		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -305,7 +301,6 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/barometer_bmp085.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
-		   drivers/callback.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/light_led_stm32f10x.c \
@@ -321,9 +316,6 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
-		   drivers/timer_input.c \
-		   drivers/timer_output.c \
-		   drivers/timer_queue.c \
 		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -347,7 +339,6 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
-		   drivers/callback.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/light_led_stm32f10x.c \
 		   drivers/pwm_mapping.c \
@@ -358,9 +349,6 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
-		   drivers/timer_input.c \
-		   drivers/timer_output.c \
-		   drivers/timer_queue.c \
 		   drivers/timer_stm32f10x.c \
 		   $(COMMON_SRC)
 
@@ -369,7 +357,6 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/bus_spi.c \
-		   drivers/callback.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
 		   drivers/light_led_stm32f10x.c \
@@ -384,9 +371,6 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
-		   drivers/timer_input.c \
-		   drivers/timer_output.c \
-		   drivers/timer_queue.c \
 		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -396,7 +380,6 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/adc_stm32f30x.c \
 		   drivers/bus_i2c_stm32f30x.c \
 		   drivers/bus_spi.c \
-		   drivers/callback.c \
 		   drivers/gpio_stm32f30x.c \
 		   drivers/light_led_stm32f30x.c \
 		   drivers/light_ws2811strip.c \
@@ -410,9 +393,6 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/sound_beeper_stm32f30x.c \
 		   drivers/system_stm32f30x.c \
 		   drivers/timer.c \
-		   drivers/timer_input.c \
-		   drivers/timer_output.c \
-		   drivers/timer_queue.c \
 		   drivers/timer_stm32f30x.c \
 		   vcp/hw_config.c \
 		   vcp/stm32_it.c \
@@ -485,7 +465,7 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
 		   $(DEBUG_FLAGS) \
 		   -std=gnu99 \
-		   -Wall -Wextra -Wunsafe-loop-optimizations \
+		   -Wall -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion \
 		   -ffunction-sections \
 		   -fdata-sections \
 		   $(DEVICE_FLAGS) \
@@ -510,6 +490,7 @@ LDFLAGS		 = -lm \
 		   $(ARCH_FLAGS) \
 		   $(LTO_FLAGS) \
 		   $(DEBUG_FLAGS) \
+		   -save-temps=obj \
 		   -static \
 		   -Wl,-gc-sections,-Map,$(TARGET_MAP) \
 		   -T$(LD_SCRIPT)

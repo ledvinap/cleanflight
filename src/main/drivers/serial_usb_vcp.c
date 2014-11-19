@@ -70,7 +70,7 @@ bool isUsbVcpTransmitBufferEmpty(serialPort_t *serial)
     return true;
 }
 
-void usbVcpPutc(serialPort_t *serial, uint8_t c)
+void usbVcpWrite(serialPort_t *serial, uint8_t c)
 {
     UNUSED(serial);
     uint32_t txed;
@@ -91,7 +91,7 @@ int usbVcpTotalBytesWaiting(serialPort_t *serial)
     return receiveLength;
 }
 
-int usbVcpGetc(serialPort_t *serial)
+int usbVcpRead(serialPort_t *serial)
 {
     UNUSED(serial);
     uint8_t buf[1];
@@ -122,9 +122,9 @@ serialPort_t *usbVcpOpen(void)
 
 const struct serialPortVTable usbVcpVTable = {
     .isTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,
-    .putc = usbVcpPutc,
+    .write = usbVcpWrite,
     .totalBytesWaiting = usbVcpTotalBytesWaiting,
-    .getc = usbVcpGetc,
+    .read = usbVcpRead,
 
     .release = usbVcpRelease,
     .configure = usbVcpConfigure,

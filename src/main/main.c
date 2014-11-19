@@ -358,6 +358,7 @@ void init(void)
         .mode = MODE_RXTX | MODE_DEFAULT_FAST,
         .baudRate = 115200,
     };
+    extern softSerial_t softSerialPorts[];
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);
     if (!loopbackPort->vTable) {
         loopbackPort = openSoftSerial(0, &loopbackPortConfig);
@@ -400,6 +401,13 @@ void processLoopback(void) {
 #endif
 
 int main(void) {
+static int markme=0;
+markme++;
+ATOMIC_BLOCK_NB(0xff) {
+   ATOMIC_BARRIER(markme);
+   markme++;
+};
+markme++;
     init();
 
     while (1) {

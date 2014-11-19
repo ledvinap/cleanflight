@@ -101,7 +101,7 @@ static uint8_t hottMsgCrc;
 #define HOTT_CRC_SIZE (sizeof(hottMsgCrc))
 
 static const serialPortConfig_t hottSerialPortConfig = {
-    .mode = MODE_RXTX | MODE_DEFAULT_SMALL,
+    .mode = MODE_RXTX,
     .baudRate = 19200
 };
 

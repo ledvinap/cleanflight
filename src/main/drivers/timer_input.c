@@ -39,12 +39,12 @@ void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channel
     self->timeout = 0;
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
         // todo - mark second channel as used
-        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority);
+        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority, 1000000);
         self->CCR = timerChCCRLo(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_dualCaptureEventStart);
         timerChCCHandlerInit(&self->edgeHiCb, timerIn_dualCaptureEventStore);
     } else {
-        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER, priority);
+        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER, priority, 1000000);
         self->CCR = timerChCCR(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);
     }

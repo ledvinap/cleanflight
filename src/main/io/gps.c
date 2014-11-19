@@ -192,7 +192,7 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
     portMode_t mode = MODE_RXTX;
     // only RX is needed for NMEA-style GPS
     if (gpsConfig->provider == GPS_NMEA)
-        mode = MODE_RX;
+        mode &= ~MODE_TX;
 
     // no callback - buffer will be consumed in gpsThread()
     gpsSerialPortConfig.baudRate = gpsInitData[gpsData.baudrateIndex].baudrate;
@@ -241,6 +241,7 @@ void gpsInitUblox(void)
                 // try different speed to INIT
                 serialRelease(gpsPort);
                 gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
+                gpsSerialPortConfig.mode |= MODE_TX;   // TODO - we need to switch TX on when changing from NMEA
                 serialConfigure(gpsPort, &gpsSerialPortConfig);
                 // but print our FIXED init string for the baudrate we want to be at
                 serialPrint(gpsPort, gpsInitData[gpsData.baudrateIndex].ubx);
@@ -875,14 +876,33 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
     gpsPassthroughPortConfig.baudRate = serialConfig->gps_passthrough_baudrate;
     serialPort_t *gpsPassthroughPort = findOpenSerialPort(FUNCTION_GPS_PASSTHROUGH);
     if (gpsPassthroughPort) {
-        serialRelease(gpsPassthroughPort);
         waitForSerialPortToFinishTransmitting(gpsPassthroughPort);
+        serialRelease(gpsPassthroughPort);
         serialConfigure(gpsPassthroughPort, &gpsPassthroughPortConfig);
     } else {
         gpsPassthroughPort = openSerialPort(FUNCTION_GPS_PASSTHROUGH, &gpsPassthroughPortConfig);
         if (!gpsPassthroughPort) {
             return GPS_PASSTHROUGH_NO_SERIAL_PORT;
         }
+    }
+
+    // reconfigure GPS, enable TX mode
+    serialPortConfig_t tmpCfg;
+    serialGetConfig(gpsPort, &tmpCfg);
+    bool changed=false;
+    // enable TX     TODO - use parameter to allow this
+    if(!(tmpCfg.mode & MODE_TX)) {
+        tmpCfg.mode |= MODE_TX;
+        changed = true;
+    }
+    // disable callback (callback is not used now)
+    if(tmpCfg.rxCallback) {
+        tmpCfg.rxCallback = 0;
+        changed = true;
+    }
+    if(changed) {
+        serialRelease(gpsPort);
+        serialConfigure(gpsPort, &tmpCfg);
     }
 
     LED0_OFF;

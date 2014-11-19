@@ -84,6 +84,7 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortCo
         self->txTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_TX_HARDWARE]);
     }
 #endif
+
 #ifdef USE_SOFTSERIAL2
     if (portIndex == SOFTSERIAL2) {
         self->rxTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_RX_HARDWARE]);
@@ -416,7 +417,7 @@ bool isSoftSerialTransmitBufferEmpty(serialPort_t *instance)
     return instance->txBufferHead == instance->txBufferTail;
 }
 
-void softSerialPutc(serialPort_t *instance, uint8_t ch)
+void softSerialWrite(serialPort_t *instance, uint8_t ch)
 {
     softSerial_t *self = container_of(instance, softSerial_t, port);
 
@@ -435,13 +436,35 @@ void softSerialPutc(serialPort_t *instance, uint8_t ch)
         }
     }
 }
+#if 0
+// ---
+void softSerialSetBaudRate(serialPort_t *instance, uint32_t baud)
+{
+    softSerial_t *self = container_of(instance, softSerial_t, port);
 
+    serialPortConfig_t config;
+    softSerialGetConfig(instance, &config);
+    softSerialRelease(instance);
+    config.baudRate = baud;
+    softSerialConfigure(instance, &config);
+}
+
+void softSerialSetMode(serialPort_t *instance, portMode_t mode)
+{
+    serialPortConfig_t config;
+    softSerialGetConfig(instance, &config);
+    softSerialRelease(instance);
+    config.mode = mode;
+    softSerialConfigure(instance, &config);
+}
+// ---
+#endif
 int softSerialTotalBytesWaiting(serialPort_t *instance)
 {
     return (instance->rxBufferHead - instance->rxBufferTail) & (instance->rxBufferSize - 1);
 }
 
-int softSerialGetc(serialPort_t *instance)
+int softSerialRead(serialPort_t *instance)
 {
     uint8_t ch;
 
@@ -457,9 +480,9 @@ int softSerialGetc(serialPort_t *instance)
 
 const struct serialPortVTable softSerialVTable = {
     .isTransmitBufferEmpty = isSoftSerialTransmitBufferEmpty,
-    .putc = softSerialPutc,
+    .write = softSerialWrite,
     .totalBytesWaiting = softSerialTotalBytesWaiting,
-    .getc = softSerialGetc,
+    .read = softSerialRead,
 
     .release = softSerialRelease,
     .configure = softSerialConfigure,

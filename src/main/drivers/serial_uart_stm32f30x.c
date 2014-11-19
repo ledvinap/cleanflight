@@ -98,23 +98,23 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 
-    if (config->mode & MODE_TX) {
-        GPIO_InitStructure.GPIO_Pin = UART1_TX_PIN;
-        GPIO_PinAFConfig(UART1_GPIO, UART1_TX_PINSOURCE, GPIO_AF_7);
-        GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
-    }
-
-    if (config->mode & MODE_RX) {
-        GPIO_InitStructure.GPIO_Pin = UART1_RX_PIN;
-        GPIO_PinAFConfig(UART1_GPIO, UART1_RX_PINSOURCE, GPIO_AF_7);
-        GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
-    }
-
-    if (mode & MODE_BIDIR) {
+    if (config->mode & MODE_BIDIR) {
         GPIO_InitStructure.GPIO_Pin = UART1_TX_PIN;
         GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
         GPIO_PinAFConfig(UART1_GPIO, UART1_TX_PINSOURCE, GPIO_AF_7);
         GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
+    } else {
+        if (config->mode & MODE_TX) {
+            GPIO_InitStructure.GPIO_Pin = UART1_TX_PIN;
+            GPIO_PinAFConfig(UART1_GPIO, UART1_TX_PINSOURCE, GPIO_AF_7);
+            GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
+        }
+
+        if (config->mode & MODE_RX) {
+            GPIO_InitStructure.GPIO_Pin = UART1_RX_PIN;
+            GPIO_PinAFConfig(UART1_GPIO, UART1_RX_PINSOURCE, GPIO_AF_7);
+            GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
+        }
     }
 
     // DMA TX Interrupt
@@ -177,23 +177,22 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
 
-    if (config->mode & MODE_TX) {
-        GPIO_InitStructure.GPIO_Pin = UART2_TX_PIN;
-        GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PINSOURCE, GPIO_AF_7);
-        GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
-    }
-
-    if (config->mode & MODE_RX) {
-        GPIO_InitStructure.GPIO_Pin = UART2_RX_PIN;
-        GPIO_PinAFConfig(UART2_GPIO, UART2_RX_PINSOURCE, GPIO_AF_7);
-        GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
-    }
-
-    if (mode & MODE_BIDIR) {
+    if (config->mode & MODE_SINGLEWIRE) {
         GPIO_InitStructure.GPIO_Pin = UART2_TX_PIN;
         GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
         GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PINSOURCE, GPIO_AF_7);
         GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
+    } else {
+        if (config->mode & MODE_TX) {
+            GPIO_InitStructure.GPIO_Pin = UART2_TX_PIN;
+            GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PINSOURCE, GPIO_AF_7);
+            GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
+        }
+        if (config->mode & MODE_RX) {
+            GPIO_InitStructure.GPIO_Pin = UART2_RX_PIN;
+            GPIO_PinAFConfig(UART2_GPIO, UART2_RX_PINSOURCE, GPIO_AF_7);
+            GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
+        }
     }
 
 #ifdef USE_USART2_TX_DMA

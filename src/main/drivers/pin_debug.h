@@ -1,15 +1,14 @@
 #pragma once
 
 // simple pin-debug support
-// define macros to use avalable pins to signal some event/state
+// define macros to use available pins to signal some event/state
 // in normal build there is zero overhead (make sure this holds when making changes)
-// select here which events(defines) are output to available pins
-// there is no guarantee that this works, only that it will not break anything in production build
-// usability is preffered to portability/corectness/etc
+// select here which events(defines) are output to available pins, other places will be optimized out
+// pindebug is not essential, only guarantie is that it will not break anything in production build
+// usability is preffered to portability/corectness/...
 
-
-#define DBP_TIMER                            DBG_PIN_1
-#define DBP_CALLBACK                         DBG_PIN_2
+#define DBP_TIMER                            DBG_PIN_1     // in timer interrupt
+#define DBP_CALLBACK                         DBG_PIN_2     // in callback (pendSv) handler
 
 #define DBP_SOFTSERIAL_RXPROCESS             DBG_PIN_3     // in softSerialRxProcess
 #define DBP_SOFTSERIAL_RXWAIT_SYMBOL         DBG_PIN_4     // waiting for whole symbol to arrive
@@ -22,6 +21,10 @@
 #ifdef PINDEBUG
 
 #include "gpio.h"
+
+// these pins are currently defined for AfroMini32 (reduced NAZE)
+// change used pins to any available. It will be probably problem-dependent
+// check code that uses pin for normal function, use pinDebugIsPinUsed() to skip pin inicialization and use
 
 #define DBG_PIN_1 true, GPIOB, Pin_6             // PWM11
 #define DBG_PIN_2 true, GPIOB, Pin_9             // PWM14
@@ -74,4 +77,3 @@ static inline void pinDebugInit(void) {}
 static inline bool pinDebugIsPinUsed(GPIO_TypeDef* gpio, uint16_t pin) { UNUSED(gpio); UNUSED(pin); return false; }
 
 #endif
-

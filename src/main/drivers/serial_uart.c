@@ -292,7 +292,7 @@ bool isUartTransmitBufferEmpty(serialPort_t *serial)
         return self->port.txBufferTail == self->port.txBufferHead;
 }
 
-void uartPutc(serialPort_t *serial, uint8_t ch)
+void uartWrite(serialPort_t *serial, uint8_t ch)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
     // TODO - check for full buffer
@@ -318,7 +318,7 @@ int uartTotalBytesWaiting(serialPort_t *serial)
     }
 }
 
-int uartGetc(serialPort_t *serial)
+int uartRead(serialPort_t *serial)
 {
     uint8_t ch;
     uartPort_t *self = container_of(serial, uartPort_t, port);
@@ -339,9 +339,9 @@ int uartGetc(serialPort_t *serial)
 
 const struct serialPortVTable uartVTable = {
     .isTransmitBufferEmpty = isUartTransmitBufferEmpty,
-    .putc = uartPutc,
+    .write = uartWrite,
     .totalBytesWaiting = uartTotalBytesWaiting,
-    .getc = uartGetc,
+    .read = uartRead,
 
     .release = uartRelease,
     .configure = uartConfigure,

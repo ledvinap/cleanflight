@@ -81,17 +81,22 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
     // USART1_TX    PA9
     // USART1_RX    PA10
     gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_9;
-    gpio.mode = Mode_AF_PP;
-    if (config->mode & MODE_TX)
+    if(config->mode & MODE_SINGLEWIRE) {
+        gpio.pin = Pin_9;
+        gpio.mode = Mode_AF_OD;
         gpioInit(GPIOA, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (config->mode & MODE_SINGLEWIRE)
-        gpioInit(GPIOA, &gpio);
-    gpio.pin = Pin_10;
-    gpio.mode = Mode_IPU;
-    if (config->mode & MODE_RX)
-        gpioInit(GPIOA, &gpio);
+    } else {
+        if (config->mode & MODE_TX) {
+            gpio.pin = Pin_9;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(GPIOA, &gpio);
+        }
+        if (config->mode & MODE_RX) {
+            gpio.pin = Pin_10;
+            gpio.mode = Mode_IPU;
+            gpioInit(GPIOA, &gpio);
+        }
+    }
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
@@ -155,17 +160,22 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
     // USART2_TX    PA2
     // USART2_RX    PA3
     gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_2;
-    gpio.mode = Mode_AF_PP;
-    if (config->mode & MODE_TX)
+    if(config->mode & MODE_SINGLEWIRE) {
+        gpio.pin = Pin_2;
+        gpio.mode = Mode_AF_OD;
         gpioInit(GPIOA, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (config->mode & MODE_SINGLEWIRE)
-        gpioInit(GPIOA, &gpio);
-    gpio.pin = Pin_3;
-    gpio.mode = Mode_IPU;
-    if (config->mode & MODE_RX)
-        gpioInit(GPIOA, &gpio);
+    } else {
+        if (config->mode & MODE_TX) {
+            gpio.pin = Pin_2;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(GPIOA, &gpio);
+        }
+        if (config->mode & MODE_RX) {
+            gpio.pin = Pin_3;
+            gpio.mode = Mode_IPU;
+            gpioInit(GPIOA, &gpio);
+        }
+    }
 
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
@@ -219,17 +229,22 @@ uartPort_t *serialUSART3(const serialPortConfig_t *config)
 #endif
 
     gpio.speed = Speed_2MHz;
-    gpio.pin = USART3_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (config->mode & MODE_TX)
-        gpioInit(USART3_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART3_GPIO, &gpio);
-    gpio.pin = USART3_RX_PIN;
-    gpio.mode = Mode_IPU;
-    if (config->mode & MODE_RX)
-        gpioInit(USART3_GPIO, &gpio);
+    if(config->mode & MODE_SINGLEWIRE) {
+        gpio.pin = USART3_TX_PIN;
+        gpio.mode = Mode_AF_OD;
+        gpioInit(GPIOA, &gpio);
+    } else {
+        if (config->mode & MODE_TX) {
+            gpio.pin = USART3_TX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(GPIOA, &gpio);
+        }
+        if (config->mode & MODE_RX) {
+            gpio.pin = USART3_RX_PIN;
+            gpio.mode = Mode_IPU;
+            gpioInit(GPIOA, &gpio);
+        }
+    }
 
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;

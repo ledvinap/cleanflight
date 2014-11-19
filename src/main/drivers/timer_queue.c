@@ -45,7 +45,7 @@ void timerQueue_Init(void)
     timerQueue.isrHead = timerQueue.isrTail = 0;
     timerQueue.timCCR = timerChCCR(timHw);
     timerQueue.timCNT = &timHw->tim->CNT;
-    timerChInit(timHw, TYPE_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER);
+    timerChInit(timHw, TYPE_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER, 1000000);
     timerChConfigOC(timHw, false, false);
     timerChCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
     callbackRegister(&timerQueue.callback, timerQueue_CallbackEvent);

@@ -50,9 +50,9 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config);
 
 // serialPort API
 bool isUartTransmitBufferEmpty(serialPort_t *instance);
-void uartPutc(serialPort_t *instance, uint8_t ch);
+void uartWrite(serialPort_t *instance, uint8_t ch);
 int uartTotalBytesWaiting(serialPort_t *instance);
-int uartGetc(serialPort_t *instance);
+int uartRead(serialPort_t *instance);
 
 void uartRelease(serialPort_t *instance);
 void uartConfigure(serialPort_t *instance, const serialPortConfig_t* config);

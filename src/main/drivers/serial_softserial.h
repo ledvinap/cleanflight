@@ -58,9 +58,9 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortCo
 
 // serialPort API
 bool isSoftSerialTransmitBufferEmpty(serialPort_t *instance);
-void softSerialPutc(serialPort_t *instance, uint8_t ch);
+void softSerialWrite(serialPort_t *instance, uint8_t ch);
 int softSerialTotalBytesWaiting(serialPort_t *instance);
-int softSerialGetc(serialPort_t *instance);
+int softSerialRead(serialPort_t *instance);
 
 void softSerialRelease(serialPort_t *instance);
 void softSerialConfigure(serialPort_t *instance, const serialPortConfig_t* config);

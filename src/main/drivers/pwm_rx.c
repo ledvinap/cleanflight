@@ -43,8 +43,7 @@
 #define PWM_PORTS_OR_PPM_CAPTURE_COUNT PWM_INPUT_PORT_COUNT
 #endif
 
-// TODO - change to timer cloks ticks
-#define INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX 0x03
+#define INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX ~0   // use maximum filter length
 
 static inputFilteringMode_e inputFilteringMode;
 
@@ -267,9 +266,9 @@ void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
     self->mode = INPUT_MODE_PWM;
     self->timerHardware = timerHardwarePtr;
 
-    timerChInit(timerHardwarePtr, TYPE_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER);
+    timerChInit(timerHardwarePtr, TYPE_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, PWM_TIMER_MHZ);
     timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
-    timerChConfigIC(timerHardwarePtr, true, 0);
+    timerChConfigIC(timerHardwarePtr, true, INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX);
 
     timerChCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
     timerChOvrHandlerInit(&self->overflowCb, pwmOverflowCallback);
@@ -287,13 +286,12 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     self->mode = INPUT_MODE_PPM;
     self->timerHardware = timerHardwarePtr;
 
-    timerChInit(timerHardwarePtr, TYPE_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER);
+    timerChInit(timerHardwarePtr, TYPE_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, PWM_TIMER_MHZ);
     timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
     timerChConfigIC(timerHardwarePtr, true, 0);
 
     timerChCCHandlerInit(&self->edgeCb, ppmEdgeCallback);
     timerChOvrHandlerInit(&self->overflowCb, ppmOverflowCallback);
-
     timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
 }
 

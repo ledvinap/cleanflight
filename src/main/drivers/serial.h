@@ -25,20 +25,18 @@ typedef enum portMode_t {
     MODE_TX           = 1 << 1,
     MODE_RXTX         = MODE_RX | MODE_TX,
     MODE_SBUS         = 1 << 2,
-    MODE_HALFDUPLEX   = 1 << 3,
-    MODE_SINGLEWIRE   = 1 << 4,
+    MODE_SINGLEWIRE   = 1 << 3,
+    MODE_HALFDUPLEX   = 1 << 4,
     MODE_INVERTED     = 1 << 5,
 // driver specific modes below
-// serial should work regardless of settings
 // softserial specific
     MODE_S_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
 // uart specific
     MODE_U_DMARX      = 1 << 7, // use USART RX DMA if available
     MODE_U_DMATX      = 1 << 8, // use USART TX DMA if available
 
-// default modes if no specific features are needed
-    MODE_DEFAULT_FAST  = MODE_S_DUALTIMER | MODE_U_DMARX | MODE_U_DMATX,
-    MODE_DEFAULT_SMALL = 0,
+// hints how to setup port if more configuration options are possible (DMA, dualtimer, .. ). Device-specific driver sets neccesary flags
+    MODE_DEFAULT_FAST  = 1 << 9, // setup port for high-performance if possible
 } portMode_t;
 
 
@@ -85,15 +83,15 @@ typedef struct  {
     serialReceiveCallback *rxCallback;
 } serialPortConfig_t;
 
-// use this to initialize structure used to store port config. CMD_CONFIGURE can be safely called with it
+// use this to initialize structure used to store port config. serialConfigure can be safely called with it
 #define SERIAL_CONFIG_INIT_EMPTY { .mode = 0 }
 
 struct serialPortVTable {
     bool (*isTransmitBufferEmpty)(serialPort_t *instance);
-    void (*putc)(serialPort_t *instance, uint8_t ch);
+    void (*write)(serialPort_t *instance, uint8_t ch);
 
     int (*totalBytesWaiting)(serialPort_t *instance);
-    int (*getc)(serialPort_t *instance);
+    int (*read)(serialPort_t *instance);
 
     void (*release)(serialPort_t *instance);
     void (*configure)(serialPort_t *instance, const serialPortConfig_t* config);
@@ -102,15 +100,14 @@ struct serialPortVTable {
 };
 
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
-void serialWrite(serialPort_t *instance, uint8_t ch); // for backward comaptibility
-void serialPutc(serialPort_t *instance, uint8_t ch);
-int serialWriteData(serialPort_t *instance, const uint8_t *data, int len); // TODO - implement this
+void serialWrite(serialPort_t *instance, uint8_t ch);
+int serialWriteData(serialPort_t *instance, const uint8_t *data, int len);  // for backward comaptibility
+int serialWriteBlock(serialPort_t *instance, const uint8_t *data, int len);
 void serialPrint(serialPort_t *instance, const char *str);
 
 int serialTotalBytesWaiting(serialPort_t *instance);
-int serialRead(serialPort_t *instance);  // for backward comaptibility
-int serialGetc(serialPort_t *instance);
-int serialReadData(serialPort_t *instance, const uint8_t *data, int len); // TODO - implement this
+int serialRead(serialPort_t *instance);
+int serialReadBlock(serialPort_t *instance, const uint8_t *data, int len);
 // release port
 void serialRelease(serialPort_t *instance);
 // restore previous configuration

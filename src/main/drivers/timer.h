@@ -119,7 +119,7 @@ void timerChITConfigDualLo(const timerHardware_t* timHw, FunctionalState newStat
 void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
 void timerChClearCCFlag(const timerHardware_t* timHw);
 
-void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority);
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency);
 
 const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw);
 channelResources_t timerChGetUsedResources(const timerHardware_t *timHw);

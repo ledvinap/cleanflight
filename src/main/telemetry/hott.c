@@ -113,8 +113,6 @@ static telemetryConfig_t *telemetryConfig;
 static HOTT_GPS_MSG_t hottGPSMessage;
 static HOTT_EAM_MSG_t hottEAMMessage;
 
-static bool useSoftserialRxFailureWorkaround = false;
-
 static void initialiseEAMMessage(HOTT_EAM_MSG_t *msg, size_t size)
 {
     memset(msg, 0, size);

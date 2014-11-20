@@ -885,8 +885,6 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
             return GPS_PASSTHROUGH_NO_SERIAL_PORT;
         }
     }
-    if(!(gpsPort->mode & MODE_TX))
-        serialSetMode(gpsPort, gpsPort->mode | MODE_TX);
 
     // reconfigure GPS, enable TX mode
     serialPortConfig_t tmpCfg;

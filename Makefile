@@ -18,7 +18,7 @@
 TARGET		?= NAZE
 
 # Compile-time options
-OPTIONS		?= PINDEBUG
+OPTIONS		?= # PINDEBUG
 
 # compile for OpenPilot BootLoader support
 OPBL ?=no

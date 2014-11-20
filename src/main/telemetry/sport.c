@@ -150,15 +150,15 @@ struct tlm_info_s {
 const struct tlm_info_s tlm_info[] = {
     {tlm_Acc, 125},
     {tlm_Vario, 125},
-    {tlm_BaroAlt, 500},
-    {tlm_Heading, 500},
+    {tlm_BaroAlt, 250},
+    {tlm_Heading, 250},
     {tlm_Temp1, 1000},
     {tlm_Current, 1000},
     {tlm_Voltage, 1000},
     {tlm_Cells, 1000},
     {tlm_Fuel, 1000},
 #ifdef GPS
-    {tlm_GPS, 1000},
+    {tlm_GPS, 500},
     {tlm_GPS_Speed, 500},
 #endif
     {tlm_Time, 5000},
@@ -286,7 +286,7 @@ void tlm_sendGPS(void)
     if(GPS_coord[LAT] < 0) val |= 1 << 30;
     pushPacket(GPS_LONG_LATI_FIRST_ID, val);
     // send also GPS altitude here
-    pushPacket(GPS_ALT_FIRST_ID, GPS_altitude * 10);
+    pushPacket(GPS_ALT_FIRST_ID, GPS_altitude * 100);   // send in mm, local in 0.1m
 }
 #endif
 

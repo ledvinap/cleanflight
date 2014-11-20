@@ -22,7 +22,7 @@
 #endif
 
 #ifdef M_PI
-// M_PI should me float
+// M_PI should be float, but previous definition may be double
 # undef M_PI
 #endif
 #define M_PI       3.14159265358979323846f

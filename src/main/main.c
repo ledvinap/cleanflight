@@ -42,9 +42,6 @@
 #include "drivers/adc.h"
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
-#include "drivers/gpio.h"
-#include "drivers/light_led.h"
-#include "drivers/sound_beeper.h"
 #include "drivers/inverter.h"
 #include "drivers/pin_debug.h"
 
@@ -272,7 +269,7 @@ void init(void)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
-#ifdef STM32F10X
+#if defined(SERIAL_PORT_USART2) && defined(STM32F10X)
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
 #endif
     pwm_params.useVbat = feature(FEATURE_VBAT);

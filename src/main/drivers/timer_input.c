@@ -71,7 +71,7 @@ void timerIn_Restart(timerInputRec_t* self)
             ATOMIC_AND(&self->flags, ~TIMERIN_FLAG_HIGH);
         else
             ATOMIC_OR(&self->flags, TIMERIN_FLAG_HIGH);
-        timerChConfigIC(timHw, self->flags & TIMERIN_RISING, 0);
+        timerChConfigIC(timHw, self->flags & TIMERIN_RISING, 42*72);
         timerChConfigGPIO(timHw, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacks(timHw, &self->edgeLoCb, NULL);
     }
@@ -84,7 +84,7 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
     // check buffer space first
     unsigned nxt = (self->qhead + 1) % TIMERIN_QUEUE_LEN;
     if(nxt == self->qtail) {
-        // do not change polarity if queue is full. Next edge will be ignored
+        // do not change polarity if queue is full. Next edge (with oposite direction) will be ignored
         // this way buffer stays synchronized
         return;
     }

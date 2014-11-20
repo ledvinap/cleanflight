@@ -187,6 +187,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
                        | TIMERIN_QUEUE_BUFFER);
         self->rxTimerCh.timeout = self->symbolLength + SOFTSERIAL_RXPROCESS_DELAY;
         state |= STATE_RX;
+        self->port.state = state;                                                   // we need RX in callback
         callbackTrigger(&self->rxCallback);                                         // rxCallback will setup timeouts if neccessary
     }
     self->port.state = state;

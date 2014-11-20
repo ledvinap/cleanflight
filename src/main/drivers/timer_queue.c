@@ -69,16 +69,17 @@ void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn)
 {
     self->callbackFn = callbackFn;
     self->queuePos = 0;
+    self->inIsrQueue = 0;
 }
 
 // this function must not interrupt CALLBACK isr (but can be called from callback handler)
+// also make sure timerQueue_Start is not called after calling release (trom higher priority ISR)
 void timerQueue_Release(timerQueueRec_t *self)
 {
     ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
         timerQueue_EnqueuePending();             // make sure this timer not in ISR queue. Is is simpler that explicit check
         if(self->queuePos)
             timerQueue_QueueDelete(self);
-        self->queuePos = 0;
     }
 }
 
@@ -111,10 +112,11 @@ static int timerQueue_QueueInsert(timerQueueRec_t *rec)
         parent = child / 2;
         if(tq_cmp(timerQueue.heap[parent - 1], rec) <= 0) break;
         timerQueue.heap[child - 1] = timerQueue.heap[parent - 1];
+        timerQueue.heap[child - 1]->queuePos = child;
         child = parent;
     }
     timerQueue.heap[child - 1] = rec;
-    rec->queuePos = child;
+    timerQueue.heap[child - 1]->queuePos = child;
     return child;
 }
 
@@ -128,15 +130,15 @@ static void timerQueue_QueueDelete(timerQueueRec_t *rec)
 
 // remove element at given index from queue
 // caller must be at CALLBACK priority
-static void timerQueue_QueueDeleteIdx(unsigned parent)
+static void timerQueue_QueueDeleteIdx(unsigned position)
 {
     if(timerQueue.heapLen == 0) return;
-    unsigned child;
+    unsigned child, parent = position;
     timerQueueRec_t *last = timerQueue.heap[--timerQueue.heapLen];
     timerQueue.heap[parent - 1]->queuePos = 0;
     while ((child = 2 * parent) <= timerQueue.heapLen) {
-        if (child + 1 <= timerQueue.heapLen
-            && tq_cmp(timerQueue.heap[child - 1], timerQueue.heap[child]) >=0)
+        if (child < timerQueue.heapLen         // equivalent to child + 1 <= ...
+            && tq_cmp(timerQueue.heap[child - 1], timerQueue.heap[child + 1 - 1]) >= 0)
             ++child;
         if(tq_cmp(last, timerQueue.heap[child - 1]) <= 0)
             break;
@@ -172,6 +174,8 @@ void timerQueue_CallbackEvent(callbackRec_t *cb)
 // must be called at CALLBACK priority
 static void timerQueue_EnqueuePending(void)
 {
+    // TODO - use linked list stored in timerQueueRec to handle this
+    //   but that will need protection on TIMER priority ...
     while(timerQueue.isrHead != timerQueue.isrTail) {
         timerQueueRec_t *t = timerQueue.isr[timerQueue.isrTail];
         if(t->queuePos)
@@ -188,14 +192,15 @@ static void timerQueue_Run(void)
 {
 check_again:
     // trigger all due timers, removing them from queue
-    while(timerQueue.heapLen && tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT) < 0) {
+    while(timerQueue.heapLen
+          && tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT) < 0) {
         timerQueueRec_t *rec = timerQueue.heap[0];
         timerQueue_QueueDeleteIdx(1);                              // remove timer from queue first, so it is posible reinsert it in callback function
         rec->callbackFn(rec);                                      // call regitered function
     }
     // replan timer
     if(timerQueue.heapLen) {
-        timerChClearCCFlag(&timerHardware[TIMER_QUEUE_CHANNEL]);   // check for compare match from here if interrupt is enabled later
+        timerChClearCCFlag(&timerHardware[TIMER_QUEUE_CHANNEL]);   // honour compare match flag from here if interrupt is enabled later
         *timerQueue.timCCR = timerQueue.heap[0]->time;
         if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT) < 0) {
             // it is possible that we filled CCR too late. Run callbacks again immediately

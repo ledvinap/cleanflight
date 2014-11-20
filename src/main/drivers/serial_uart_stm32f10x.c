@@ -237,12 +237,12 @@ uartPort_t *serialUSART3(const serialPortConfig_t *config)
         if (config->mode & MODE_TX) {
             gpio.pin = USART3_TX_PIN;
             gpio.mode = Mode_AF_PP;
-            gpioInit(GPIOA, &gpio);
+            gpioInit(USART3_GPIO, &gpio);
         }
         if (config->mode & MODE_RX) {
             gpio.pin = USART3_RX_PIN;
             gpio.mode = Mode_IPU;
-            gpioInit(GPIOA, &gpio);
+            gpioInit(USART3_GPIO, &gpio);
         }
     }
 

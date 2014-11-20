@@ -362,18 +362,6 @@ static void hottCheckSerialData(uint32_t currentMicros)
 
     uint8_t bytesWaiting = serialTotalBytesWaiting(hottPort);
 
-    if (useSoftserialRxFailureWorkaround) {
-        // FIXME The 0x80 is being read as 0x00 - softserial timing/syncronisation problem somewhere.
-        if (!bytesWaiting) {
-            return;
-        }
-
-        uint8_t incomingByte = serialRead(hottPort);
-        processBinaryModeRequest(incomingByte);
-
-        return;
-    }
-
     if (bytesWaiting <= 1) {
         return;
     }

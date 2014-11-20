@@ -7,16 +7,19 @@
 
 #ifdef PINDEBUG
 
+#define _ENTRY2(a,b,c) {b,c}
+#define _ENTRY(...) _ENTRY2(__VA_ARGS__)
 struct {
-    bool enable;
     GPIO_TypeDef *gpio;
     uint16_t pin;
-} pinDebugPins[] = {
-    {DBG_PIN_1},
-    {DBG_PIN_2},
-    {DBG_PIN_3},
-    {DBG_PIN_4},
+} const pinDebugPins[] = {
+    _ENTRY(DBG_PIN_1),
+    _ENTRY(DBG_PIN_2),
+    _ENTRY(DBG_PIN_3),
+    _ENTRY(DBG_PIN_4),
 };
+#undef _ENTRY
+#undef _ENTRY2
 
 void pinDebugInit(void)
 {

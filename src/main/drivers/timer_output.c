@@ -35,14 +35,17 @@ void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, chann
     self->flags = flags;
     timerChInit(timHw, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, priority, 1000000);
     timerChCCHandlerInit(&self->compareCb, timerOut_timerCompareEvent);
+    // Enable PWM for advanced timers here, it is not cleared during release
+    if(self->timHw->outputEnable)
+        TIM_CtrlPWMOutputs(self->timHw->tim, ENABLE);
 
     timerOut_Restart(self);
 }
 
 void timerOut_Release(timerOutputRec_t* self)
 {
-    self->flags &= ~(TIMEROUT_RUNNING | TIMEROUT_RESTART);
     timerChConfigCallbacks(self->timHw, NULL, NULL);
+    ATOMIC_AND(&self->flags, ~(TIMEROUT_RUNNING | TIMEROUT_RESTART));
     if(self->flags & TIMEROUT_RELEASEMODE_INPUT) {
         timerChConfigGPIO(self->timHw, (self->flags & TIMEROUT_IDLE_HI) ? Mode_IPU : Mode_IPD);
     } else {
@@ -61,11 +64,10 @@ void timerOut_Restart(timerOutputRec_t* self)
 
     timerChConfigOC(self->timHw, true, !(self->flags & TIMEROUT_IDLE_HI));
     timerChConfigGPIO(self->timHw, Mode_AF_PP);
-    if(self->timHw->outputEnable)
-        TIM_CtrlPWMOutputs(self->timHw->tim, ENABLE);
     timerChConfigCallbacks(self->timHw, &self->compareCb, NULL);
 }
 
+// this handler can't be interrupted by any timer code
 void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
 {
     UNUSED(compare);
@@ -82,19 +84,32 @@ void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
             if(self->qtail == self->qhead) { // last interval, disable polarity change
                 TIM_SelectOCxM_NoDisable(self->tim, self->timHw->channel, TIM_OCMode_Timing);
             }
-            if(self->qtailWake == self->qtail)  // user wants to be woken up
+            if(self->qtail == self->qtailWake)  // user wants to be woken up
                 callbackTrigger(self->callback);
         } else {
             self->flags &= ~TIMEROUT_RUNNING;
             if(self->flags & TIMEROUT_WAKEONEMPTY)
                 callbackTrigger(self->callback);
-            // TODO - may disable channel irq here
+            // TODO - we may disable channel irq here
         }
     }
 }
 
+bool timerOut_IsIdle(timerOutputRec_t *self)
+{
+    return !(self->flags & TIMEROUT_RUNNING);
+}
+
 short timerOut_QLen(timerOutputRec_t *self)
 {
+    // this code may fail:
+    // qhead is read
+    // ISR - edge is pushed into queue (qhead++)
+    // ISR - edge is transmitted (qtail++)
+    // qtail is read
+    // in current code only caller can modify qhead, so this can't happen. But take care
+    // ATOMIC penalty will be quite high, don't fix it untill it is a problem
+    // (exclusive monitor on dummy variable is way to go)
     return (self->qhead - self->qtail) & (TIMEROUT_QUEUE_LEN - 1);
 }
 
@@ -129,23 +144,20 @@ void timerOut_QCommit(timerOutputRec_t *self)
                 self->flags |= TIMEROUT_RESTART;
             }
             self->qhead = self->qheadUnc;  // commit prepared data
-            // TODO - better wake handling
-            // wake exactly on TIMEROUT_QUEUE_LOW items
         } else {
             *self->timCCR = self->tim->CNT - 1;   // make sure there is no compare event soon
-            // TODO - maybe clear timer ISR flag here if there was compare match
+            timerChClearCCFlag(self->timHw);      // clear timer ISR flag if there was compare match before updating CCR
             self->flags |= TIMEROUT_RUNNING;
-            // TODO - can't commit single interval this way (only delay, no toggle)
             TIM_SelectOCxM_NoDisable(self->tim, self->timHw->channel, TIM_OCMode_Toggle);
-            *self->timCCR = self->tim->CNT + 2;     // not sure what happens when CNT is written into CCR. This should work fine (we have at lease 72 ticks to spare)
-            // TODO - maybe we missed compare because higher priority IRQ was served here
-            // we should retry unless CCR<CNT or irq flag is set
-            // this will work is timer interrupt high enough (current case)
-            // or we could disable all interrupts, ideally only for read/write instruction
+            *self->timCCR = self->tim->CNT + 2;     // not sure what happens when CNT is written into CCR. This should work fine (we have at least 72 ticks to spare)
+            // this will work fine as long as timer interrupt priority is highest in system
+            // but we can miss compare if higher priority IRQ is served between reading CNT and writing CCR
+            // we should probably disable all interrupts around CCR=CNT+2, but __disable_irq creates memory barrier, killing compiller optimizations. Inline asm is an option
             // [same assumption is in IRQ handler]
+            // failing to setup CCR correctly will generate ~65ms of idle state on line and then resume correctly. It's IMO OK to take the risk now
             self->qhead = self->qheadUnc;
         }
-        if(self->flags&TIMEROUT_WAKEONLOW)
+        if(self->flags & TIMEROUT_WAKEONLOW)
             self->qtailWake = (self->qhead - TIMEROUT_QUEUE_LOW) & (TIMEROUT_QUEUE_LEN - 1);
     }
 }

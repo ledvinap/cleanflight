@@ -45,8 +45,8 @@ typedef enum portMode_t {
 // some port functions can be triggered by bit in this field
 typedef enum {
     // port direction
-    STATE_TX             = 1 << 0,
-    STATE_RX             = 1 << 1,
+    STATE_RX             = 1 << 0,
+    STATE_TX             = 1 << 1,
     STATE_RXTX           = STATE_RX | STATE_TX,
     // function flags
     STATE_RX_WHENTXDONE  = 1 << 2,  // TODO - implemented only for softserial

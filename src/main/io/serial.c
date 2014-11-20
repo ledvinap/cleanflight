@@ -81,8 +81,8 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 
 static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USB_VCP,       9600,   115200,   SPF_NONE },
-    {SERIAL_PORT_USART1,        9600,   115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_USART2,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+    {SERIAL_PORT_USART1,        9600,   115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_USART2,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
 #if (SERIAL_PORT_COUNT > 3)
     {SERIAL_PORT_USART3,        9600,   19200,    SPF_SUPPORTS_CALLBACK},
     {SERIAL_PORT_USART4,        9600,   19200,    SPF_SUPPORTS_CALLBACK}
@@ -99,9 +99,9 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 };
 
 static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
-    {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
+    {SERIAL_PORT_USART1,        9600, 115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE | SPF_IS_SOFTWARE_INVERTABLE}
 };
 #else
 
@@ -115,11 +115,11 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 };
 
 static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
-    {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_USART1,        9600, 115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_USART2,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
 #if (SERIAL_PORT_COUNT > 2)
-    {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_IS_SOFTWARE_INVERTABLE},
-    {SERIAL_PORT_SOFTSERIAL2,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_IS_SOFTWARE_INVERTABLE}
+    {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE | SPF_IS_SOFTWARE_INVERTABLE},
+    {SERIAL_PORT_SOFTSERIAL2,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE | SPF_IS_SOFTWARE_INVERTABLE}
 #endif
 };
 #endif
@@ -268,10 +268,8 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
 
 #endif
 
-        if (functionConstraint->requiredSerialPortFeatures != SPF_NONE) {
-            if (!(serialPortConstraint->feature & functionConstraint->requiredSerialPortFeatures)) {
-                continue;
-            }
+        if ((serialPortConstraint->feature & functionConstraint->requiredSerialPortFeatures) != functionConstraint->requiredSerialPortFeatures) {
+            continue;
         }
 
         if (functionConstraint->minBaudRate < serialPortConstraint->minBaudRate || functionConstraint->maxBaudRate > serialPortConstraint->maxBaudRate) {

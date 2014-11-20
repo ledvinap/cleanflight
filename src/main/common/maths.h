@@ -22,7 +22,8 @@
 #endif
 
 #ifdef M_PI
-#undef M_PI
+// M_PI should me float
+# undef M_PI
 #endif
 #define M_PI       3.14159265358979323846f
 

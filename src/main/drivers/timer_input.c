@@ -16,7 +16,7 @@
 #include "timer_input.h"
 
 /* timer input fast handler. Input signal generates capture events,
-   captured times are augmented with input state and stored in receive queue
+   captured times are stored in receive queue
 */
 void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture);
 void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture);
@@ -38,7 +38,6 @@ void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channel
     self->timer = timer;
     self->timeout = 0;
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
-        // todo - mark second channel as used
         timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority, 1000000);
         self->CCR = timerChCCRLo(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_dualCaptureEventStart);
@@ -53,32 +52,32 @@ void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channel
 
 void timerIn_Release(timerInputRec_t* self)
 {
-    if(self->flags&TIMERIN_QUEUE_DUALTIMER)
+    if(self->flags & TIMERIN_QUEUE_DUALTIMER)
         timerChConfigCallbacksDual(self->timHw, NULL, NULL, NULL);
     else
         timerChConfigCallbacks(self->timHw, NULL, NULL);
 }
 
-// we assume that no IRQs can interfere, timerChConfigCallbacksmust protect self correctly
 void timerIn_Restart(timerInputRec_t* self)
 {
     const timerHardware_t* timHw = self->timHw;
 
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
-        timerChConfigICDual(timHw, self->flags & TIMERIN_RISING, 0);
-        timerChConfigGPIO(timHw, (self->flags & TIMERIN_IPU) ? Mode_IPU : Mode_IPD);
+        timerChConfigICDual(timHw, self->flags & TIMERIN_RISING, 42*72);  // halfbit interval for 115200. Safe for PWM/PPM input. This should be probably configurable in future
+        timerChConfigGPIO(timHw, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacksDual(timHw, &self->edgeLoCb, &self->edgeHiCb, NULL);
     } else {
         if(self->flags & TIMERIN_RISING)
-            self->flags &= ~TIMERIN_FLAG_HIGH;
+            ATOMIC_AND(&self->flags, ~TIMERIN_FLAG_HIGH);
         else
-            self->flags |= TIMERIN_FLAG_HIGH;
+            ATOMIC_OR(&self->flags, TIMERIN_FLAG_HIGH);
         timerChConfigIC(timHw, self->flags & TIMERIN_RISING, 0);
-        timerChConfigGPIO(timHw, (self->flags & TIMERIN_IPU) ? Mode_IPU : Mode_IPD);
+        timerChConfigGPIO(timHw, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
         timerChConfigCallbacks(timHw, &self->edgeLoCb, NULL);
     }
 }
 
+// this handler can't be interrupted by any timer code
 void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self = container_of(self_, timerInputRec_t, edgeLoCb);
 
@@ -99,27 +98,29 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
     self->qhead = nxt;
 
     // start timer if requested
-    if(self->flags & TIMERIN_TIMEOUT_FIRST) {
-        self->flags &= ~TIMERIN_TIMEOUT_FIRST;
+    if(self->flags & TIMERIN_TIMEOUT_ON_EDGE) {
+        self->flags &= ~TIMERIN_TIMEOUT_ON_EDGE;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
         timerQueue_Start(self->timer, (capture - self->tim->CNT) + self->timeout);
     }
-    if(!(self->flags&TIMERIN_QUEUE_BUFFER)
+    if(!(self->flags & TIMERIN_QUEUE_BUFFER)
        || (((self->qhead - self->qtail) & (TIMERIN_QUEUE_LEN - 1)) > TIMERIN_QUEUE_HIGH) ) {   // flush only if queue is getting full
         callbackTrigger(self->callback);
     }
 }
 
+// this handler can't be interrupted by any timer code
 void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self = container_of(self_, timerInputRec_t, edgeLoCb);
-    if(self->flags & TIMERIN_TIMEOUT_FIRST) {
-        self->flags &= ~TIMERIN_TIMEOUT_FIRST;
+    if(self->flags & TIMERIN_TIMEOUT_ON_EDGE) {
+        self->flags &= ~TIMERIN_TIMEOUT_ON_EDGE;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
         timerQueue_Start(self->timer, (capture - self->tim->CNT) + self->timeout);
-        timerChITConfigDualLo(self->timHw, DISABLE);
+        timerChITConfigDualLo(self->timHw, DISABLE);  // timer started, nothind else to do
     }
 }
 
+// this handler can't be interrupted by any timer code
 void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture) {
     timerInputRec_t* self = container_of(self_, timerInputRec_t, edgeHiCb);
     // two captured values are ready now
@@ -131,7 +132,7 @@ void timerIn_dualCaptureEventStore(timerCCHandlerRec_t *self_, uint16_t capture)
         return;
     }
     self->queue[self->qhead] = *self->CCR;
-    self->queue[self->qhead + 1] = capture;  // or self->CCR[3] if 16bit CCR / CCR[1] if 32bit ccr.
+    self->queue[self->qhead + 1] = capture;  // or use self->CCR+offset ...
     self->qhead = nxt;
 
     if(!(self->flags & TIMERIN_QUEUE_BUFFER)
@@ -149,12 +150,13 @@ bool timerIn_ArmEdgeTimeout(timerInputRec_t* self)
 {
     ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
         ATOMIC_BARRIER(*self);
-        if(self->qhead == self->qtail) { // wait only in queue is empty
-            self->flags |= TIMERIN_TIMEOUT_FIRST;
+        if(self->qhead == self->qtail) { // wait only if queue is empty
+            self->flags |= TIMERIN_TIMEOUT_ON_EDGE;
             if(self->flags & TIMERIN_QUEUE_DUALTIMER)
                 timerChITConfigDualLo(self->timHw, ENABLE);
-            // TODO - check that IT flag is cleared correctly
-            //  it is cleared by reading corresponding CCR on store
+            // IT flag must be set if first edge was already captured in dualtimer mode
+            // it is cleared by reading corresponding CCR on store
+            // keep this in mind when modifying this code
             return true;
         }
     }
@@ -171,7 +173,8 @@ void timerIn_Reset(timerInputRec_t* self)
                 self->flags |= TIMERIN_FLAG_HIGH;
             timerChICPolarity(self->timHw, !(self->flags & TIMERIN_FLAG_HIGH));
         }
-        self->qhead = self->qtail = 0;  // we assume that caller knows that tail will jump.
+        self->qhead = self->qtail = 0;
+        // we assume that caller knows that qtail will jump.
         // Use self->qhead=self->qtail if there are multiple consumers
     }
 }
@@ -191,7 +194,7 @@ bool timerIn_QPeek(timerInputRec_t* self, uint16_t* capture, uint16_t* flags)
     if(self->qhead == self->qtail)
         return false;
     *capture = self->queue[self->qtail];
-    *flags = (self->qtail&1) ? 0 : TIMERIN_FLAG_HIGH;
+    *flags = (self->qtail & 1) ? 0 : TIMERIN_FLAG_HIGH;
     self->qtail = (self->qtail + 1) % TIMERIN_QUEUE_LEN;
     return true;
 }
@@ -201,8 +204,8 @@ void timerIn_QPop(timerInputRec_t* self)
     self->qtail = (self->qtail + 1) % TIMERIN_QUEUE_LEN;
 }
 
-// queue position must be be always even when using these functions
-// this will return first edge and bogus second edge if only only half-pulse is in queue
+// queue position must be always even when using these functions
+// will return true and undefined value in capture2 if only only half-pulse is in queue
 bool timerIn_QPeek2(timerInputRec_t* self, uint16_t* capture1, uint16_t* capture2)
 {
     if(self->qhead == self->qtail)

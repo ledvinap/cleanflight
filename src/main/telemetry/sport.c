@@ -104,11 +104,11 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 #define GPS_LONG_LATI_LAST_ID   0x080f
 #define GPS_ALT_FIRST_ID        0x0820
 #define GPS_ALT_LAST_ID         0x082f
-#define GPS_SPEED_FIRST_ID      0x0830
+#define GPS_SPEED_FIRST_ID      0x0830           // in 0.01 km/h ?
 #define GPS_SPEED_LAST_ID       0x083f
-#define GPS_COURS_FIRST_ID      0x0840         // heading;  in hunderds of degree
+#define GPS_COURS_FIRST_ID      0x0840           // heading;  in hunderds of degree
 #define GPS_COURS_LAST_ID       0x084f
-#define GPS_TIME_DATE_FIRST_ID  0x0850         // hhmmss00 or YYMMDDxx with nonzero xx
+#define GPS_TIME_DATE_FIRST_ID  0x0850           // hhmmss00 or YYMMDDxx with nonzero xx
 #define GPS_TIME_DATE_LAST_ID   0x085f
 #define A3_FIRST_ID             0x0900
 #define A3_LAST_ID              0x090f
@@ -137,7 +137,7 @@ typedef enum  {
     tlm_Acc = 0, tlm_Vario, tlm_BaroAlt, tlm_Heading, tlm_Temp1, tlm_Current,
     tlm_Voltage, tlm_Cells, tlm_Fuel,
 #ifdef GPS
-    tlm_GPS,
+    tlm_GPS, tlm_GPS_Speed,
 #endif
     tlm_Time
 } tlm_Id;
@@ -159,6 +159,7 @@ const struct tlm_info_s tlm_info[] = {
     {tlm_Fuel, 1000},
 #ifdef GPS
     {tlm_GPS, 1000},
+    {tlm_GPS_Speed, 500},
 #endif
     {tlm_Time, 5000},
 };
@@ -236,10 +237,10 @@ void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
     pinDbgLo(DBP_TELEMETRY_SPORT_REPLYWAIT);
     uint8_t *pkt = telemPktQueueHead();
     if(!pkt) return;
-    serialSetDirection(sPortPort, STATE_TX);
     for(unsigned i = 0; i < 8; i++)
         tx_u8(pkt[i]);
-    serialUpdateState(sPortPort, ~0, STATE_RX_WHENTXDONE);
+    // start transmitting only after full packet is in queue
+    serialUpdateState(sPortPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE); 
     telemPktQueuePop();
 }
 
@@ -284,6 +285,8 @@ void tlm_sendGPS(void)
     val = (abs(GPS_coord[LON]) * 3 / 50) | (1 << 31);
     if(GPS_coord[LAT] < 0) val |= 1 << 30;
     pushPacket(GPS_LONG_LATI_FIRST_ID, val);
+    // send also GPS altitude here
+    pushPacket(GPS_ALT_FIRST_ID, GPS_altitude * 10);
 }
 #endif
 
@@ -293,19 +296,19 @@ static int generatePacket(tlm_Id id) {
     switch(id) {
     case tlm_Acc:
         for(int i = 0; i < 3; i++)
-            pushPacketS(ACC_FIRST_ID(i), (int)accSmooth[i] * 100 / acc_1G); // convert to 8.8 fixed point
+            pushPacketS(ACC_FIRST_ID(i), (int)accSmooth[i] * 100 / acc_1G); // send int 0.01G
         break;
     case tlm_Vario:
-        pushPacketS(VARIO_FIRST_ID, vario);
+        pushPacketS(VARIO_FIRST_ID, vario);    // send in 0.01m/s
         break;
     case tlm_BaroAlt:
-        pushPacketS(ALT_FIRST_ID, BaroAlt);
+        pushPacketS(ALT_FIRST_ID, BaroAlt);    // in 0.01m
         break;
     case tlm_Heading:
-        pushPacketS(GPS_COURS_FIRST_ID, heading);  // TODO - scaling is probably necessary
+        pushPacketS(GPS_COURS_FIRST_ID, heading*100);  // internal 1deg, sent in 0.01deg
         break;
     case tlm_Temp1:
-        pushPacketS(T1_FIRST_ID, telemTemperature1);  // TODO - maybe /10 ?
+        pushPacketS(T1_FIRST_ID, telemTemperature1);  // send in degrees
         break;
     case tlm_Current:
         if (feature(FEATURE_VBAT))
@@ -333,11 +336,16 @@ static int generatePacket(tlm_Id id) {
         break;
 #ifdef GPS
     case tlm_GPS:
-        if (sensors(SENSOR_GPS))
+        if (sensors(SENSOR_GPS) && STATE(GPS_FIX))
             tlm_sendGPS();
         else
             return 0;
         break;
+    case tlm_GPS_Speed:
+        if (sensors(SENSOR_GPS) && STATE(GPS_FIX))
+            pushPacket(GPS_SPEED_FIRST_ID, (GPS_speed * 36 + 36 / 2) / 100);  // send in in 0.01km/h, local in 0.1m/s
+        break;
+
 #endif
     case tlm_Time: {
         unsigned seconds = millis() / 1000;

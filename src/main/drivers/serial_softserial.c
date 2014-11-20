@@ -34,6 +34,8 @@
 #include "timer.h"
 #include "callback.h"
 #include "pin_debug.h"
+#include "timer.h"
+
 
 #include "pwm_mapping.h"
 
@@ -49,6 +51,12 @@
 #else
 #define MAX_SOFTSERIAL_PORTS 1
 #endif
+
+#define SOFTSERIAL_TIMER_FREQ 1000000
+// edges are processed after whole symbol was reveived. Aditional delay is addded after stopbit
+// before processing is triggered. Processing is a bit faster when next startbit edge is received
+// before this time, but reception of last byte is also delayed by this amount.
+#define SOFTSERIAL_RXPROCESS_DELAY 50
 
 extern const struct serialPortVTable softSerialVTable;
 
@@ -71,9 +79,6 @@ static void resetBuffers(softSerial_t *self)
     self->port.txBufferTail = 0;
     self->port.txBufferHead = 0;
 }
-
-// TODO !
-#include "timer.h"
 
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t *config)
 {
@@ -111,7 +116,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     if((mode & MODE_RXTX) == MODE_RXTX && self->txTimerHardware == self->rxTimerHardware)
         mode |= MODE_SINGLEWIRE;
     if(mode & MODE_SINGLEWIRE) {
-        self->txTimerHardware = self->rxTimerHardware;  // use RX pin only in singlewire mode
+        self->rxTimerHardware = self->txTimerHardware;  // use TX pin only in singlewire mode (TX is used for singlewire on USART)
         mode |= MODE_HALFDUPLEX;
     }
     if(mode & MODE_HALFDUPLEX) {
@@ -134,6 +139,8 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
        && timerChFindDualChannel(self->rxTimerHardware) == self->txTimerHardware)
         mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
 
+    // we do not check if direct pins/timer channels are free now..
+
     // there is possibility that we claim dual channel that will be neccesary for something else (two serial ports on channel pair)
     // one possibility is to use week channel allocation and enable dualtimer only after all initialization is done
     // we can also reclaim channel from other softserial port (release/configure it without dualtimer mode)
@@ -148,15 +155,15 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     self->transmissionErrors = 0;
     self->receiveErrors = 0;
 
-    self->bitTime = (1000000 << 8) / baud;                             // fractional number of timer ticks per bit, 24.8 fixed point
-    self->invBitTime = ((long long)baud << 16) / 1000000;              // scaled inverse bit time. Used to to get bit number (multiplication is faster)
+    self->bitTime = (SOFTSERIAL_TIMER_FREQ << 8) / baud;                             // fractional number of timer ticks per bit, 24.8 fixed point
+    self->invBitTime = ((long long)baud << 16) / SOFTSERIAL_TIMER_FREQ;              // 16.16 scaled inverse bit time. Used to to get bit number (multiplication is faster)
     int symbolBits = mode & MODE_SBUS ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS;
-    self->symbolLength = (self->bitTime * (2 * symbolBits - 1) / 2) >> 8;  //  symbol ends in middle of last stopbit
+    self->symbolLength = (self->bitTime * (2 * symbolBits - 1) / 2) >> 8;            //  symbol ends in middle of last stopbit; in timer ticks
 
     if(mode & MODE_TX) {
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh,
-                        self->txTimerHardware, TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
+                        self->txTimerHardware, (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
                         &self->txCallback,
                         ((mode & MODE_INVERTED) ? 0 : TIMEROUT_IDLE_HI)
                         | ((mode & MODE_SINGLEWIRE) ? TIMEROUT_RELEASEMODE_INPUT : 0)
@@ -176,11 +183,11 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
                        &self->rxCallback, &self->rxTimerQ,
                        ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0)
                        | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE)
-                       | ((mode & MODE_INVERTED) ? 0 : TIMERIN_IPU)
+                       | ((mode & MODE_INVERTED) ? 0 : TIMERIN_PIN_IPU)
                        | TIMERIN_QUEUE_BUFFER);
-        self->rxTimerCh.timeout = self->symbolLength + 50; // 50 us after stopbit (make it configurable)
+        self->rxTimerCh.timeout = self->symbolLength + SOFTSERIAL_RXPROCESS_DELAY;
         state |= STATE_RX;
-        callbackTrigger(&self->rxCallback);                                  // setup timeouts correctly
+        callbackTrigger(&self->rxCallback);                                         // rxCallback will setup timeouts if neccessary
     }
     self->port.state = state;
 }
@@ -223,9 +230,9 @@ void softSerialUpdateState(serialPort_t *serial, portState_t andMask, portState_
     ATOMIC_BLOCK(NVIC_PRIO_CALLBACK) {
         portState_t newState = (self->port.state & andMask) | orMask;
         if(newState & STATE_RX_WHENTXDONE) {
-            // first check if there is something in buffer.
-            if((self->port.state & STATE_TX)   // only if transmitter is already enabled. It should be possible to prepare data
-               && isSoftSerialTransmitBufferEmpty(&self->port) && (timerOut_QLen(&self->txTimerCh) == 0)) {
+            // first check if transmission is finished and end TX immediately in that case
+            // it is possible to prepare data first, then enable STATE_RX_WHENTXDONE and enable TX
+            if(isSoftSerialTransmitBufferEmpty(&self->port) && timerOut_IsIdle(&self->txTimerCh)) {
                 // Return to RX immediately
                 newState &= ~STATE_TX;
                 newState |= STATE_RX;
@@ -264,17 +271,16 @@ void softSerialTxCallback(callbackRec_t *cb)
     softSerial_t *self = container_of(cb, softSerial_t, txCallback);;
     softSerialTryTx(self);
 
-    if(self->directionRxOnDone && timerOut_QLen(&self->txTimerCh)==0) {
+    if(self->directionRxOnDone && timerOut_IsIdle(&self->txTimerCh)) {
         softSerialUpdateState(&self->port, ~STATE_RXTX, STATE_RX);
     }
 }
 
-// this function must be called at least on CALLBACK basepri
+// this function must be called on CALLBACK basepri
 void softSerialTryTx(softSerial_t* self) {
-    while(!isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?
+    while((self->port.state & STATE_TX)                              // do nothing if TX is not enabled
+          && !isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?
           && timerOut_QSpace(&self->txTimerCh) > ((self->port.mode & MODE_SBUS) ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS)) {  // we need space for whole byte
-
-
         uint16_t byteToSend = self->port.txBuffer[self->port.txBufferTail];
         self->port.txBufferTail = (self->port.txBufferTail + 1) & (self->port.txBufferSize - 1);
 
@@ -291,7 +297,7 @@ void softSerialTryTx(softSerial_t* self) {
         // there is toggle on start of each interval, first interval starts in idle state
         unsigned bitPos = 0;
         uint16_t lastEdgePos = 0;
-        while(byteToSend) {
+        while(byteToSend) {          // stopbit is always 1, so correct number of bits is always sent
             unsigned bitcnt = (byteToSend & 1) ? __builtin_ctz(~byteToSend ) : __builtin_ctz(byteToSend);
             byteToSend >>= bitcnt;
             bitPos += bitcnt;
@@ -327,8 +333,14 @@ void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
     if (self->port.rxCallback) {
         self->port.rxCallback(byte);
     } else {
-        self->port.rxBuffer[self->port.rxBufferHead] = byte;
-        self->port.rxBufferHead = (self->port.rxBufferHead + 1) & (self->port.rxBufferSize - 1);
+        unsigned nxt = (self->port.rxBufferHead + 1) & (self->port.rxBufferSize - 1);
+        if(nxt != self->port.rxBufferTail) {
+            self->port.rxBuffer[self->port.rxBufferHead] = byte;
+            self->port.rxBufferHead = nxt;
+        } else {
+            self->receiveErrors++;
+            return;
+        }
     }
 }
 
@@ -342,16 +354,17 @@ void softSerialRxProcess(softSerial_t *self)
 {
     uint16_t capture0, capture1, symbolStart, symbolEnd;
     PIN_DBG_BLOCK(DBP_SOFTSERIAL_RXPROCESS);
+    if(!(self->port.state & STATE_RX))    // check if RX is enabled to be sure
+        return;
     do { // return here if late edge was caught
         // always process whole symbol; first captured edge must be startbit
         while(timerIn_QPeek2(&self->rxTimerCh, &symbolStart, &capture1)) {
             // maybe capture1 is invalid here, but if enough time passed, it means wrong symbol (break) anyway
-            symbolEnd = symbolStart + self->symbolLength;   // symbolLength is to center of last stopbit
-            if(timerIn_QLen(&self->rxTimerCh) < SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol is waiting to prevent problems with timerCnt overflow
+            symbolEnd = symbolStart + self->symbolLength;                          // symbolLength is time to center of last stopbit
+            if(timerIn_QLen(&self->rxTimerCh) < SYM_TOTAL_BITS_SBUS                // process data if enough bits for symbol is waiting to prevent problems with cmp16 overflow
                && cmp16(timerIn_getTimCNT(&self->rxTimerCh), symbolEnd) < 0) {
                 pinDbgHi(DBP_SOFTSERIAL_RXWAIT_SYMBOL);
-                timerQueue_Start(&self->rxTimerQ, symbolEnd - timerIn_getTimCNT(&self->rxTimerCh) + 20);  // add some time to wait for next startbit
-                // TODO - configure this additional delay and make it bitrate dependent too)
+                timerQueue_Start(&self->rxTimerQ, symbolEnd - timerIn_getTimCNT(&self->rxTimerCh) + SOFTSERIAL_RXPROCESS_DELAY);
                 return;   // symbol is not finished yet
             }
             if(timerIn_QLen(&self->rxTimerCh) > 1) {       // continue only if second edge was found
@@ -365,7 +378,7 @@ void softSerialRxProcess(softSerial_t *self)
                 goto edge1;
                 while(timerIn_QPeek2(&self->rxTimerCh, &capture0, &capture1)) {
                     if(cmp16(capture0, symbolEnd)>0) {
-                        // this edge is in next symbol, all bits for current symbol are ready
+                        // this edge is in next symbol, all bits for current symbol are processed
                         break;
                     }
                     timerIn_QPop2(&self->rxTimerCh);
@@ -388,7 +401,7 @@ void softSerialRxProcess(softSerial_t *self)
                 // dualtimer mode is not active (dualtimer triggers on 0->1 edge)
                 // we can't simply ArmEdgeTimeout() here - input is still in wrong state, there is edge in queue
                 // so reset input queue (and setup trigger edge). We can discard edge here, but that should not hurt
-                // anything (sender must assume we need short timer after break to recover)
+                // anything (sender must assume we need short time after break to recover from break condition)
                 timerIn_Reset(&self->rxTimerCh);
                 softSerialStoreByte(self, 0);    // TODO - pass BREAK condition here
                 // check queue again, then arm (correct) timeout
@@ -420,10 +433,9 @@ bool isSoftSerialTransmitBufferEmpty(serialPort_t *instance)
 void softSerialWrite(serialPort_t *instance, uint8_t ch)
 {
     softSerial_t *self = container_of(instance, softSerial_t, port);
-
     uint16_t nxt = (self->port.txBufferHead + 1) & (self->port.txBufferSize - 1);
     if(nxt == self->port.txBufferTail) {
-        // TODO - buffer is full ...  we could wait (if outside of isr), but that could break something important.
+        // buffer is full ...  we could wait (if outside of isr), but that could break something important.
         // only log error end discard character now
         self->transmissionErrors++;
     } else {
@@ -436,29 +448,7 @@ void softSerialWrite(serialPort_t *instance, uint8_t ch)
         }
     }
 }
-#if 0
-// ---
-void softSerialSetBaudRate(serialPort_t *instance, uint32_t baud)
-{
-    softSerial_t *self = container_of(instance, softSerial_t, port);
 
-    serialPortConfig_t config;
-    softSerialGetConfig(instance, &config);
-    softSerialRelease(instance);
-    config.baudRate = baud;
-    softSerialConfigure(instance, &config);
-}
-
-void softSerialSetMode(serialPort_t *instance, portMode_t mode)
-{
-    serialPortConfig_t config;
-    softSerialGetConfig(instance, &config);
-    softSerialRelease(instance);
-    config.mode = mode;
-    softSerialConfigure(instance, &config);
-}
-// ---
-#endif
 int softSerialTotalBytesWaiting(serialPort_t *instance)
 {
     return (instance->rxBufferHead - instance->rxBufferTail) & (instance->rxBufferSize - 1);

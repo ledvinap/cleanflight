@@ -895,7 +895,7 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
         tmpCfg.mode |= MODE_TX;
         changed = true;
     }
-    // disable callback (callback is not used now)
+    // disable callback (callback is not used in current code, but be sure)
     if(tmpCfg.rxCallback) {
         tmpCfg.rxCallback = 0;
         changed = true;

@@ -160,6 +160,7 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 // caller must check if channel is free
 void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency)
 {
+    // TODO - handle timerFrequency (not used right now)
     unsigned channel = timHw - timerHardware;
     if(channel >= USABLE_TIMER_CHANNEL_COUNT)
         return;
@@ -384,10 +385,14 @@ volatile timCCR_t* timerChCCRLo(const timerHardware_t *timHw)
 }
 
 
-
 volatile timCCR_t* timerChCCR(const timerHardware_t *timHw)
 {
     return (volatile timCCR_t*)((volatile char*)&timHw->tim->CCR1 + timHw->channel);
+}
+
+volatile timCCR_t* timerChCNT(const timerHardware_t *timHw)
+{
+    return &timHw->tim->CNT;
 }
 
 void timerChConfigOC(const timerHardware_t *timHw, bool outEnable, bool activeHigh)
@@ -601,10 +606,21 @@ void timerInit(void)
 // initialize timer channel structures
     for(int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
         timerChannelInfo[i].type = TYPE_FREE;
+        timerChannelInfo[i].resourcesUsed = 0;
     }
     for(int i = 0; i < USED_TIMER_COUNT; i++) {
         timerInfo[i].priority = ~0;
     }
+#ifdef PINDEBUG
+// allocate debug pins here
+    for(int i=0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+        if(pinDebugIsPinUsed(timerHardware[i].gpio, timerHardware[i].pin)) {
+            // true pin allocation should be used when implemented
+            timerChannelInfo[i].type = TYPE_PINDEBUG;
+            timerChannelInfo[i].resourcesUsed = RESOURCE_OUTPUT;
+        }
+    }
+#endif
 }
 
 // finish configuring timers after allocation phase

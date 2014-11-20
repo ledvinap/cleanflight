@@ -21,6 +21,8 @@ callbackRec_t* callbackEntries[CALLBACK_MAX];
 # error "Currently only 32 callbacks are supported"
 #endif
 
+// it is possible to use bitbanding for callbackTrigger bits. Same parts of code will be a simpler and faster.
+
 uint32_t callbackTriggers[(CALLBACK_MAX + (CALLBACK_MAX - 1)) / 32];
 uint32_t callbackFree[(CALLBACK_MAX + (CALLBACK_MAX - 1)) / 32];
 

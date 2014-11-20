@@ -13,6 +13,8 @@
 #define DBP_SOFTSERIAL_RXPROCESS             DBG_PIN_3     // in softSerialRxProcess
 #define DBP_SOFTSERIAL_RXWAIT_SYMBOL         DBG_PIN_4     // waiting for whole symbol to arrive
 #define DBP_TIMERINPUT_EDGEDELAY             DBG_PIN_4     // waiting for whole symbol to arrive
+#define DBP_TELEMETRY_SPORT_REPLYWAIT        DBG_NONE      // poll received, waiting before reply
+
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -32,8 +34,6 @@
 #define DBG_PIN_4 true, GPIOA, Pin_8             // PWM9 (PWM1)
 
 #define DBG_NONE false, 0, 0
-
-#define DBP_TELEMETRY_SPORT_REPLYWAIT        DBG_NONE
 
 static inline void pinDbgHi(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 {
@@ -60,6 +60,7 @@ bool pinDebugIsPinUsed(GPIO_TypeDef* gpio, uint16_t pin);
 #endif
 
 // assert pin for duration of enclosing block (local variable scope)
+// use only once per line
 #define PIN_DBG_BLOCK(def)                                              \
     __extension__ void  __UNIQL(__pinDbgBlockEnd)(char *u __attribute__ ((unused))) {  pinDbgLo(def); } \
     char  __attribute__((__cleanup__(__UNIQL(__pinDbgBlockEnd))))       \

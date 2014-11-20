@@ -72,7 +72,8 @@ enum
     FSSP_SENSOR_ID2 = 0x0D,
     FSSP_SENSOR_ID3 = 0x34,
     FSSP_SENSOR_ID4 = 0x67,
-    // reverse engineering tells me that there are plenty more IDs
+    // there are 32 ID's polled by smartport master
+    // remaining 3 bits are crc (according to comments in openTx code)
 };
 
 // these data identifiers are obtained from http://diydrones.com/forum/topics/amp-to-frsky-x8r-sport-converter
@@ -184,8 +185,6 @@ static void smartPortSendByte(uint8_t c, uint16_t *crcp)
     crc += c;
     crc += crc >> 8;
     crc &= 0x00FF;
-    crc += crc >> 8;
-    crc &= 0x00FF;
     *crcp = crc;
 }
 
@@ -203,6 +202,7 @@ static void smartPortSendPackage(uint16_t id, uint32_t val)
     smartPortSendByte(u8p[3], &crc);
     smartPortSendByte(0xFF - (uint8_t)crc, NULL);
 
+    serialUpdateState(smartPortSerialPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE);
     smartPortLastServiceTime = millis();
 }
 
@@ -311,7 +311,6 @@ void handleSmartPortTelemetry(void)
         }
         smartPortIdCnt++;
 
-        float tmpf;
         int32_t tmpi;
         uint32_t tmpui;
         static uint8_t t1Cnt = 0;
@@ -319,9 +318,8 @@ void handleSmartPortTelemetry(void)
         switch(id) {
             case FSSP_DATAID_SPEED      :
                 if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
-                    tmpf = GPS_speed;
-                    tmpf *= 0.36f;
-                    smartPortSendPackage(id, (uint32_t)lroundf(tmpf)); // given in 0.1 m/s, provide in KM/H
+                    tmpui = (GPS_speed * 36 + 36 / 2) / 100;
+                    smartPortSendPackage(id, tmpui); // given in 0.1 m/s, provide in KM/H
                     smartPortHasRequest = 0;
                 }
                 break;
@@ -376,7 +374,7 @@ void handleSmartPortTelemetry(void)
                 smartPortHasRequest = 0;
                 break;
             case FSSP_DATAID_HEADING    :
-                smartPortSendPackage(id, heading / 10); // given in 0.1 deg, requested in 10000 = 100 deg
+                smartPortSendPackage(id, heading * 100); // given in deg, requested in 10000 = 100 deg
                 smartPortHasRequest = 0;
                 break;
             case FSSP_DATAID_ACCX       :

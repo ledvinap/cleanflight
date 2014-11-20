@@ -37,9 +37,9 @@ typedef struct softSerial_s {
     const timerHardware_t *txTimerHardware;
     volatile uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
 
-    uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point
-    uint32_t         invBitTime;                          // inverse bit time, scaled to 16.16
-    uint16_t         symbolLength;                        // length of whole symbol (start+parity+stop-0.5)
+    uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point in ticks
+    uint32_t         invBitTime;                          // inverse bit time, 16.16 fixed point in ticks
+    uint16_t         symbolLength;                        // length of whole symbol (start+parity+stop-0.5); in ticks
 
     timerInputRec_t  rxTimerCh;
     timerQueueRec_t  rxTimerQ;

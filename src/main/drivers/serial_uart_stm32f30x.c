@@ -98,7 +98,7 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 
-    if (config->mode & MODE_BIDIR) {
+    if (mode & MODE_SINGLEWIRE) {
         GPIO_InitStructure.GPIO_Pin = UART1_TX_PIN;
         GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
         GPIO_PinAFConfig(UART1_GPIO, UART1_TX_PINSOURCE, GPIO_AF_7);

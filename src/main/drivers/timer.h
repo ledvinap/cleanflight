@@ -128,4 +128,5 @@ channelResources_t timerChGetUsedResources(const timerHardware_t *timHw);
 
 void timerInit(void);
 void timerStart(void);
+void timerForceOverflow(TIM_TypeDef *tim);
 

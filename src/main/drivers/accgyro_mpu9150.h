@@ -17,12 +17,13 @@
 
 #pragma once
 
-void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
-void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
-void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t idlePulse);
+typedef struct mpu9150Config_s {
+    uint32_t gpioAPB2Peripherals;
+    uint16_t gpioPin;
+    GPIO_TypeDef *gpioPort;
+} mpu9150Config_t;
 
-void pwmWriteMotor(uint8_t index, uint16_t value);
-void pwmCompleteOneshotMotorUpdate(uint8_t motorCount);
-
-void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse);
-void pwmWriteServo(uint8_t index, uint16_t value);
+bool mpu9150AccDetect(const mpu9150Config_t *config,acc_t *acc);
+bool mpu9150GyroDetect(const mpu9150Config_t *config, gyro_t *gyro, uint16_t lpf);
+void mpu9150DmpLoop(void);
+void mpu9150DmpResetFifo(void);

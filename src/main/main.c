@@ -206,6 +206,7 @@ void init(void)
 #endif
 #endif
 
+#if !defined(SPARKY)
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
     adc_params.enableExternal1 = false;
@@ -218,6 +219,8 @@ void init(void)
 #endif
 
     adcInit(&adc_params);
+#endif
+
 
     initBoardAlignment(&masterConfig.boardAlignment);
 
@@ -279,6 +282,7 @@ void init(void)
     pwm_params.useCurrentMeterADC = feature(FEATURE_CURRENT_METER);
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
+    pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
     pwm_params.useServos = isMixerUsingServos();
     pwm_params.extraServos = currentProfile->gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
@@ -372,7 +376,11 @@ void init(void)
 
 #ifdef DISPLAY
     if (feature(FEATURE_DISPLAY)) {
+#ifdef USE_OLED_GPS_DEBUG_PAGE_ONLY
+        displayShowFixedPage(PAGE_GPS);
+#else
         displayEnablePageCycling();
+#endif
     }
 #endif
 }

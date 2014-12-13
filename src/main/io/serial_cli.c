@@ -126,7 +126,7 @@ static const char * const featureNames[] = {
     "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
-    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", NULL
+    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125", NULL
 };
 
 // sync this with sensors_e
@@ -135,7 +135,7 @@ static const char * const sensorNames[] = {
 };
 
 static const char * const accNames[] = {
-    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "LSM303DLHC", "MPU6000", "MPU6500", "FAKE", "None", NULL
+    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "LSM303DLHC", "MPU6000", "MPU6500", "MPU9150", "FAKE", "None", NULL
 };
 
 typedef struct {
@@ -254,7 +254,8 @@ const clivalue_t valueTable[] = {
 
     { "gps_provider",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
     { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
-    { "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.gpsAutoConfig, 0, GPS_AUTOCONFIG_OFF },
+    { "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoConfig, GPS_AUTOCONFIG_OFF, GPS_AUTOCONFIG_ON },
+    { "gps_auto_baud",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoBaud, GPS_AUTOBAUD_OFF, GPS_AUTOBAUD_ON },
 
 
     { "gps_pos_p",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOS], 0, 200 },
@@ -952,10 +953,6 @@ static void cliGpsPassthrough(char *cmdline)
     gpsEnablePassthroughResult_e result = gpsEnablePassthrough();
 
     switch (result) {
-        case GPS_PASSTHROUGH_NO_GPS:
-            cliPrint("Error: Enable and plug in GPS first\r\n");
-            break;
-
         case GPS_PASSTHROUGH_NO_SERIAL_PORT:
             cliPrint("Error: Enable and plug in GPS first\r\n");
             break;

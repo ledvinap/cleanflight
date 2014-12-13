@@ -22,7 +22,7 @@
 
 #include "usb_core.h"
 #include "usb_init.h"
-#include "hw_config.h"
+#include "vcp/hw_config.h"
 
 #include <stdbool.h>
 #include <string.h>

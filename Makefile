@@ -35,7 +35,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 FORKNAME			 = cleanflight
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R CRAZYFLIE
 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
@@ -122,6 +122,31 @@ TARGET_FLAGS = -D$(TARGET) -pedantic
 DEVICE_FLAGS = -DSTM32F10X_HD -DSTM32F10X
 
 DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
+
+else ifeq ($(TARGET),$(filter $(TARGET),CRAZYFLIE))
+
+STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F10x_StdPeriph_Driver
+USBFS_DIR	= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
+
+STDPERIPH_SRC	= $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
+USBPERIPH_SRC	= $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
+
+VPATH		:= $(VPATH):$(CMSIS_DIR)/CM3/CoreSupport:$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x:$(USBFS_DIR)/src
+CMSIS_SRC	= $(notdir $(wildcard $(CMSIS_DIR)/CM3/CoreSupport/*.c \
+			   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x/*.c))
+INCLUDE_DIRS	:= $(INCLUDE_DIRS) \
+		$(STDPERIPH_DIR)/inc \
+		$(USBFS_DIR)/inc \
+		$(CMSIS_DIR)/CM3/CoreSupport \
+		$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
+
+LD_SCRIPT	= $(LINKER_DIR)/stm32_flash_f103_128k.ld
+
+ARCH_FLAGS	= -mthumb -mcpu=cortex-m3
+TARGET_FLAGS	= -D$(TARGET) -pedantic
+DEVICE_FLAGS	= -DSTM32F10X_MD -DSTM32F10X
+
+DEVICE_STDPERIPH_SRC = $(USBPERIPH_SRC) $(STDPERIPH_SRC)
 
 else
 
@@ -293,6 +318,36 @@ EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   $(COMMON_SRC)
 
 PORT103R_SRC = $(EUSTM32F103RC_SRC)
+
+CRAZYFLIE_SRC	=	startup_stm32f10x_md_gcc.S \
+		   drivers/accgyro_mpu6050.c \
+		   drivers/adc.c \
+		   drivers/adc_stm32f10x.c \
+		   drivers/barometer_ms5611.c \
+		   drivers/bus_spi.c \
+		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/compass_hmc5883l.c \
+		   drivers/gpio_stm32f10x.c \
+		   drivers/light_led_stm32f10x.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_softserial.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f10x.c \
+		   drivers/serial_usb_vcp.c \
+		   drivers/system_stm32f10x.c \
+		   drivers/timer.c \
+		   drivers/timer_stm32f10x.c \
+		   vcp/hw_config.c \
+		   vcp/stm32_it.c \
+		   vcp/usb_desc.c \
+		   vcp/usb_endp.c \
+		   vcp/usb_istr.c \
+		   vcp/usb_prop.c \
+		   vcp/usb_pwr.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)
 
 OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_mpu6050.c \

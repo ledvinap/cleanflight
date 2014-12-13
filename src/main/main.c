@@ -292,9 +292,9 @@ void init(void)
 
     pwmRxInit(masterConfig.inputFilteringMode);
 
-//    pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
+    pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
 
-//    mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
+    mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
 
     failsafe = failsafeInit(&masterConfig.rxConfig);
     beepcodeInit(failsafe);

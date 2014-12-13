@@ -270,7 +270,9 @@ bool mpu6050GyroDetect(const mpu6050Config_t *configToUse, gyro_t *gyro, uint16_
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;
 
-    if (lpf >= 188)
+    if (lpf == 0xffff)            // diasable LPF if requested
+        mpuLowPassFilter = INV_FILTER_256HZ_NOLPF2;
+    else if (lpf >= 188)
         mpuLowPassFilter = INV_FILTER_188HZ;
     else if (lpf >= 98)
         mpuLowPassFilter = INV_FILTER_98HZ;
@@ -322,7 +324,10 @@ static void mpu6050GyroInit(void)
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
     delay(100);
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+    if(mpuLowPassFilter == INV_FILTER_256HZ_NOLPF2)         // keep 1khz sampling frequency
+        i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x07); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+    else
+        i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x03); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_INT_PIN_CFG,
             0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
@@ -344,3 +349,33 @@ static void mpu6050GyroRead(int16_t *gyroData)
     gyroData[1] = (int16_t)((buf[2] << 8) | buf[3]);
     gyroData[2] = (int16_t)((buf[4] << 8) | buf[5]);
 }
+
+uint16_t mpu6050GetFifoLen(void)
+{
+    uint8_t buf[2];
+    i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_COUNTH, 2, buf);
+    return (buf[0] << 8) | buf[1];
+}
+
+void mpu6050EnableFifo(void)
+{
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_CONFIG, INV_FILTER_188HZ);
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0);
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, 0x04);  // flush FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, 0x40);  // enable FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_FIFO_EN, 0x08);    // collect accell
+    uint8_t buf[10];
+    i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_EN, 1, buf);
+}
+
+int mpu6050ReadFifo(uint8_t *buffer, int maxLen) {
+    int len = min(min(maxLen, 64), mpu6050GetFifoLen());
+    uint8_t* p = buffer;
+    while(len>0) {
+        int tlen=min(6, len);
+        i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, tlen, p);
+        len-=tlen; p+=tlen;
+    }
+    return p-buffer;
+}
+

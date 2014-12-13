@@ -96,6 +96,7 @@ static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
+static void cliVibration(char *cmdline);
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 
@@ -172,6 +173,7 @@ const clicmd_t cmdTable[] = {
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
     { "version", "", cliVersion },
+    { "vibration", "relay accelerometer data", cliVibration },
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
 
@@ -243,12 +245,12 @@ const clivalue_t valueTable[] = {
 #endif
 
     { "reboot_character",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.reboot_character, 48, 126 },
-    { "msp_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.msp_baudrate, 1200, 115200 },
-    { "cli_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.cli_baudrate, 1200, 115200 },
+    { "msp_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.msp_baudrate, 1200, 460800 },
+    { "cli_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.cli_baudrate, 1200, 460800 },
 
 #ifdef GPS
     { "gps_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.gps_baudrate, 0, 115200 },
-    { "gps_passthrough_baudrate",   VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.gps_passthrough_baudrate, 1200, 115200 },
+    { "gps_passthrough_baudrate",   VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.gps_passthrough_baudrate, 1200, 460800 },
 
     { "gps_provider",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
     { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
@@ -1355,6 +1357,117 @@ static void cliVersion(char *cmdline)
     UNUSED(cmdline);
 
     printf("Cleanflight/%s %s / %s (%s)", targetName, buildDate, buildTime, shortGitRevision);
+}
+
+#define FILT_E 8
+static void cliVibration(char *cmdline)
+{
+    UNUSED(cmdline);
+    printf("Y,c,p\r\n");
+    mpu6050EnableFifo();
+    static uint8_t data[32];
+
+    int xf = 0,yf = 0,zf = 0;
+    bool pos=false;
+    gpio_config_t cfg;
+    cfg.pin = Pin_9;
+    cfg.speed = Speed_2MHz;
+    cfg.mode = Mode_AF_PP;
+    gpioInit(GPIOB, &cfg);
+
+    TIM_Cmd(TIM4, DISABLE);
+
+    NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+    NVIC_Init(&NVIC_InitStructure);
+    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
+    NVIC_Init(&NVIC_InitStructure);
+
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+    TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+    TIM_TimeBaseStructure.TIM_Period = 20000; // AKA TIMx_ARR
+
+    TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / 1000000) - 1;
+
+    TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);
+
+    TIM_OCInitTypeDef  TIM_OCInitStructure;
+
+    TIM_OCStructInit(&TIM_OCInitStructure);
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Disable;
+    TIM_OCInitStructure.TIM_Pulse = 1000;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+    TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+    TIM_OC4Init(TIM4, &TIM_OCInitStructure);
+    TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
+
+    TIM_Cmd(TIM4, ENABLE);
+
+
+    TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+    TIM_TimeBaseStructure.TIM_Period = 0xffff;
+
+    TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / 1000000) - 1;
+
+    TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+
+    TIM_Cmd(TIM3, ENABLE);
+
+    int tick=0;
+    int lasttick=0;
+    int period=10;
+    int per=0;
+
+    while(true) {
+        unsigned dlen=0;
+        do {
+            dlen += mpu6050ReadFifo(data + dlen, 6 - dlen);
+        } while(dlen<6);
+
+        int x=(int16_t)(data[0] << 8) | data[1];
+        int y=(int16_t)(data[2] << 8) | data[3];
+        int z=(int16_t)(data[4] << 8) | data[5];
+
+        x -= xf >> FILT_E;
+        y -= yf >> FILT_E;
+        z -= zf >> FILT_E;
+
+        xf += x;
+        yf += y;
+        zf += z;
+
+        if(y>0) {
+            if(!pos) {
+                pos = true;
+                tick = TIM3->CNT;
+                per=(uint16_t)(tick-lasttick);
+                lasttick=tick;
+
+                period +=  ((per << 7) - period) >> 7;
+
+                int p=period>>7;
+#if 0
+                int pos=TIM4->CNT;
+                if(pos > (TIM4->ARR/2))
+                    pos-=TIM4->ARR;
+                TIM4->ARR=(period>>7)+pos/8;
+#else
+                TIM4->EGR = TIM_EGR_UG;
+#endif
+            }
+        } else {
+            pos=false;
+        }
+//        if(!(tick % 4))
+            printf("%d,%d,%d\r\n", y, period, per);
+    }
 }
 
 void cliProcess(void)

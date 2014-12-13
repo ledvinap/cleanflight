@@ -74,7 +74,7 @@ typedef enum {
 } serialPortIndex_e;
 
 
-#ifdef STM32F303xC
+#if defined(STM32F303xC)
 
 typedef enum {
     SERIAL_PORT_USB_VCP = 0,
@@ -85,9 +85,8 @@ typedef enum {
 } serialPortIdentifier_e;
 
 #define SERIAL_PORT_IDENTIFIER_COUNT 5
-#else
 
-#ifdef CC3D
+#elif defined(CC3D)
 
 typedef enum {
     SERIAL_PORT_USART1 = 0,
@@ -96,6 +95,17 @@ typedef enum {
 } serialPortIdentifier_e;
 
 #define SERIAL_PORT_IDENTIFIER_COUNT 3
+
+#elif defined(CRAZYFLIE)
+
+typedef enum {
+    SERIAL_PORT_USB_VCP = 0,
+    SERIAL_PORT_USART3,
+    SERIAL_PORT_SOFTSERIAL1,
+} serialPortIdentifier_e;
+
+#define SERIAL_PORT_IDENTIFIER_COUNT 3
+
 #else
 
 typedef enum {
@@ -107,7 +117,6 @@ typedef enum {
 } serialPortIdentifier_e;
 
 #define SERIAL_PORT_IDENTIFIER_COUNT 5
-#endif
 #endif
 
 // bitmask

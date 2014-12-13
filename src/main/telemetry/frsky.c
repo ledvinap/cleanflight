@@ -166,6 +166,7 @@ static void sendBaro(void)
     serialize16(abs(BaroAlt % 100));
 }
 
+#ifdef GPS
 static void sendGpsAltitude(void)
 {
     uint16_t altitude = GPS_altitude;
@@ -178,7 +179,7 @@ static void sendGpsAltitude(void)
     sendDataHead(ID_GPS_ALTIDUTE_AP);
     serialize16(0);
 }
-
+#endif
 
 static void sendThrottleOrBatterySizeAsRpm(void)
 {
@@ -201,6 +202,7 @@ static void sendTemperature1(void)
 #endif
 }
 
+#ifdef GPS
 static void sendSatalliteSignalQualityAsTemperature2(void)
 {
     uint16_t satellite = GPS_numSat;
@@ -230,6 +232,7 @@ static void sendSpeed(void)
     sendDataHead(ID_GPS_SPEED_AP);
     serialize16(0); //Not dipslayed
 }
+#endif
 
 static void sendTime(void)
 {
@@ -481,12 +484,12 @@ void handleFrSkyTelemetry(void)
             sendGpsAltitude();
             sendSatalliteSignalQualityAsTemperature2();
         }
-#endif
-
         //  Send GPS information to display compass information
         if (sensors(SENSOR_GPS) || (telemetryConfig->gpsNoFixLatitude != 0 && telemetryConfig->gpsNoFixLongitude != 0)) {
             sendGPS();
         }
+#endif
+
         sendTelemetryTail();
     }
 

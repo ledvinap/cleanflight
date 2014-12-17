@@ -283,7 +283,7 @@ void softSerialTryTx(softSerial_t* self) {
           && !isSoftSerialTransmitBufferEmpty(&self->port)           // do we have something to send?
           && timerOut_QSpace(&self->txTimerCh) > ((self->port.mode & MODE_SBUS) ? SYM_TOTAL_BITS_SBUS : SYM_TOTAL_BITS)) {  // we need space for whole byte
         uint16_t byteToSend = self->port.txBuffer[self->port.txBufferTail];
-        self->port.txBufferTail = (self->port.txBufferTail + 1) & (self->port.txBufferSize - 1);
+        self->port.txBufferTail = (self->port.txBufferTail + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferTail + 1;
 
         if(self->port.mode & MODE_SBUS) {
             byteToSend |= (__builtin_parity(byteToSend)) << SYM_DATA_BITS;       // parity bit
@@ -334,7 +334,7 @@ void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
     if (self->port.rxCallback) {
         self->port.rxCallback(byte);
     } else {
-        unsigned nxt = (self->port.rxBufferHead + 1) & (self->port.rxBufferSize - 1);
+        unsigned nxt = (self->port.rxBufferHead + 1 >= self->port.rxBufferSize) ? 0 : self->port.rxBufferHead + 1;
         if(nxt != self->port.rxBufferTail) {
             self->port.rxBuffer[self->port.rxBufferHead] = byte;
             self->port.rxBufferHead = nxt;
@@ -434,7 +434,7 @@ bool isSoftSerialTransmitBufferEmpty(serialPort_t *instance)
 void softSerialWrite(serialPort_t *instance, uint8_t ch)
 {
     softSerial_t *self = container_of(instance, softSerial_t, port);
-    uint16_t nxt = (self->port.txBufferHead + 1) & (self->port.txBufferSize - 1);
+    uint16_t nxt = (self->port.txBufferHead + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferHead + 1;
     if(nxt == self->port.txBufferTail) {
         // buffer is full ...  we could wait (if outside of isr), but that could break something important.
         // only log error end discard character now
@@ -452,7 +452,10 @@ void softSerialWrite(serialPort_t *instance, uint8_t ch)
 
 int softSerialTotalBytesWaiting(serialPort_t *instance)
 {
-    return (instance->rxBufferHead - instance->rxBufferTail) & (instance->rxBufferSize - 1);
+    int ret = instance->rxBufferHead - instance->rxBufferTail;
+    if(ret < 0)
+        ret += instance->rxBufferSize;
+    return ret;
 }
 
 int softSerialRead(serialPort_t *instance)
@@ -465,7 +468,7 @@ int softSerialRead(serialPort_t *instance)
     }
 
     ch = instance->rxBuffer[instance->rxBufferTail];
-    instance->rxBufferTail = (instance->rxBufferTail + 1) & (instance->rxBufferSize - 1);
+    instance->rxBufferTail = (instance->rxBufferTail + 1 >= instance->rxBufferSize) ? 0 : instance->rxBufferTail + 1;
     return ch;
 }
 

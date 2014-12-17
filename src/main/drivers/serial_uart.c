@@ -260,14 +260,14 @@ void uartIrqHandler(uartPort_t *self)
             self->port.rxCallback(USART_ReceiveData(self->USARTx));
         } else {
             self->port.rxBuffer[self->port.rxBufferHead] = USART_ReceiveData(self->USARTx);
-            self->port.rxBufferHead = (self->port.rxBufferHead + 1) & (self->port.rxBufferSize - 1);
+            self->port.rxBufferHead = (self->port.rxBufferHead + 1 >= self->port.rxBufferSize) ? 0 : self->port.rxBufferHead + 1;
         }
     }
 
     if (!(self->port.mode & MODE_U_DMATX) && (flags & USART_IT_TXE)) {
         if (self->port.txBufferTail != self->port.txBufferHead) {
             USART_SendData(self->USARTx, self->port.txBuffer[self->port.txBufferTail]);
-            self->port.txBufferTail = (self->port.txBufferTail + 1) & (self->port.txBufferSize - 1);
+            self->port.txBufferTail = (self->port.txBufferTail + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferTail + 1;
         } else {
             USART_ITConfig(self->USARTx, USART_IT_TXE, DISABLE);
         }
@@ -298,7 +298,7 @@ void uartWrite(serialPort_t *serial, uint8_t ch)
     // TODO - check for full buffer
 
     self->port.txBuffer[self->port.txBufferHead] = ch;
-    self->port.txBufferHead = (self->port.txBufferHead + 1) & (self->port.txBufferSize - 1);
+    self->port.txBufferHead = (self->port.txBufferHead + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferHead + 1;
 
     if (self->port.mode & MODE_U_DMATX) {
         if (!(self->txDMAChannel->CCR & 1))
@@ -311,11 +311,15 @@ void uartWrite(serialPort_t *serial, uint8_t ch)
 int uartTotalBytesWaiting(serialPort_t *serial)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
+    int ret;
     if (self->port.mode & MODE_U_DMARX) {
-        return (self->rxDMAChannel->CNDTR - self->rxDMAPos) & (self->port.rxBufferSize - 1);
+        ret = self->rxDMAChannel->CNDTR - self->rxDMAPos;
     } else {
-        return (self->port.rxBufferHead - self->port.rxBufferTail) & (self->port.rxBufferSize - 1);
+        ret = self->port.rxBufferHead - self->port.rxBufferTail;
     }
+    if(ret < 0)
+        ret += self->port.rxBufferSize;
+    return ret;
 }
 
 int uartRead(serialPort_t *serial)
@@ -327,11 +331,13 @@ int uartRead(serialPort_t *serial)
 
     if (self->port.mode & MODE_U_DMARX) {
         ch = self->port.rxBuffer[self->port.rxBufferSize - self->rxDMAPos];
-        if (--self->rxDMAPos == 0)
+        if (self->rxDMAPos == 1)
             self->rxDMAPos = self->port.rxBufferSize;
+        else
+            self->rxDMAPos --;
     } else {
         ch = self->port.rxBuffer[self->port.rxBufferTail];
-        self->port.rxBufferTail = (self->port.rxBufferTail + 1) & (self->port.rxBufferSize - 1);
+        self->port.rxBufferTail = (self->port.rxBufferTail + 1 >= self->port.rxBufferSize) ? 0 : self->port.rxBufferTail + 1;
     }
 
     return ch;

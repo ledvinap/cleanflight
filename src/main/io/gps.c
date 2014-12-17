@@ -279,13 +279,12 @@ void gpsInitUblox(void)
                 // try different speed to INIT
                 uint32_t newBaudRate = gpsInitData[gpsData.state_position].baudrate;
                 gpsData.state_ts = now;
-                if (serialGetBaudRate(gpsPort) != newBaudRate) {
+                if (gpsSerialPortConfig.baudRate != newBaudRate) {
                     // change the rate if needed and wait a little
                     serialRelease(gpsPort);
                     gpsSerialPortConfig.baudRate = newBaudRate;
                     gpsSerialPortConfig.mode |= MODE_TX;   // TODO - we need to switch TX on when changing from NMEA
                     serialConfigure(gpsPort, &gpsSerialPortConfig);
-                    serialSetBaudRate(gpsPort, newBaudRate);
                     return;
                 }
 

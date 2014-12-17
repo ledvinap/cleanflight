@@ -122,4 +122,6 @@
 #define SERIAL_RX
 #define AUTOTUNE
 
+#define CurrentMeter_TIMER 7 // OUT6
+
 #define USABLE_TIMER_CHANNEL_COUNT (14)

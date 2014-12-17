@@ -386,7 +386,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             continue;
         }
 #endif
-#ifdef CC3D
+#if defined(CC3D) || defined(NAZE)
         if (init->useCurrentMeterADC && timerIndex == CurrentMeter_TIMER) {
             continue;
         }

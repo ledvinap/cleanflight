@@ -47,4 +47,9 @@
 #define SERIAL_RX
 #define AUTOTUNE
 
+#define SPEKTRUM_BIND
+// USART2, PA3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3
+
 #define USABLE_TIMER_CHANNEL_COUNT (14 + 1)

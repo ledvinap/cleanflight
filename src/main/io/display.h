@@ -22,10 +22,9 @@ typedef enum {
     PAGE_SENSORS,
     PAGE_RX,
     PAGE_PROFILE,
-    PAGE_GPS
+    PAGE_GPS,
 #ifdef ENABLE_DEBUG_OLED_PAGE
-    ,
-    PAGE_DEBUG
+    PAGE_DEBUG,
 #endif
 } pageId_e;
 

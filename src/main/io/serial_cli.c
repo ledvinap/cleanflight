@@ -90,13 +90,14 @@ static void cliMixer(char *cmdline);
 static void cliMotor(char *cmdline);
 static void cliProfile(char *cmdline);
 static void cliRateProfile(char *cmdline);
-static void cliReboot(void);
 static void cliSave(char *cmdline);
 static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
 static void cliVibration(char *cmdline);
+
+static void cliReboot();
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 
@@ -864,14 +865,21 @@ static void cliEnter(void)
 
 static void cliExit(char *cmdline)
 {
-    UNUSED(cmdline);
-    cliPrint("\r\nLeaving CLI mode, unsaved changes lost.\r\n");
-    *cliBuffer = '\0';
-    bufferIndex = 0;
-    cliMode = 0;
-    // incase a motor was left running during motortest, clear it here
-    mixerResetMotors();
-    cliReboot();
+    if(!strcmp(cmdline, "noreboot")) {
+        cliPrint("\r\nLeaving CLI mode without reboot. Be careful!\r\n");
+        *cliBuffer = '\0';
+        bufferIndex = 0;
+        endSerialPortFunction(cliPort, FUNCTION_CLI);
+        cliMode = 0;
+    } else {
+        cliPrint("\r\nLeaving CLI mode and rebooting, unsaved changes lost.\r\n");
+        *cliBuffer = '\0';
+        bufferIndex = 0;
+        cliMode = 0;
+        // incase a motor was left running during motortest, clear it here
+        mixerResetMotors();
+        cliReboot();
+    }
 }
 
 static void cliFeature(char *cmdline)
@@ -1122,17 +1130,21 @@ static void cliRateProfile(char *cmdline)
 static void cliReboot(void) {
     cliPrint("\r\nRebooting");
     waitForSerialPortToFinishTransmitting(cliPort);
+    // incase a motor was left running during motortest, clear it here
+    mixerResetMotors();
     systemReset();
 }
 
 static void cliSave(char *cmdline)
 {
-    UNUSED(cmdline);
-
-    cliPrint("Saving");
+    cliPrint("Saving\r\n");
     //copyCurrentProfileToProfileSlot(masterConfig.current_profile_index);
     writeEEPROM();
-    cliReboot();
+    if(!strcmp(cmdLine, "noreboot")) {
+        cliPrint("Skipping reboot\r\n");
+    } else {
+        cliReboot();
+    }
 }
 
 static void cliDefaults(char *cmdline)
@@ -1511,7 +1523,7 @@ void cliProcess(void)
             }
             for (; i < bufferIndex; i++)
                 cliWrite(cliBuffer[i]);
-        } else if (!bufferIndex && c == 4) {
+        } else if (!bufferIndex && c == 4) {   //CTRL-D
             cliExit(cliBuffer);
             return;
         } else if (c == 12) {

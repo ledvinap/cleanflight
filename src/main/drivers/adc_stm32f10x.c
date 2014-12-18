@@ -25,10 +25,6 @@
 
 #include "system.h"
 
-#include "sensors/sensors.h" // FIXME dependency into the main code
-
-#include "accgyro.h"
-
 #include "adc.h"
 
 // Driver for STM32F103CB onboard ADC
@@ -55,42 +51,38 @@ void adcInit(drv_adc_config_t *init)
     DMA_InitTypeDef dma;
     GPIO_InitTypeDef GPIO_InitStructure;
 
-    uint8_t i;
-    uint8_t configuredAdcChannels = 0;
-
     memset(&adcConfig, 0, sizeof(adcConfig));
 
     GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 
 #ifdef CC3D
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
     adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_0;
-    adcConfig[ADC_BATTERY].dmaIndex = configuredAdcChannels++;
     adcConfig[ADC_BATTERY].enabled = true;
     adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_239Cycles5;
-
 #else
     // configure always-present battery index (ADC4)
-    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_4;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
     adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_4;
-    adcConfig[ADC_BATTERY].dmaIndex = configuredAdcChannels++;
     adcConfig[ADC_BATTERY].enabled = true;
     adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_239Cycles5;
 
     if (init->enableExternal1) {
 #ifdef OLIMEXINO
-        GPIO_InitStructure.GPIO_Pin   |= GPIO_Pin_5;
+        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+        GPIO_Init(GPIOA, &GPIO_InitStructure);
         adcConfig[ADC_EXTERNAL1].adcChannel = ADC_Channel_5;
-        adcConfig[ADC_EXTERNAL1].dmaIndex = configuredAdcChannels++;
         adcConfig[ADC_EXTERNAL1].enabled = true;
         adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_239Cycles5;
 #endif
 
 #ifdef NAZE
-        GPIO_InitStructure.GPIO_Pin   |= GPIO_Pin_5;
+        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+        GPIO_Init(GPIOA, &GPIO_InitStructure);
         adcConfig[ADC_EXTERNAL1].adcChannel = ADC_Channel_5;
-        adcConfig[ADC_EXTERNAL1].dmaIndex = configuredAdcChannels++;
         adcConfig[ADC_EXTERNAL1].enabled = true;
         adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_239Cycles5;
 #endif
@@ -98,24 +90,26 @@ void adcInit(drv_adc_config_t *init)
 #endif // !CC3D
 
     if (init->enableRSSI) {
-        GPIO_InitStructure.GPIO_Pin   |= GPIO_Pin_1;
+        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+        GPIO_Init(GPIOA, &GPIO_InitStructure);
         adcConfig[ADC_RSSI].adcChannel = ADC_Channel_1;
-        adcConfig[ADC_RSSI].dmaIndex = configuredAdcChannels++;
         adcConfig[ADC_RSSI].enabled = true;
         adcConfig[ADC_RSSI].sampleTime = ADC_SampleTime_239Cycles5;
     }
-
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
 
     if (init->enableCurrentMeter) {
         GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_1;
         GPIO_Init(GPIOB, &GPIO_InitStructure);
         adcConfig[ADC_CURRENT].adcChannel = ADC_Channel_9;
-        adcConfig[ADC_CURRENT].dmaIndex = configuredAdcChannels++;
         adcConfig[ADC_CURRENT].enabled = true;
         adcConfig[ADC_CURRENT].sampleTime = ADC_SampleTime_239Cycles5;
     }
 
+    // count used channels
+    int configuredAdcChannels=0;
+    for(int i = 0; i < ADC_CHANNEL_COUNT; i++)
+        if(adcConfig[i].enabled)
+            configuredAdcChannels++;
 
     RCC_ADCCLKConfig(RCC_PCLK2_Div8);  // 9MHz from 72MHz APB2 clock(HSE), 8MHz from 64MHz (HSI)
 
@@ -147,12 +141,14 @@ void adcInit(drv_adc_config_t *init)
     adc.ADC_NbrOfChannel = configuredAdcChannels;
     ADC_Init(ADC1, &adc);
 
-    uint8_t rank = 1;
-    for (i = 0; i < ADC_CHANNEL_COUNT; i++) {
+    uint8_t sequencerIndex = 0;
+    for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
         if (!adcConfig[i].enabled) {
             continue;
         }
-        ADC_RegularChannelConfig(ADC1, adcConfig[i].adcChannel, rank++, adcConfig[i].sampleTime);
+        adcConfig[i].dmaIndex = sequencerIndex;
+        ADC_RegularChannelConfig(ADC1, adcConfig[i].adcChannel, sequencerIndex + 1, adcConfig[i].sampleTime);
+        sequencerIndex++;
     }
 
     ADC_DMACmd(ADC1, ENABLE);

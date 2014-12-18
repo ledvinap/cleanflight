@@ -88,12 +88,12 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
     batteryWarningVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage; // 3.3V per cell minimum, configurable in CLI
 }
 
-#define ADCVREF 33L
+#define ADCVREF 3300L   // in mV
 int32_t currentSensorToCentiamps(uint16_t src)
 {
     int32_t millivolts;
 
-    millivolts = ((uint32_t)src * ADCVREF * 100) / 4095;
+    millivolts = ((uint32_t)src * ADCVREF) / 4096;
     millivolts -= batteryConfig->currentMeterOffset;
 
     return (millivolts * 1000) / (int32_t)batteryConfig->currentMeterScale; // current in 0.01A steps

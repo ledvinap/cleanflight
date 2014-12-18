@@ -26,8 +26,8 @@ typedef struct batteryConfig_s {
     uint8_t vbatmaxcellvoltage;             // maximum voltage per cell, used for auto-detecting battery voltage in 0.1V units, default is 43 (4.3V)
     uint8_t vbatmincellvoltage;             // minimum voltage per cell, this triggers battery out alarms, in 0.1V units, default is 33 (3.3V)
 
-    uint16_t currentMeterScale;             // scale the current sensor output voltage to milliamps. Value in 1/10th mV/A
-    uint16_t currentMeterOffset;            // offset of the current sensor in millivolt steps
+    int16_t currentMeterScale;              // scale the current sensor output voltage to milliamps. Value in 1/10th mV/A
+    int16_t currentMeterOffset;             // offset of the current sensor in millivolt steps
 
     // FIXME this doesn't belong in here since it's a concern of MSP, not of the battery code.
     uint8_t multiwiiCurrentMeterOutput;     // if set to 1 output the amperage in milliamp steps instead of 0.01A steps via msp

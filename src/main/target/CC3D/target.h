@@ -83,3 +83,4 @@
 #define BIND_PIN   Pin_11
 
 #define USABLE_TIMER_CHANNEL_COUNT (12 + 1)
+

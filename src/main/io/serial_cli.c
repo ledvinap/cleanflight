@@ -1142,7 +1142,7 @@ static void cliSave(char *cmdline)
     cliPrint("Saving\r\n");
     //copyCurrentProfileToProfileSlot(masterConfig.current_profile_index);
     writeEEPROM();
-    if(!strcmp(cmdLine, "noreboot")) {
+    if(!strcmp(cmdline, "noreboot")) {
         cliPrint("Skipping reboot\r\n");
     } else {
         cliReboot();

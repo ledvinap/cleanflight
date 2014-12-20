@@ -124,7 +124,7 @@
 
 #define CurrentMeter_TIMER 7 // OUT6
 
-#define SPEKTRUM_BIND
+//#define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3

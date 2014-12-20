@@ -23,6 +23,7 @@
 #include "platform.h"
 
 #include "gpio.h"
+#include "nvic.h"
 #include "timer.h"
 
 #include "flight/failsafe.h" // FIXME dependency into the main code from a driver
@@ -95,7 +96,7 @@ static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8
 {
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
-    timerConfigure(timerHardware, period, mhz);
+    timerConfigure(timerHardware->tim, NVIC_PRIO_TIMER_PWMOUT, period, mhz * 1000000);
     pwmGPIOConfig(timerHardware->gpio, timerHardware->pin, Mode_AF_PP);
 
 

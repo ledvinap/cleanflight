@@ -154,6 +154,12 @@ void init(void)
 
     systemInit();
 
+    // timer must be initialized before any channel is allocated
+    // delay functions are dependent on timer
+    timerInit();
+
+    pinDebugInit();
+
 #ifdef SPEKTRUM_BIND
     if (feature(FEATURE_RX_SERIAL)) {
         switch (masterConfig.rxConfig.serialrx_provider) {
@@ -170,9 +176,6 @@ void init(void)
 
     delay(100);
 
-    pinDebugInit();
-
-    timerInit();  // timer must be initialized before any channel is allocated
 
     ledInit();
 

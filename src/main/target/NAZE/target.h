@@ -130,3 +130,6 @@
 #define BIND_PIN   Pin_3
 
 #define USABLE_TIMER_CHANNEL_COUNT (14)
+
+#define TIME_USE_TIMER    // base timming on some timer instead of systick
+#define TIME_TIMER TIM3

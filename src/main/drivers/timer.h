@@ -101,7 +101,7 @@ typedef enum {
     RESOURCE_ADC = 1 << 5
 } channelResources_t;
 
-void timerConfigure(const timerHardware_t *timHw, uint16_t period, uint8_t mhz);  // This interface should be replaced.
+void timerConfigure(TIM_TypeDef *tim, uint8_t irqPriority, uint16_t period, int frequency);
 
 void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);
 void timerChConfigICDual(const timerHardware_t* timHw, bool polarityRising, unsigned inputFilterSamples);

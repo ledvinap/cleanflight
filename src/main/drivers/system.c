@@ -31,8 +31,9 @@
 
 #include "system.h"
 
+#ifndef TIME_USE_TIMER
 // cycles per microsecond
-static volatile uint32_t usTicks = 0;
+static uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
 
@@ -68,6 +69,8 @@ uint32_t millis(void)
     return sysTickUptime;
 }
 
+#endif
+
 void systemInit(void)
 {
 #ifdef CC3D
@@ -96,12 +99,16 @@ void systemInit(void)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;
 #endif
 
+#ifndef TIME_USE_TIMER
     // Init cycle counter
     cycleCounterInit();
 
     // SysTick
     SysTick_Config(SystemCoreClock / 1000);
+#endif
 }
+
+#ifndef TIME_USE_TIMER
 
 #if 1
 void delayMicroseconds(uint32_t us)
@@ -142,6 +149,8 @@ void delay(uint32_t ms)
     while (ms--)
         delayMicroseconds(1000);
 }
+
+#endif
 
 // FIXME replace mode with an enum so usage can be tracked, currently mode is a magic number
 void failureMode(uint8_t mode)

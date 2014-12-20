@@ -21,7 +21,11 @@
 #define NVIC_PRIO_I2C_EV                   NVIC_BUILD_PRIORITY(1, 0)
 #define NVIC_PRIO_USB                      NVIC_BUILD_PRIORITY(2, 0)
 #define NVIC_PRIO_USB_WUP                  NVIC_BUILD_PRIORITY(1, 0)
+#define NVIC_PRIO_TIME_TIMER               NVIC_BUILD_PRIORITY(0x0f, 0x0f)   // used to keep track of time timer overflows
+#define NVIC_PRIO_SYSTICK                  NVIC_BUILD_PRIORITY(0x0f, 0x0f)   // must be same priority group as CALLBACK
 #define NVIC_PRIO_CALLBACK                 NVIC_BUILD_PRIORITY(0x0f, 0x0f)
+
+#define NVIC_PRIO_TIMER_PWMOUT             NVIC_BUILD_PRIORITY(3, 1)
 
 // utility macros to join/split priority
 #define NVIC_BUILD_PRIORITY(base,sub) (((((base)<<(4-(7-(NVIC_PRIORITY_GROUPING>>8))))|((sub)&(0x0f>>(7-(NVIC_PRIORITY_GROUPING>>8)))))<<4)&0xf0)

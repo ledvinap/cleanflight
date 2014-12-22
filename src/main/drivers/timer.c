@@ -131,9 +131,9 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 };
 
 struct {
-    uint8_t irq;
+    uint8_t irqCC, irqUP;
 } timerInfoConst[USED_TIMER_COUNT] = {
-#define _DEF(i, irqCC, irqUP) {irq}
+#define _DEF(i, iCC, iUP) {.irqCC = iCC, .irqUP = iUP}
 
 #if USED_TIMERS & TIM_N(1)
     _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn),
@@ -181,12 +181,18 @@ void timerConfigureIRQ(TIM_TypeDef *tim, uint8_t irqPriority)
         // it would be better to set priority in the end, but current startup sequence is not ready
         NVIC_InitTypeDef NVIC_InitStructure;
 
-        NVIC_InitStructure.NVIC_IRQChannel = timerInfoConst[timIdx].irq;
+        NVIC_InitStructure.NVIC_IRQChannel = timerInfoConst[timIdx].irqCC;
         NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(irqPriority);
         NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(irqPriority);
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
 
+        if(timerInfoConst[timIdx].irqUP != timerInfoConst[timIdx].irqCC) {
+            // two interrupts. We should check if another TIM is affected and maybe use different priority for UP
+            // but now simply set priority to same value
+             NVIC_InitStructure.NVIC_IRQChannel = timerInfoConst[timIdx].irqUP;
+             NVIC_Init(&NVIC_InitStructure);
+        }
         timerConfig[timIdx].priority = irqPriority;
     }
 }

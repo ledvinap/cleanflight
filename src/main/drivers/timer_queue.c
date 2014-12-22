@@ -198,8 +198,6 @@ void SysTick_Handler(void)
     timerQueue_EnqueuePending();
     timerQueue_Run();
 }
-#else
-#error !
 #endif
 
 // callback function for timer queue

@@ -314,14 +314,13 @@ void handleSmartPortTelemetry(void)
         smartPortIdCnt++;
 
         int32_t tmpi;
-        uint32_t tmpui;
         static uint8_t t1Cnt = 0;
 
         switch(id) {
 #ifdef GPS
             case FSSP_DATAID_SPEED      :
                 if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
-                    tmpui = (GPS_speed * 36 + 36 / 2) / 100;
+                    uint32_t tmpui = (GPS_speed * 36 + 36 / 2) / 100;
                     smartPortSendPackage(id, tmpui); // given in 0.1 m/s, provide in KM/H
                     smartPortHasRequest = 0;
                 }

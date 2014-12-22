@@ -133,31 +133,35 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 struct {
     uint8_t irq;
 } timerInfoConst[USED_TIMER_COUNT] = {
-#define _DEF(i, irq) {irq}
+#define _DEF(i, irqCC, irqUP) {irq}
 
 #if USED_TIMERS & TIM_N(1)
-    _DEF(1, TIM1_CC_IRQn),
+    _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn),
 #endif
 #if USED_TIMERS & TIM_N(2)
-    _DEF(2, TIM2_IRQn),
+    _DEF(2, TIM2_IRQn, TIM2_IRQn),
 #endif
 #if USED_TIMERS & TIM_N(3)
-    _DEF(3, TIM3_IRQn),
+    _DEF(3, TIM3_IRQn, TIM3_IRQn),
 #endif
 #if USED_TIMERS & TIM_N(4)
-    _DEF(4, TIM4_IRQn),
+    _DEF(4, TIM4_IRQn, TIM4_IRQn),
 #endif
 #if USED_TIMERS & TIM_N(8)
-    _DEF(8, TIM8_IRQn),
+# if defined(STM32F10X_XL)
+    _DEF(8, TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn),
+# else // f10x_hd, f30x
+    _DEF(8, TIM8_CC_IRQn, TIM8_UP_IRQn),
+# endif
 #endif
 #if USED_TIMERS & TIM_N(15)
-    _DEF(15, TIM15_IRQn),
+    _DEF(15, TIM1_BRK_TIM15_IRQn, TIM1_BRK_TIM15_IRQn),
 #endif
 #if USED_TIMERS & TIM_N(16)
-    _DEF(16, TIM16_IRQn),
+    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn),
 #endif
 #if USED_TIMERS & TIM_N(17)
-    _DEF(17, TIM17_IRQn),
+    _DEF(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn),
 #endif
 #undef _DEF
 };
@@ -588,8 +592,7 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 #else
     if (tim_status & (int)TIM_IT_Update) {
         tim->SR = ~TIM_IT_Update;
-        uint16_t capture;
-        capture = tim->ARR;
+        uint16_t capture = tim->ARR;
         // compensate skipped value if overflow was forced
         capture -= timerConfig->forcedTimerOverflowSkipped;
         timerConfig->forcedTimerOverflowSkipped = 0;
@@ -724,7 +727,7 @@ void timerInit(void)
     }
 #endif
 #ifdef TIME_USE_TIMER
-    // initialize timer used for timming functions
+    // initialize timer used for timing functions
     timerConfigure(TIME_TIMER, NVIC_PRIO_TIME_TIMER, 0, 1000000);
     timerCountRunningTime(TIME_TIMER, true, NVIC_PRIO_TIME_TIMER);
 #endif

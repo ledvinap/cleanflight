@@ -369,7 +369,7 @@ void init(void)
     // start all timers
     // TODO - not implemented yet
     timerStart();
-
+    
     ENABLE_STATE(SMALL_ANGLE);
     DISABLE_ARMING_FLAG(PREVENT_ARMING);
 

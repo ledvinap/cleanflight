@@ -298,7 +298,7 @@ void SetSysClock(void)
   /* SYSCLK, HCLK, PCLK2 and PCLK1 configuration -----------*/
   /* Enable HSE */
   RCC->CR |= ((uint32_t)RCC_CR_HSEON);
- 
+
   /* Wait till HSE is ready and if Time out is reached exit */
   do
   {
@@ -319,13 +319,13 @@ void SetSysClock(void)
   {
     /* Enable Prefetch Buffer and set Flash Latency */
     FLASH->ACR = FLASH_ACR_PRFTBE | (uint32_t)FLASH_ACR_LATENCY_1;
- 
+
      /* HCLK = SYSCLK / 1 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
-       
+
      /* PCLK2 = HCLK / 1 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE2_DIV1;
-     
+
      /* PCLK1 = HCLK / 2 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE1_DIV2;
 
@@ -340,7 +340,7 @@ void SetSysClock(void)
     while((RCC->CR & RCC_CR_PLLRDY) == 0)
     {
     }
-    
+
     /* Select PLL as system clock source */
     RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_SW));
     RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;

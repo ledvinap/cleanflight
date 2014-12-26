@@ -22,11 +22,17 @@
 #include "system.h"
 
 #include "adc.h"
+#include "adc_impl.h"
 
 adc_config_t adcConfig[ADC_CHANNEL_COUNT];
 volatile uint16_t adcValues[ADC_CHANNEL_COUNT];
 
 extern int16_t debug[4];
+
+void adcInit(drv_adc_config_t *init)
+{
+    adcInitHw(init);
+}
 
 uint16_t adcGetChannel(uint8_t channel)
 {

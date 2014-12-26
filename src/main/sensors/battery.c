@@ -37,6 +37,14 @@ int32_t mAhDrawn = 0;               // milliampere hours drawn from the battery 
 
 batteryConfig_t *batteryConfig;
 
+timerQueueRec_t batteryTimer;
+
+void batteryTimerCallback(struct timerQueueRec_s *self)
+{
+    adcTriggerPeriodicConversion();
+    timerQueue_Start(self, 1000);    // replan after 1ms
+}
+
 uint16_t batteryAdcToVoltage(uint16_t src)
 {
     // calculate battery voltage based on ADC reading
@@ -78,20 +86,19 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
 {
     batteryConfig = initialBatteryConfig;
 
-    uint32_t i;
+    // register and start timer to trigger ADC
+    timerQueue_Config(&batteryTimer, batteryTimerCallback);
+    timerQueue_Start(&batteryTimer, 0);
 
-    for (i = 0; i < BATTERY_SAMPLE_COUNT; i++) {
+    for (unsigned i = 0; i < BATTERY_SAMPLE_COUNT; i++) {
         updateBatteryVoltage();
         delay((32 / BATTERY_SAMPLE_COUNT) * 10);
     }
 
-    // autodetect cell count, going from 1S..8S
-    for (i = 1; i < 8; i++) {
-        if (vbat < i * batteryConfig->vbatmaxcellvoltage)
-            break;
-    }
-
-    batteryCellCount = i;
+    unsigned cells = (vbat / batteryConfig->vbatmaxcellvoltage) + 1;
+    if(cells > 8)            // something is wrong, we expect 8 cells maximum (and autodetection will be problematic at 6+ cells)
+        cells = 8;
+    batteryCellCount = calls;
     batteryWarningVoltage = batteryCellCount * batteryConfig->vbatwarningcellvoltage;
     batteryCriticalVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage;
 }

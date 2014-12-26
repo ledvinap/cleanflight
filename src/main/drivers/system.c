@@ -48,8 +48,6 @@ static void cycleCounterInit(void)
 void SysTick_Handler(void)
 {
     sysTickUptime++;
-    // trigger ADC conversion from here now
-    adcTriggerPeriodicConversion();
 }
 
 // Return system uptime in microseconds (rollover in 70minutes)

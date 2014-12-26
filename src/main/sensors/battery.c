@@ -22,6 +22,7 @@
 
 #include "drivers/adc.h"
 #include "drivers/system.h"
+#include "drivers/timer_queue.h"
 
 #include "sensors/battery.h"
 
@@ -69,6 +70,7 @@ void updateBatteryVoltage(void)
         vbatSampleTotal += vbatSamples[index];
     }
     vbat = batteryAdcToVoltage(vbatSampleTotal / BATTERY_SAMPLE_COUNT);
+    adcTriggerPeriodicConversion();
 }
 
 batteryState_e calculateBatteryState(void)
@@ -98,7 +100,7 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
     unsigned cells = (vbat / batteryConfig->vbatmaxcellvoltage) + 1;
     if(cells > 8)            // something is wrong, we expect 8 cells maximum (and autodetection will be problematic at 6+ cells)
         cells = 8;
-    batteryCellCount = calls;
+    batteryCellCount = cells;
     batteryWarningVoltage = batteryCellCount * batteryConfig->vbatwarningcellvoltage;
     batteryCriticalVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage;
 }

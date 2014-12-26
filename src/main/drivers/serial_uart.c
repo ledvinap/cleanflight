@@ -248,14 +248,14 @@ void uartStartTxDMA(uartPort_t *self)
 void uartIrqHandler(uartPort_t *self)
 {
 #if defined(STM32F10X)
-    uint16_t flags = self->USARTx->SR;
+    uint16_t flags = self->USARTx->SR & self->USARTx->CR1;
 #elif defined(STM32F303)
     uint32_t flags = self->USARTx->ISR;
 #else
 # error "Unknown CPU"
 #endif
 
-    if (!(self->port.mode & MODE_U_DMARX) && (flags & USART_IT_RXNE)) {
+    if (!(self->port.mode & MODE_U_DMARX) && (flags & USART_FLAG_RXNE)) {
         if (self->port.rxCallback) {
             self->port.rxCallback(USART_ReceiveData(self->USARTx));
         } else {
@@ -264,7 +264,7 @@ void uartIrqHandler(uartPort_t *self)
         }
     }
 
-    if (!(self->port.mode & MODE_U_DMATX) && (flags & USART_IT_TXE)) {
+    if (!(self->port.mode & MODE_U_DMATX) && (flags & USART_FLAG_TXE)) {
         if (self->port.txBufferTail != self->port.txBufferHead) {
             USART_SendData(self->USARTx, self->port.txBuffer[self->port.txBufferTail]);
             self->port.txBufferTail = (self->port.txBufferTail + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferTail + 1;

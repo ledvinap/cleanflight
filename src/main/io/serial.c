@@ -277,13 +277,13 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
             continue;
         }
 #else
-#if defined(USE_SOFTSERIAL1) ||(defined(USE_SOFTSERIAL2))
-        if (!feature(FEATURE_SOFTSERIAL) && (
-                serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1 ||
-                serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2
-        )) {
+#if defined(USE_SOFTSERIAL1)
+        if (!feature(FEATURE_SOFTSERIAL) && serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1)
             continue;
-        }
+#endif
+#if defined(USE_SOFTSERIAL2)
+        if (!feature(FEATURE_SOFTSERIAL) && serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)
+            continue;
 #endif
 #if (defined(NAZE) || defined(OLIMEXINO)) && defined(SONAR)
         if (feature(FEATURE_SONAR) && !feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {

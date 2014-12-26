@@ -36,6 +36,31 @@
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
 
+static void usartConfigurePinInversion(uartPort_t *uartPort) {
+#ifdef INVERTER
+    if (uartPort->port.mode == MODE_INVERTED && uartPort->USARTx == INVERTER_USART) {
+        // Enable hardware inverter if available.
+        INVERTER_ON;
+    }
+#endif
+
+#ifdef STM32F303xC
+    uint32_t inversionPins = 0;
+
+    if (uartPort->port.mode & MODE_TX) {
+        inversionPins |= USART_InvPin_Tx;
+    }
+    if (uartPort->port.mode & MODE_RX) {
+        inversionPins |= USART_InvPin_Rx;
+    }
+
+    // Note: inversion when using MODE_BIDIR not supported yet.
+
+    USART_InvPinCmd(uartPort->USARTx, inversionPins, uartPort->port.mode == MODE_INVERTED ? ENABLE : DISABLE);
+#endif
+
+}
+
 static void uartReconfigure(uartPort_t *self)
 {
     USART_InitTypeDef USART_InitStructure;
@@ -58,19 +83,13 @@ static void uartReconfigure(uartPort_t *self)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
 
     USART_Init(self->USARTx, &USART_InitStructure);
+    usartConfigurePinInversion(uartPort);
     USART_Cmd(self->USARTx, ENABLE);
 }
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 {
     uartPort_t *self;
-
-#ifdef INVERTER
-    if (config->mode & MODE_INVERTED && USARTx == INVERTER_USART) {
-        // Enable hardware inverter if available.
-        INVERTER_ON;
-    }
-#endif
 
     if(0) {
 #ifdef USE_USART1

@@ -83,7 +83,7 @@ static void uartReconfigure(uartPort_t *self)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
 
     USART_Init(self->USARTx, &USART_InitStructure);
-    usartConfigurePinInversion(uartPort);
+    usartConfigurePinInversion(self);
     USART_Cmd(self->USARTx, ENABLE);
 }
 

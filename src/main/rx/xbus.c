@@ -98,7 +98,7 @@ bool xBusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
             break;
     }
 
-    xBusPort = openSerialPort(FUNCTION_SERIAL_RX, xBusDataReceive, XBUS_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+//    xBusPort = openSerialPort(FUNCTION_SERIAL_RX, xBusDataReceive, XBUS_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
     if (callback) {
         *callback = xBusReadRawRC;
     }
@@ -110,7 +110,7 @@ bool xBusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
 static uint16_t xBusCRC16(uint16_t crc, uint8_t value)
 {
     uint8_t i;
-    
+
     crc = crc ^ (int16_t)value << 8;
 
     for (i = 0; i < 8; i++) {

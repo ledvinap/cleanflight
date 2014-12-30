@@ -426,6 +426,7 @@ void processLoopback(void) {
 #endif
 
 int main(void) {
+#if 0
 static int markme=0;
 markme++;
 ATOMIC_BLOCK_NB(0xff) {
@@ -433,6 +434,7 @@ ATOMIC_BLOCK_NB(0xff) {
    markme++;
 };
 markme++;
+#endif
     init();
 
     while (1) {

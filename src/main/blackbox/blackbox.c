@@ -77,8 +77,12 @@
 #include "blackbox_fielddefs.h"
 #include "blackbox.h"
 
-#define BLACKBOX_BAUDRATE 115200
-#define BLACKBOX_INITIAL_PORT_MODE MODE_TX
+const serialPortConfig_t blackboxPortConfig = {
+    .mode = MODE_TX,
+    .baudRate = 115200,
+};
+
+
 #define BLACKBOX_I_INTERVAL 32
 
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
@@ -260,8 +264,7 @@ static uint32_t blackboxIteration;
 static uint32_t blackboxPFrameIndex, blackboxIFrameIndex;
 
 static serialPort_t *blackboxPort;
-static portMode_t previousPortMode;
-static uint32_t previousBaudRate;
+static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 
 /*
  * We store voltages in I-frames relative to this, which was the voltage when the blackbox was activated.
@@ -842,26 +845,19 @@ static void configureBlackboxPort(void)
 {
     blackboxPort = findOpenSerialPort(FUNCTION_BLACKBOX);
     if (blackboxPort) {
-        previousPortMode = blackboxPort->mode;
-        previousBaudRate = blackboxPort->baudRate;
-
-        serialSetBaudRate(blackboxPort, BLACKBOX_BAUDRATE);
-        serialSetMode(blackboxPort, BLACKBOX_INITIAL_PORT_MODE);
+        serialGetConfig(blackboxPort, &previousSerialConfig);
+        serialRelease(blackboxPort);
+        serialConfigure(blackboxPort, &blackboxPortConfig);
         beginSerialPortFunction(blackboxPort, FUNCTION_BLACKBOX);
     } else {
-        blackboxPort = openSerialPort(FUNCTION_BLACKBOX, NULL, BLACKBOX_BAUDRATE, BLACKBOX_INITIAL_PORT_MODE, SERIAL_NOT_INVERTED);
-
-        if (blackboxPort) {
-            previousPortMode = blackboxPort->mode;
-            previousBaudRate = blackboxPort->baudRate;
-        }
+        blackboxPort = openSerialPort(FUNCTION_BLACKBOX, &blackboxPortConfig);
     }
 }
 
 static void releaseBlackboxPort(void)
 {
-    serialSetMode(blackboxPort, previousPortMode);
-    serialSetBaudRate(blackboxPort, previousBaudRate);
+    serialRelease(blackboxPort);
+    serialConfigure(blackboxPort, &previousSerialConfig);
 
     endSerialPortFunction(blackboxPort, FUNCTION_BLACKBOX);
 }

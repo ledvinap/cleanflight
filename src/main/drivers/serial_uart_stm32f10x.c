@@ -52,8 +52,8 @@ static uartPort_t uartPort3;
 // USART1 - Telemetry (RX/TX by DMA)
 uartPort_t *serialUSART1(const serialPortConfig_t *config)
 {
-    static volatile uint8_t rx1Buffer[UART1_RX_BUFFER_SIZE];
-    static volatile uint8_t tx1Buffer[UART1_TX_BUFFER_SIZE];
+    static uint8_t rx1Buffer[UART1_RX_BUFFER_SIZE];
+    static uint8_t tx1Buffer[UART1_TX_BUFFER_SIZE];
     gpio_config_t gpio;
     NVIC_InitTypeDef NVIC_InitStructure;
 
@@ -134,8 +134,8 @@ void USART1_IRQHandler(void)
 // USART2 - GPS or Spektrum or ?? (RX + TX by IRQ)
 uartPort_t *serialUSART2(const serialPortConfig_t *config)
 {
-    static volatile uint8_t rx2Buffer[UART2_RX_BUFFER_SIZE];
-    static volatile uint8_t tx2Buffer[UART2_TX_BUFFER_SIZE];
+    static uint8_t rx2Buffer[UART2_RX_BUFFER_SIZE];
+    static uint8_t tx2Buffer[UART2_TX_BUFFER_SIZE];
     gpio_config_t gpio;
     NVIC_InitTypeDef NVIC_InitStructure;
 
@@ -201,8 +201,8 @@ void USART2_IRQHandler(void)
 uartPort_t *serialUSART3(const serialPortConfig_t *config)
 {
     uartPort_t *self;
-    static volatile uint8_t rx3Buffer[UART3_RX_BUFFER_SIZE];
-    static volatile uint8_t tx3Buffer[UART3_TX_BUFFER_SIZE];
+    static uint8_t rx3Buffer[UART3_RX_BUFFER_SIZE];
+    static uint8_t tx3Buffer[UART3_TX_BUFFER_SIZE];
     gpio_config_t gpio;
     NVIC_InitTypeDef NVIC_InitStructure;
 

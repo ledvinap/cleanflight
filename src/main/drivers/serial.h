@@ -66,8 +66,8 @@ typedef struct serialPort {
 
     uint32_t rxBufferSize;              // must be power of two
     uint32_t txBufferSize;              // must be power of two
-    volatile uint8_t *rxBuffer;
-    volatile uint8_t *txBuffer;
+    uint8_t *rxBuffer;
+    uint8_t *txBuffer;
     uint32_t rxBufferHead;
     uint32_t rxBufferTail;
     uint32_t txBufferHead;

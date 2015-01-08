@@ -67,6 +67,7 @@
 #include "io/statusindicator.h"
 #include "rx/msp.h"
 #include "telemetry/telemetry.h"
+#include "blackbox/blackbox.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -91,6 +92,7 @@ uint16_t cycleTime = 0;         // this is the number in micro second to achieve
 int16_t headFreeModeHold;
 
 int16_t telemTemperature1;      // gyro sensor temperature
+static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern failsafe_t *failsafe;
@@ -305,6 +307,15 @@ void mwDisarm(void)
             }
         }
 #endif
+
+#ifdef BLACKBOX
+        if (feature(FEATURE_BLACKBOX)) {
+            finishBlackbox();
+            if (isSerialPortFunctionShared(FUNCTION_BLACKBOX, FUNCTION_MSP)) {
+                mspAllocateSerialPorts(&masterConfig.serialConfig);
+            }
+        }
+#endif
     }
 }
 
@@ -326,6 +337,18 @@ void mwArm(void)
                 }
             }
 #endif
+
+#ifdef BLACKBOX
+            if (feature(FEATURE_BLACKBOX)) {
+                serialPort_t *sharedBlackboxAndMspPort = findSharedSerialPort(FUNCTION_BLACKBOX, FUNCTION_MSP);
+                if (sharedBlackboxAndMspPort) {
+                    mspReleasePortIfAllocated(sharedBlackboxAndMspPort);
+                }
+                startBlackbox();
+            }
+#endif
+            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
+
             return;
         }
     }
@@ -493,6 +516,21 @@ void processRx(void)
         resetErrorAngle();
         resetErrorGyro();
     }
+    // When armed and motors aren't spinning, disarm board after delay so users without buzzer won't lose fingers.
+    // mixTable constrains motor commands, so checking  throttleStatus is enough
+    if (
+        ARMING_FLAG(ARMED)
+        && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)
+        && masterConfig.auto_disarm_delay != 0
+        && isUsingSticksForArming()
+    ) {
+        if (throttleStatus == THROTTLE_LOW) {
+            if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
+                mwDisarm();
+        } else {
+            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // extend delay
+        }
+    }
 
     processRcStickPositions(&masterConfig.rxConfig, throttleStatus, masterConfig.retarded_arm, masterConfig.disarm_kill_switch);
 
@@ -521,17 +559,17 @@ void processRx(void)
         DISABLE_FLIGHT_MODE(ANGLE_MODE); // failsafe support
     }
 
-	if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
+    if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
 
-		DISABLE_FLIGHT_MODE(ANGLE_MODE);
+        DISABLE_FLIGHT_MODE(ANGLE_MODE);
 
-		if (!FLIGHT_MODE(HORIZON_MODE)) {
-			resetErrorAngle();
-			ENABLE_FLIGHT_MODE(HORIZON_MODE);
-		}
-	} else {
-		DISABLE_FLIGHT_MODE(HORIZON_MODE);
-	}
+        if (!FLIGHT_MODE(HORIZON_MODE)) {
+            resetErrorAngle();
+            ENABLE_FLIGHT_MODE(HORIZON_MODE);
+        }
+    } else {
+        DISABLE_FLIGHT_MODE(HORIZON_MODE);
+    }
 
     if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
         LED1_ON;
@@ -680,6 +718,12 @@ void loop(void)
         mixTable();
         writeServos();
         writeMotors();
+
+#ifdef BLACKBOX
+        if (!cliMode && feature(FEATURE_BLACKBOX)) {
+            handleBlackbox();
+        }
+#endif
     }
 
 #ifdef TELEMETRY

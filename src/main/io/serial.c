@@ -62,7 +62,10 @@ const serialPortFunctionScenario_e serialPortScenarios[SERIAL_PORT_SCENARIO_COUN
     SCENARIO_CLI_ONLY,
     SCENARIO_GPS_PASSTHROUGH_ONLY,
     SCENARIO_MSP_ONLY,
-    SCENARIO_SMARTPORT_TELEMETRY_ONLY
+    SCENARIO_SMARTPORT_TELEMETRY_ONLY,
+
+    SCENARIO_BLACKBOX_ONLY,
+    SCENARIO_MSP_CLI_BLACKBOX_GPS_PASTHROUGH
 };
 
 static serialConfig_t *serialConfig;
@@ -82,7 +85,7 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 #endif
 };
 
-static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USB_VCP,       9600,   115200,   SPF_NONE },
     {SERIAL_PORT_USART1,        9600,   115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_USART2,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
@@ -102,7 +105,7 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_SOFTSERIAL1, NULL, SCENARIO_UNUSED, FUNCTION_NONE}
 };
 
-static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,        9600, 115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE | SPF_IS_SOFTWARE_INVERTABLE}
@@ -133,7 +136,7 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 #endif
 };
 
-static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,        9600, 460800,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_USART2,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
 #if (SERIAL_PORT_COUNT > 2)
@@ -151,7 +154,8 @@ const functionConstraint_t functionConstraints[] = {
         { FUNCTION_MSP,                 9600,  115200, NO_AUTOBAUD, SPF_NONE },
         { FUNCTION_SERIAL_RX,           9600,  115200, NO_AUTOBAUD, SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_CALLBACK },
         { FUNCTION_TELEMETRY,           9600,  19200,  NO_AUTOBAUD, SPF_NONE },
-        { FUNCTION_SMARTPORT_TELEMETRY, 57600, 57600,  NO_AUTOBAUD, SPF_SUPPORTS_SINGLEWIRE }
+        { FUNCTION_SMARTPORT_TELEMETRY, 57600, 57600,  NO_AUTOBAUD, SPF_SUPPORTS_BIDIR_MODE },
+        { FUNCTION_BLACKBOX,            115200,115200, NO_AUTOBAUD, SPF_NONE }
 };
 
 #define FUNCTION_CONSTRAINT_COUNT (sizeof(functionConstraints) / sizeof(functionConstraint_t))
@@ -552,9 +556,10 @@ serialPort_t *findSharedSerialPort(serialPortFunction_e functionToUse, uint16_t 
 
 void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)
 {
-    uint32_t portIndex = 0, serialPortIdentifier;
+    uint32_t portIndex = 0, serialPortIdentifier, constraintIndex;
 
-    for (serialPortIdentifier = 0; serialPortIdentifier < SERIAL_PORT_IDENTIFIER_COUNT && portIndex < SERIAL_PORT_COUNT; serialPortIdentifier++) {
+    for (constraintIndex = 0; constraintIndex < SERIAL_PORT_COUNT && portIndex < SERIAL_PORT_COUNT; constraintIndex++) {
+        serialPortIdentifier = serialPortConstraints[constraintIndex].identifier;
         uint32_t functionIndex = lookupSerialPortFunctionIndexByIdentifier(serialPortIdentifier);
         if (functionIndex == IDENTIFIER_NOT_FOUND) {
             continue;

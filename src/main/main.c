@@ -68,6 +68,7 @@
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "telemetry/telemetry.h"
+#include "blackbox/blackbox.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "config/runtime_config.h"
@@ -75,8 +76,8 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
-#ifdef NAZE
-#include "target/NAZE/hardware_revision.h"
+#ifdef USE_HARDWARE_REVISION_DETECTION
+#include "hardware_revision.h"
 #endif
 
 #include "build_config.h"
@@ -149,7 +150,7 @@ void init(void)
     SetSysClock(masterConfig.emf_avoidance);
 #endif
 
-#ifdef NAZE
+#ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();
 #endif
 
@@ -160,6 +161,10 @@ void init(void)
     timerInit();
 
     pinDebugInit();
+
+#ifdef SPEKTRUM_BIND
+
+    ledInit();
 
 #ifdef SPEKTRUM_BIND
     if (feature(FEATURE_RX_SERIAL)) {
@@ -177,8 +182,6 @@ void init(void)
 
     delay(100);
 
-
-    ledInit();
 
 #ifdef BEEPER
     beeperConfig_t beeperConfig = {
@@ -209,7 +212,7 @@ void init(void)
     spiInit(SPI2);
 #endif
 
-#ifdef NAZE
+#ifdef USE_HARDWARE_REVISION_DETECTION
     updateHardwareRevision();
 #endif
 
@@ -303,6 +306,7 @@ void init(void)
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
     pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
+    pwm_params.useSerialRx = feature(FEATURE_RX_SERIAL);
     pwm_params.useServos = isMixerUsingServos();
     pwm_params.extraServos = currentProfile->gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
@@ -356,6 +360,10 @@ void init(void)
         initTelemetry();
 #endif
 
+#ifdef BLACKBOX
+    initBlackbox();
+#endif
+
     previousTime = micros();
 
     if (masterConfig.mixerMode == MIXER_GIMBAL) {
@@ -369,7 +377,7 @@ void init(void)
     // start all timers
     // TODO - not implemented yet
     timerStart();
-    
+
     ENABLE_STATE(SMALL_ANGLE);
     DISABLE_ARMING_FLAG(PREVENT_ARMING);
 
@@ -402,6 +410,10 @@ void init(void)
         displayEnablePageCycling();
 #endif
     }
+#endif
+
+#ifdef CJMCU
+    LED2_ON;
 #endif
 }
 

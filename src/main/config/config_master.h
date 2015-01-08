@@ -63,6 +63,7 @@ typedef struct master_t {
 
     uint8_t retarded_arm;                   // allow disarm/arm on throttle down + roll left/right
     uint8_t disarm_kill_switch;             // allow disarm via AUX switch regardless of throttle value
+    uint8_t auto_disarm_delay;              // allow automatically disarming multicopters after auto_disarm_delay seconds of zero throttle. Disabled when 0
     uint8_t small_angle;
 
     airplaneConfig_t airplaneConfig;
@@ -84,6 +85,8 @@ typedef struct master_t {
     uint8_t current_profile_index;
     controlRateConfig_t controlRateProfiles[MAX_CONTROL_RATE_PROFILE_COUNT];
 
+    uint8_t blackbox_rate_num;
+    uint8_t blackbox_rate_denom;
 
     uint8_t magic_ef;                       // magic number, should be 0xEF
     uint8_t chk;                            // XOR checksum

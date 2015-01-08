@@ -35,7 +35,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 FORKNAME			 = cleanflight
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R SPARKY CRAZYFLIE
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R SPARKY CRAZYFLIE ALIENWIIF1
 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
@@ -105,6 +105,12 @@ STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F10x_StdPeriph_Driver
 
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
 
+EXCLUDES	= stm32f10x_crc.c \
+		stm32f10x_cec.c \
+		stm32f10x_can.c
+
+STDPERIPH_SRC := $(filter-out ${EXCLUDES}, $(STDPERIPH_SRC))
+
 # Search path and source files for the CMSIS sources
 VPATH		:= $(VPATH):$(CMSIS_DIR)/CM3/CoreSupport:$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x
 CMSIS_SRC	 = $(notdir $(wildcard $(CMSIS_DIR)/CM3/CoreSupport/*.c \
@@ -154,6 +160,12 @@ STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F10x_StdPeriph_Driver
 
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
 
+EXCLUDES	= stm32f10x_crc.c \
+		stm32f10x_cec.c \
+		stm32f10x_can.c
+
+STDPERIPH_SRC := $(filter-out ${EXCLUDES}, $(STDPERIPH_SRC))
+
 # Search path and source files for the CMSIS sources
 VPATH		:= $(VPATH):$(CMSIS_DIR)/CM3/CoreSupport:$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x
 CMSIS_SRC	 = $(notdir $(wildcard $(CMSIS_DIR)/CM3/CoreSupport/*.c \
@@ -176,6 +188,12 @@ endif
 
 TARGET_DIR = $(ROOT)/src/main/target/$(TARGET)
 TARGET_SRC = $(notdir $(wildcard $(TARGET_DIR)/*.c))
+
+ifeq ($(TARGET),ALIENWIIF1)
+# ALIENWIIF1 is a VARIANT of NAZE
+TARGET_FLAGS := $(TARGET_FLAGS) -DNAZE -DALIENWII32
+TARGET_DIR = $(ROOT)/src/main/target/NAZE
+endif
 
 INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		    $(TARGET_DIR)
@@ -244,7 +262,8 @@ HIGHEND_SRC  = flight/autotune.c \
 		   telemetry/sport.c \
 	           telemetry/smartport.c \
 		   sensors/sonar.c \
-		   sensors/barometer.c
+		   sensors/barometer.c \
+		   blackbox/blackbox.c
 
 NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -281,6 +300,8 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   hardware_revision.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
+
+ALIENWIIF1_SRC	= $(NAZE_SRC)
 
 EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -407,6 +428,8 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
+		   blackbox/blackbox.c \
+		   hardware_revision.c \
 		   $(COMMON_SRC)
 
 CC3D_SRC	 = startup_stm32f10x_md_gcc.S \

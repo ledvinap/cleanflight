@@ -79,7 +79,7 @@ https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgein
 
 The source for it is here:
 
-https://github.com/hydra/cleanflight-configurator
+https://github.com/cleanflight/cleanflight-configurator
 
 ## Contributing
 
@@ -117,5 +117,8 @@ TravisCI is also used to run automatic builds
 https://travis-ci.org/cleanflight/cleanflight
 
 [![Build Status](https://travis-ci.org/cleanflight/cleanflight.svg?branch=master)](https://travis-ci.org/cleanflight/cleanflight)
+
+## Cleanflight Releases
+https://github.com/cleanflight/cleanflight/releases
 
 

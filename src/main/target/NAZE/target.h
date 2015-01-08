@@ -17,7 +17,8 @@
 
 #pragma once
 
-#define TARGET_BOARD_IDENTIFIER "AFNA" // AFroNAze - NAZE might be considerd misleading on Naze clones like the flip32.
+#define TARGET_BOARD_IDENTIFIER "AFNA" // AFroNAze - NAZE might be considered misleading on Naze clones like the flip32.
+#define USE_HARDWARE_REVISION_DETECTION
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
@@ -129,6 +130,7 @@
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
 
+#define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
@@ -144,3 +146,12 @@
 
 #define TIME_USE_TIMER    // base timming on some timer instead of systick
 #define TIME_TIMER TIM3
+
+// alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
+#ifdef ALIENWII32
+#define BRUSHED_MOTORS
+#define HARDWARE_BIND_PLUG
+// Hardware bind plug at PB5 (Pin 41)
+#define BINDPLUG_PORT  GPIOB
+#define BINDPLUG_PIN   Pin_5
+#endif

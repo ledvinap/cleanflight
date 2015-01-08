@@ -162,8 +162,6 @@ void init(void)
 
     pinDebugInit();
 
-#ifdef SPEKTRUM_BIND
-
     ledInit();
 
 #ifdef SPEKTRUM_BIND

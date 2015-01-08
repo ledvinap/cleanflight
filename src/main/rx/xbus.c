@@ -172,7 +172,7 @@ static void xBusDataReceive(uint16_t c)
         xBusFrame[xBusFramePosition] = (uint8_t)c;
         xBusFramePosition++;
     }
-    
+
     // Done?
     if (xBusFramePosition == XBUS_FRAME_SIZE) {
         xBusUnpackFrame();

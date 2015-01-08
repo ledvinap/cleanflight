@@ -21,6 +21,8 @@
 #include "timer_output.h"
 #include "timer_queue.h"
 
+#include "serial.h"
+
 #define SOFTSERIAL_BUFFER_SIZE 256
 
 typedef enum {

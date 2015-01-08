@@ -40,6 +40,7 @@
 #include "drivers/compass.h"
 
 #include "drivers/serial.h"
+#include "drivers/serial_softserial.h"
 #include "drivers/bus_i2c.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
@@ -259,6 +260,14 @@ const clivalue_t valueTable[] = {
 #endif
 #endif
 
+#ifdef USE_SOFTSERIAL1
+    { "softserial_1_txpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][0], 0, USABLE_TIMER_CHANNEL_COUNT },
+    { "softserial_1_rxpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][1], 0, USABLE_TIMER_CHANNEL_COUNT },
+#endif
+#ifdef USE_SOFTSERIAL2
+    { "softserial_2_txpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0], 0, USABLE_TIMER_CHANNEL_COUNT },
+    { "softserial_2_rxpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1], 0, USABLE_TIMER_CHANNEL_COUNT },
+#endif
     { "reboot_character",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.reboot_character, 48, 126 },
     { "msp_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.msp_baudrate, 1200, 460800 },
     { "cli_baudrate",               VAR_UINT32 | MASTER_VALUE,  &masterConfig.serialConfig.cli_baudrate, 1200, 460800 },

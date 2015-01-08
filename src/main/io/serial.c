@@ -271,12 +271,6 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         uint8_t serialPortIndex = lookupSerialPortIndexByIdentifier(serialPortFunction->identifier);
         const serialPortConstraint_t *serialPortConstraint = &serialPortConstraints[serialPortIndex];
 
-#if defined(CC3D)
-        if (!feature(FEATURE_SOFTSERIAL) && (
-                serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1)) {
-            continue;
-        }
-#else
 #if defined(USE_SOFTSERIAL1)
         if (!feature(FEATURE_SOFTSERIAL) && serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1)
             continue;
@@ -289,7 +283,6 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         if (feature(FEATURE_SONAR) && !feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {
             continue;
         }
-#endif
 #endif
 
         if ((serialPortConstraint->feature & functionConstraint->requiredSerialPortFeatures) != functionConstraint->requiredSerialPortFeatures) {
@@ -570,17 +563,19 @@ void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)
     }
 }
 
-serialPort_t *openSerialPort(serialPortFunction_e function, const serialPortConfig_t *config)
+serialPort_t *openSerialPort(serialPortFunction_e function, const serialPortConfig_t *configPrm)
 {
     serialPort_t *serialPort = NULL;
+
+    serialPortConfig_t config = *configPrm;   // copy config to RAM
 
     functionConstraint_t *initialFunctionConstraint = getConfiguredFunctionConstraint(function);
 
     functionConstraint_t updatedFunctionConstraint;
-    memcpy(&updatedFunctionConstraint, initialFunctionConstraint, sizeof(updatedFunctionConstraint));
+    updatedFunctionConstraint = *initialFunctionConstraint;
     if (initialFunctionConstraint->autoBaud == NO_AUTOBAUD) {
-        updatedFunctionConstraint.minBaudRate = config->baudRate;
-        updatedFunctionConstraint.maxBaudRate = config->baudRate;
+        updatedFunctionConstraint.minBaudRate = config.baudRate;
+        updatedFunctionConstraint.maxBaudRate = config.baudRate;
     }
     functionConstraint_t *functionConstraint = &updatedFunctionConstraint;
 
@@ -608,27 +603,31 @@ serialPort_t *openSerialPort(serialPortFunction_e function, const serialPortConf
 #endif
 #ifdef USE_USART1
         case SERIAL_PORT_USART1:
-            serialPort = uartOpen(USART1, config);
+            serialPort = uartOpen(USART1, &config);
             break;
 #endif
 #ifdef USE_USART2
         case SERIAL_PORT_USART2:
-            serialPort = uartOpen(USART2, config);
+            serialPort = uartOpen(USART2, &config);
             break;
 #endif
 #ifdef USE_USART3
         case SERIAL_PORT_USART3:
-            serialPort = uartOpen(USART3, config);
+            serialPort = uartOpen(USART3, &config);
             break;
 #endif
 #ifdef USE_SOFTSERIAL1
         case SERIAL_PORT_SOFTSERIAL1:
-            serialPort = openSoftSerial(SOFTSERIAL1, config);
+            config.txPin = serialConfig->softserial_pins[SOFTSERIAL1][0];
+            config.rxPin = serialConfig->softserial_pins[SOFTSERIAL1][1];
+            serialPort = openSoftSerial(SOFTSERIAL1, &config);
             break;
 #endif
 #ifdef USE_SOFTSERIAL2
         case SERIAL_PORT_SOFTSERIAL2:
-            serialPort = openSoftSerial(SOFTSERIAL2, config);
+            config.txPin = serialConfig->softserial_pins[SOFTSERIAL2][0];
+            config.rxPin = serialConfig->softserial_pins[SOFTSERIAL2][1];
+            serialPort = openSoftSerial(SOFTSERIAL2, &config);
             break;
 #endif
         default:

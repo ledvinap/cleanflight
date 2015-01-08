@@ -81,6 +81,7 @@ typedef struct  {
     portMode_t mode;
     uint32_t baudRate;
     serialReceiveCallback *rxCallback;
+    uint8_t rxPin, txPin;
 } serialPortConfig_t;
 
 // use this to initialize structure used to store port config. serialConfigure can be safely called with it

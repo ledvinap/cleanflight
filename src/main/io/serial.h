@@ -155,6 +155,8 @@ typedef struct serialConfig_s {
     uint32_t gps_passthrough_baudrate;
 
     uint8_t reboot_character;               // which byte is used to reboot. Default 'R', could be changed carefully to something else.
+
+    uint8_t softserial_pins[2][2];          // TODO - detect softserial port count
 } serialConfig_t;
 
 uint8_t lookupScenarioIndex(serialPortFunctionScenario_e scenario);

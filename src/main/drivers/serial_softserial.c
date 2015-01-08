@@ -83,19 +83,6 @@ static void resetBuffers(softSerial_t *self)
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t *config)
 {
     softSerial_t *self = &(softSerialPorts[portIndex]);
-#ifdef USE_SOFTSERIAL1
-    if (portIndex == SOFTSERIAL1) {
-        self->rxTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_RX_HARDWARE]);
-        self->txTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_TX_HARDWARE]);
-    }
-#endif
-
-#ifdef USE_SOFTSERIAL2
-    if (portIndex == SOFTSERIAL2) {
-        self->rxTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_RX_HARDWARE]);
-        self->txTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_TX_HARDWARE]);
-    }
-#endif
     self->port.vTable = &softSerialVTable;
     softSerialConfigure(&self->port, config);
     return &self->port;
@@ -111,6 +98,9 @@ void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 
     if(mode == 0)   // prevent reconfiguration with empty config
         return;
+
+    self->rxTimerHardware = &(timerHardware[config->rxPin]);
+    self->txTimerHardware = &(timerHardware[config->txPin]);
 
     // fix mode if caller got it wrong
     if((mode & MODE_RXTX) == MODE_RXTX && self->txTimerHardware == self->rxTimerHardware)
@@ -218,6 +208,8 @@ void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
     config->baudRate = (1000000 << 8) / self->bitTime;
     config->mode = self->port.mode;
     config->rxCallback = self->port.rxCallback;
+    config->rxPin = self->rxTimerHardware - timerHardware;
+    config->txPin = self->txTimerHardware - timerHardware;
 }
 
 

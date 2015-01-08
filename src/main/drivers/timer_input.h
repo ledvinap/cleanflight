@@ -1,6 +1,7 @@
 #pragma once
 
 #include "callback.h"
+#include "timer.h"
 
 // queue must be long enough to hold longest softserial symbol (~ 12 edges) and some reserve
 #define TIMERIN_QUEUE_LEN 32

@@ -35,6 +35,7 @@
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
+#include "drivers/serial_softserial.h"
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
@@ -108,7 +109,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 88;
+static const uint8_t EEPROM_CONF_VERSION = 89;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -244,6 +245,15 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->serial_port_scenario[4] = lookupScenarioIndex(SCENARIO_UNUSED);
 #endif
 #endif
+#endif
+
+#ifdef USE_SOFTSERIAL1
+    serialConfig->softserial_pins[SOFTSERIAL1][0] = SOFTSERIAL_1_TIMER_TX_HARDWARE;
+    serialConfig->softserial_pins[SOFTSERIAL1][1] = SOFTSERIAL_1_TIMER_RX_HARDWARE;
+#endif
+#ifdef USE_SOFTSERIAL2
+    serialConfig->softserial_pins[SOFTSERIAL2][0] = SOFTSERIAL_2_TIMER_TX_HARDWARE;
+    serialConfig->softserial_pins[SOFTSERIAL2][1] = SOFTSERIAL_2_TIMER_RX_HARDWARE;
 #endif
 
     serialConfig->msp_baudrate = 115200;
@@ -587,16 +597,14 @@ void validateAndFixConfig(void)
 
 #if defined(LED_STRIP) && (defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2))
     if (feature(FEATURE_SOFTSERIAL) && (
+            0
 #ifdef USE_SOFTSERIAL1
-            (LED_STRIP_TIMER == SOFTSERIAL_1_TIMER)
-#else
-            0
+            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][0]].tim)
+            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][1]].tim)
 #endif
-            ||
 #ifdef USE_SOFTSERIAL2
-            (LED_STRIP_TIMER == SOFTSERIAL_2_TIMER)
-#else
-            0
+            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0]].tim)
+            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1]].tim)
 #endif
     )) {
         // led strip needs the same timer as softserial

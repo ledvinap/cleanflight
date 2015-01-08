@@ -21,8 +21,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM4, GPIOB, Pin_7,  TIM_Channel_2, TIM4_IRQn,    0, Mode_IPD}, // PWM12  OUT4   OUT4  OUT2  OUT2
     { TIM4, GPIOB, Pin_8,  TIM_Channel_3, TIM4_IRQn,    0, Mode_IPD}, // PWM13  OUT5   OUT5  OUT3  OUT3
     { TIM4, GPIOB, Pin_9,  TIM_Channel_4, TIM4_IRQn,    0, Mode_IPD}, // PWM14  OUT6   OUT6  OUT4  OUT4
-
-//    { TIM1, GPIOA, Pin_10,  TIM_Channel_3, TIM1_CC_IRQn, 0, 0},        // TIMER
 };
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)

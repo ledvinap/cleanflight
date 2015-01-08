@@ -70,7 +70,7 @@ void updateBatteryVoltage(void)
         vbatSampleTotal += vbatSamples[index];
     }
     vbat = batteryAdcToVoltage(vbatSampleTotal / BATTERY_SAMPLE_COUNT);
-    adcTriggerPeriodicConversion();
+//    adcTriggerPeriodicConversion();
 }
 
 batteryState_e calculateBatteryState(void)

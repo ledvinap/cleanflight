@@ -62,11 +62,11 @@ static const uartHwDef_t uartPort1Hw = {
     .APB2Periph = RCC_APB2Periph_USART1,
     .rxCh = USART1_RX_IO,
     .txCh = USART1_TX_IO,
-#ifdef USART1_RX_PIN_REMAP
-    .rxChRemap = USART1_RX_PIN_REMAP,
+#ifdef USART1_RX_IO_REMAP
+    .rxChRemap = USART1_RX_IO_REMAP,
 #endif
-#ifdef USART1_TX_PIN_REMAP
-    .txChRemap = USART1_TX_PIN_REMAP,
+#ifdef USART1_TX_IO_REMAP
+    .txChRemap = USART1_TX_IO_REMAP,
 #endif
     .remap = GPIO_Remap_USART1,
 };

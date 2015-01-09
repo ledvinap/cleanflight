@@ -25,6 +25,10 @@
 #include "gpio.h"
 #include "timer.h"
 
+#include "config/config_master.h"
+
+#include "drivers/serial_softserial.h"
+
 #include "pwm_output.h"
 #include "pwm_rx.h"
 #include "pwm_mapping.h"
@@ -360,12 +364,19 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             continue;
 #endif
 
-#ifdef SOFTSERIAL_1_TIMER
-        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_1_TIMER)
+#ifdef USE_SOFTSERIAL1
+        if (init->useSoftSerial 
+            && ( masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][0] == timerIndex
+                 ||  masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][1] == timerIndex
+                ) )
             continue;
 #endif
-#ifdef SOFTSERIAL_2_TIMER
-        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_2_TIMER)
+
+#ifdef USE_SOFTSERIAL1
+        if (init->useSoftSerial 
+            && (  masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0] == timerIndex
+                 ||  masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1] == timerIndex
+                ) )
             continue;
 #endif
 

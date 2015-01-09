@@ -897,7 +897,7 @@ static void cliDump(char *cmdline)
 static void cliEnter(void)
 {
     cliMode = 1;
-    beginSerialPortFunction(cliPort, FUNCTION_CLI);
+//    beginSerialPortFunction(cliPort, FUNCTION_CLI);
     setPrintfSerialPort(cliPort);
     cliPrint("\r\nEntering CLI Mode, type 'exit' to return, or 'help'\r\n");
     cliPrompt();
@@ -909,7 +909,7 @@ static void cliExit(char *cmdline)
         cliPrint("\r\nLeaving CLI mode without reboot. Be careful!\r\n");
         *cliBuffer = '\0';
         bufferIndex = 0;
-        endSerialPortFunction(cliPort, FUNCTION_CLI);
+//        endSerialPortFunction(cliPort, FUNCTION_CLI);
         cliMode = 0;
     } else {
         cliPrint("\r\nLeaving CLI mode and rebooting, unsaved changes lost.\r\n");

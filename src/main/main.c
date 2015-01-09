@@ -46,6 +46,8 @@
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 #include "drivers/pin_debug.h"
+#include "drivers/dma.h"
+
 
 #include "flight/flight.h"
 #include "flight/mixer.h"
@@ -161,6 +163,8 @@ void init(void)
     timerInit();
 
     pinDebugInit();
+
+    DMAInit();
 
     ledInit();
 

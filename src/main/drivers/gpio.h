@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <stdbool.h>
+#include "platform.h"
+
 #ifdef STM32F10X
 typedef enum
 {

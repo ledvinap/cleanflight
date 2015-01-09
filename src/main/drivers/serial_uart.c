@@ -71,15 +71,19 @@ static void usartConfigurePinInversion(uartPort_t *self) {
 }
 
 static void usartConfigurePins(uartPort_t *self, const serialPortConfig_t *config) {
-    IOId_t tx,rx;
+    IOId_t tx,rx,rxi,txi;
     if(config->mode & MODE_U_REMAP) {
         rx = self->hwDef->rxChRemap;
         tx = self->hwDef->txChRemap;
+        rxi = self->hwDef->rxCh;
+        txi = self->hwDef->txCh;
         GPIO_PinRemapConfig(self->hwDef->remap, ENABLE);
         self->port.mode |= MODE_U_REMAP;
     } else {
         rx = self->hwDef->rxCh;
         tx = self->hwDef->txCh;
+        rxi = self->hwDef->rxChRemap;
+        txi = self->hwDef->txChRemap;
         GPIO_PinRemapConfig(self->hwDef->remap, DISABLE);
         self->port.mode &= ~MODE_U_REMAP;
     }
@@ -91,6 +95,10 @@ static void usartConfigurePins(uartPort_t *self, const serialPortConfig_t *confi
             timerChConfigGPIO(getIOHw(tx), Mode_AF_PP);   // TODO!
         if (self->port.mode & MODE_RX && rx != IO_NONE)
             timerChConfigGPIO(getIOHw(rx), Mode_IPU);
+        if (txi != IO_NONE)
+             timerChConfigGPIO(getIOHw(rxi), Mode_IPU);
+        if (rxi != IO_NONE)
+             timerChConfigGPIO(getIOHw(txi), Mode_IPU);
     }
 }
 

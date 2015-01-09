@@ -74,6 +74,7 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
+
 // June 2013     V2.2-dev
 
 enum {
@@ -663,13 +664,17 @@ void loop(void)
 
     currentTime = micros();
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
-        loopTime = currentTime + masterConfig.looptime;
 
+        debug[0] = currentTime - loopTime;
+
+        loopTime = currentTime + masterConfig.looptime;
         computeIMU(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 
         // Measure loop rate just after reading the sensors
+        debug[1] = micros() - currentTime;
+
         currentTime = micros();
-        cycleTime = (int32_t)(currentTime - previousTime);
+        debug[2] = cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
 
         annexCode();

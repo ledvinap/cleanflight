@@ -333,6 +333,7 @@ void DMA1_Channel4_IRQHandler(void)
     handleUsartTxDma(s);
 }
 
+#ifdef USE_USART2_TX_DMA
 // USART2 Tx DMA Handler
 void DMA1_Channel7_IRQHandler(void)
 {
@@ -341,6 +342,7 @@ void DMA1_Channel7_IRQHandler(void)
     DMA_Cmd(DMA1_Channel7, DISABLE);
     handleUsartTxDma(s);
 }
+#endif
 
 // USART3 Tx DMA Handler
 void DMA1_Channel2_IRQHandler(void)

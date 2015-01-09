@@ -31,109 +31,74 @@
 #include "common/utils.h"
 #include "gpio.h"
 #include "inverter.h"
+#include "nvic.h"
+
+#include "io.h" 
+
+#include "timer.h"
 
 #include "serial.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
 
-static void usartConfigurePinInversion(uartPort_t *uartPort) {
+static void uartReconfigureState(uartPort_t *self);
+extern const struct serialPortVTable uartVTable;
+
+static void usartConfigurePinInversion(uartPort_t *self) {
 #ifdef INVERTER
-    if (uartPort->port.mode == MODE_INVERTED && uartPort->USARTx == INVERTER_USART) {
+    if (self->USARTx == INVERTER_USART) {
         // Enable hardware inverter if available.
-        INVERTER_ON;
+        if(self->port.mode & MODE_INVERTED)
+            INVERTER_ON;
+        else
+            INVERTER_OFF;
     }
 #endif
 
 #ifdef STM32F303xC
     uint32_t inversionPins = 0;
 
-    if (uartPort->port.mode & MODE_TX) {
+    if (self->port.mode & MODE_TX) {
         inversionPins |= USART_InvPin_Tx;
     }
-    if (uartPort->port.mode & MODE_RX) {
+    if (self->port.mode & MODE_RX) {
         inversionPins |= USART_InvPin_Rx;
     }
 
-    // Note: inversion when using MODE_BIDIR not supported yet.
-
-    USART_InvPinCmd(uartPort->USARTx, inversionPins, uartPort->port.mode == MODE_INVERTED ? ENABLE : DISABLE);
+    USART_InvPinCmd(self->USARTx, inversionPins, uartPort->port.mode & MODE_INVERTED ? ENABLE : DISABLE);
 #endif
 
 }
 
-static void uartReconfigure(uartPort_t *self)
-{
-    USART_InitTypeDef USART_InitStructure;
-    USART_Cmd(self->USARTx, DISABLE);
-
-    USART_InitStructure.USART_BaudRate = self->port.baudRate;
-    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-    if (self->port.mode & MODE_SBUS) {
-        USART_InitStructure.USART_StopBits = USART_StopBits_2;
-        USART_InitStructure.USART_Parity = USART_Parity_Even;
+static void usartConfigurePins(uartPort_t *self, const serialPortConfig_t *config) {
+    IOId_t tx,rx;
+    if(config->mode & MODE_U_REMAP) {
+        rx = self->hwDef->rxChRemap;
+        tx = self->hwDef->txChRemap;
+        GPIO_PinRemapConfig(self->hwDef->remap, ENABLE);
+        self->port.mode |= MODE_U_REMAP;
     } else {
-        USART_InitStructure.USART_StopBits = USART_StopBits_1;
-        USART_InitStructure.USART_Parity = USART_Parity_No;
+        rx = self->hwDef->rxCh;
+        tx = self->hwDef->txCh;
+        GPIO_PinRemapConfig(self->hwDef->remap, DISABLE);
+        self->port.mode &= ~MODE_U_REMAP;
     }
-    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    USART_InitStructure.USART_Mode = 0;
-    if (self->port.state & STATE_RX)
-        USART_InitStructure.USART_Mode |= USART_Mode_Rx;
-    if (self->port.state & STATE_TX)
-        USART_InitStructure.USART_Mode |= USART_Mode_Tx;
 
-    USART_Init(self->USARTx, &USART_InitStructure);
-    usartConfigurePinInversion(self);
-    USART_Cmd(self->USARTx, ENABLE);
+    if(self->port.mode & MODE_SINGLEWIRE) {
+        timerChConfigGPIO(&timerHardware[tx], Mode_AF_OD);
+    } else {
+        if (self->port.mode & MODE_TX && tx != IO_NONE)
+            timerChConfigGPIO(getIOHw(tx), Mode_AF_PP);   // TODO!
+        if (self->port.mode & MODE_RX && rx != IO_NONE)
+            timerChConfigGPIO(getIOHw(rx), Mode_IPU);
+    }
 }
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
+static void usartConfigureDMAorIRQ(uartPort_t *self, const serialPortConfig_t *config)
 {
-    uartPort_t *self;
-
-    if(0) {
-#ifdef USE_USART1
-    } else if (USARTx == USART1) {
-        self = serialUSART1(config);
-#endif
-#ifdef USE_USART2
-    } else if (USARTx == USART2) {
-        self = serialUSART2(config);
-#endif
-#ifdef USE_USART3
-    } else if (USARTx == USART3) {
-        self = serialUSART3(config);
-#endif
-    } else {
-        return NULL;
-    }
-
-    self->txDMAEmpty = true;
-
-    // common serial initialisation code should move to serialPort::init()
-    self->port.rxBufferHead = self->port.rxBufferTail = 0;
-    self->port.txBufferHead = self->port.txBufferTail = 0;
-    // callback works for IRQ-based RX ONLY
-    self->port.rxCallback = config->rxCallback;
-    self->port.baudRate = config->baudRate;          // TODO - recalculate actual baudrate
-
-    // setup initial port state
-    self->port.state = 0;
-    if(config->mode & MODE_RX) {
-        self->port.state |= STATE_RX;
-        self->port.mode |= MODE_RX;
-    }
-    if(config->mode & MODE_TX) {
-        self->port.state |= STATE_TX;
-        self->port.mode |= MODE_TX;
-    }
-
-// FIXME use inversion on STM32F3
-// TODO - use singlewire mode (supported both by 10x and 30x)
-    uartReconfigure(self);
-
     // Receive DMA or IRQ
     DMA_InitTypeDef DMA_InitStructure;
+    self->port.mode &= ~(MODE_U_DMATX | MODE_U_DMARX);
 
     if (self->port.mode & MODE_RX) {
         if (self->rxDMAChannel && config->mode & MODE_U_DMARX) {
@@ -158,6 +123,13 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 
             self->port.mode |= MODE_U_DMARX;
         } else {
+            NVIC_InitTypeDef NVIC_InitStructure;
+            NVIC_InitStructure.NVIC_IRQChannel = self->hwDef->IRQn;
+            NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(self->hwDef->IRQPrio);
+            NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(self->hwDef->IRQPrio);
+            NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+            NVIC_Init(&NVIC_InitStructure);
+
             USART_ClearITPendingBit(self->USARTx, USART_IT_RXNE);
             USART_ITConfig(self->USARTx, USART_IT_RXNE, ENABLE);
         }
@@ -166,6 +138,8 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
     // Transmit DMA or IRQ
     if (self->port.mode & MODE_TX) {
         if (self->txDMAChannel && config->mode & MODE_U_DMATX) {
+            DMAInitNVIC(self->hwDef->txDMAChannelId, self->hwDef->IRQPrio_txDMA);
+
             DMA_StructInit(&DMA_InitStructure);
             DMA_InitStructure.DMA_PeripheralBaseAddr = self->txDMAPeripheralBaseAddr;
             DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
@@ -187,17 +161,101 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
 
             self->port.mode |= MODE_U_DMATX;
         } else {
+            NVIC_InitTypeDef NVIC_InitStructure;
+            NVIC_InitStructure.NVIC_IRQChannel = self->hwDef->IRQn;
+            NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(self->hwDef->IRQPrio);
+            NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(self->hwDef->IRQPrio);
+            NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+            NVIC_Init(&NVIC_InitStructure);
+
             USART_ITConfig(self->USARTx, USART_IT_TXE, ENABLE);
         }
     }
+}
 
-    USART_Cmd(self->USARTx, ENABLE);
+static void uartReconfigure(uartPort_t *self, const serialPortConfig_t *config)
+{
+    self->txDMAEmpty = true;
+    // common serial initialisation code should move to serialPort::init()
+    self->port.rxBufferHead = self->port.rxBufferTail = 0;
+    self->port.txBufferHead = self->port.txBufferTail = 0;
+    // callback works for IRQ-based RX ONLY
+    self->port.rxCallback = config->rxCallback;
 
+    // setup initial port state
+    self->port.mode = 0;
+    self->port.state = 0;
+    if(config->mode & MODE_RX) {
+        self->port.state |= STATE_RX;
+        self->port.mode |= MODE_RX;
+    }
+    if(config->mode & MODE_TX) {
+        self->port.state |= STATE_TX;
+        self->port.mode |= MODE_TX;
+    }
+    self->port.mode |= config->mode & MODE_SINGLEWIRE;
+    self->port.baudRate = config->baudRate;
+
+    usartConfigurePins(self, config);
+    usartConfigureDMAorIRQ(self, config);
+
+    uartReconfigureState(self);
+}
+
+
+static void uartReconfigureState(uartPort_t *self)
+{
+    USART_InitTypeDef USART_InitStructure;
+    USART_Cmd(self->USARTx, DISABLE);
+
+    USART_InitStructure.USART_BaudRate = self->port.baudRate;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    if (self->port.mode & MODE_SBUS) {
+        USART_InitStructure.USART_StopBits = USART_StopBits_2;
+        USART_InitStructure.USART_Parity = USART_Parity_Even;
+    } else {
+        USART_InitStructure.USART_StopBits = USART_StopBits_1;
+        USART_InitStructure.USART_Parity = USART_Parity_No;
+    }
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_Mode = 0;
+    if (self->port.state & STATE_RX)
+        USART_InitStructure.USART_Mode |= USART_Mode_Rx;
+    if (self->port.state & STATE_TX)
+        USART_InitStructure.USART_Mode |= USART_Mode_Tx;
+
+    USART_Init(self->USARTx, &USART_InitStructure);
+    usartConfigurePinInversion(self);
     if (self->port.mode & MODE_SINGLEWIRE)
         USART_HalfDuplexCmd(self->USARTx, ENABLE);
     else
         USART_HalfDuplexCmd(self->USARTx, DISABLE);
+    USART_Cmd(self->USARTx, ENABLE);
+}
 
+serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
+{
+    const uartHwDef_t* def;
+    def = serialUSARTFindDef(USARTx);
+    if(!def) return NULL;
+
+    uartPort_t *self=def->uartPort;
+
+    self->port.vTable = &uartVTable;
+
+    self->port.rxBuffer = def->rxBuffer;
+    self->port.txBuffer = def->txBuffer;
+    self->port.rxBufferSize = def->rxBufferSize;
+    self->port.txBufferSize = def->txBufferSize;
+
+    self->hwDef = def;
+    self->USARTx = def->USARTx;
+
+    self->rxDMAChannel = DMAGetChannel(def->rxDMAChannelId);
+    self->txDMAChannel = DMAGetChannel(def->txDMAChannelId);
+
+    serialUSARTHwInit(self, config);
+    uartReconfigure(self, config);
     return &self->port;
 }
 
@@ -207,7 +265,7 @@ void uartUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMa
     uartPort_t *self = container_of(serial, uartPort_t, port);
     portState_t newState = (self->port.state & andMask) | orMask;
     self->port.state = newState;
-    uartReconfigure(self);
+    uartReconfigureState(self);
 }
 
 void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
@@ -218,14 +276,7 @@ void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
     if(config->mode == 0)  // check for dummy config
         return;
 
-    self->port.mode = config->mode;
-    self->port.baudRate = config->baudRate;
-    self->port.state = 0;
-    if(self->port.mode & MODE_RX)
-        self->port.state |= STATE_RX;
-    if(self->port.mode & MODE_TX)
-        self->port.state |= STATE_TX;
-    uartReconfigure(self);
+    uartReconfigure(self, config);
 }
 
 void uartRelease(serialPort_t *serial)
@@ -234,7 +285,6 @@ void uartRelease(serialPort_t *serial)
     uartUpdateState(&self->port, 0, 0);
     // DMA channels should be released
     USART_Cmd(self->USARTx, DISABLE);
-    uartReconfigure(self);
     self->port.mode = 0;
 }
 
@@ -262,6 +312,14 @@ void uartStartTxDMA(uartPort_t *self)
     }
     self->txDMAEmpty = false;
     DMA_Cmd(self->txDMAChannel, ENABLE);
+}
+
+void uartTxDMAHandler(uartPort_t *self)
+{
+    if (self->port.txBufferHead != self->port.txBufferTail)
+        uartStartTxDMA(self);
+    else
+        self->txDMAEmpty = true;
 }
 
 void uartIrqHandler(uartPort_t *self)

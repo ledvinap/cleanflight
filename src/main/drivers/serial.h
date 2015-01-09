@@ -34,6 +34,7 @@ typedef enum portMode_t {
 // uart specific
     MODE_U_DMARX      = 1 << 7, // use USART RX DMA if available
     MODE_U_DMATX      = 1 << 8, // use USART TX DMA if available
+    MODE_U_REMAP      = 1 << 9, // remap USART to alternate pins
 
 // hints how to setup port if more configuration options are possible (DMA, dualtimer, .. ). Device-specific driver sets neccesary flags
     MODE_DEFAULT_FAST  = MODE_U_DMARX | MODE_U_DMATX, // setup port for high-performance if possible

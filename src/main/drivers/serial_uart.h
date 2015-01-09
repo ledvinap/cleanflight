@@ -26,14 +26,16 @@
 #define UART3_RX_BUFFER_SIZE    128
 #define UART3_TX_BUFFER_SIZE    64
 
+struct uartHwDef_s;
+
 typedef struct {
     serialPort_t port;
 
     DMA_Channel_TypeDef *rxDMAChannel;
     DMA_Channel_TypeDef *txDMAChannel;
 
-    uint32_t rxDMAIrq;
-    uint32_t txDMAIrq;
+//    uint32_t rxDMAIrq;
+//    uint32_t txDMAIrq;
 
     uint32_t rxDMAPos;
     bool txDMAEmpty;
@@ -42,6 +44,7 @@ typedef struct {
     uint32_t rxDMAPeripheralBaseAddr;
 
     USART_TypeDef *USARTx;
+    const struct uartHwDef_s* hwDef;
 } uartPort_t;
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config);

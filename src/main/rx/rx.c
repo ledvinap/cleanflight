@@ -64,6 +64,7 @@ uint16_t rssi;                  // range: [0;1023]
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 
 #define PPM_AND_PWM_SAMPLE_COUNT 4
+#define CHANNEL_HISTORY_SIZE 4
 
 #define PULSE_MIN   750       // minimum PWM pulse width which is considered valid
 #define PULSE_MAX   2250      // maximum PWM pulse width which is considered valid
@@ -232,34 +233,43 @@ static bool isRxDataDriven(void) {
 }
 
 static uint8_t rcSampleIndex = 0;
+static int16_t rcSamples[MAX_SUPPORTED_RC_CHANNEL_COUNT][CHANNEL_HISTORY_SIZE];
+static bool rcSamplesCollected = false;
 
-uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
+void storeRcChannelSample(uint8_t chan, uint16_t sample)
 {
-    static int16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
-    static int16_t rcDataMean[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT];
-    static bool rxSamplesCollected = false;
+    unsigned sampleIndex = rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1);
 
-    uint8_t currentSampleIndex = rcSampleIndex % PPM_AND_PWM_SAMPLE_COUNT;
-
-    // update the recent samples and compute the average of them
-    rcSamples[chan][currentSampleIndex] = sample;
-
-    // avoid returning an incorrect average which would otherwise occur before enough samples
-    if (!rxSamplesCollected) {
-        if (rcSampleIndex < PPM_AND_PWM_SAMPLE_COUNT) {
-            return sample;
-        }
-        rxSamplesCollected = true;
-    }
-
-    rcDataMean[chan] = 0;
-
-    uint8_t sampleIndex;
-    for (sampleIndex = 0; sampleIndex < PPM_AND_PWM_SAMPLE_COUNT; sampleIndex++)
-        rcDataMean[chan] += rcSamples[chan][sampleIndex];
-
-    return rcDataMean[chan] / PPM_AND_PWM_SAMPLE_COUNT;
+    rcSamples[chan][sampleIndex] = sample;
+    if(rcSampleIndex >= CHANNEL_HISTORY_SIZE)
+        rcSamplesCollected = true;
 }
+
+uint16_t getRcChannelHistory(int chan, int n)
+{
+    if(rcSamplesCollected) {
+        return rcSamples[chan][(rcSampleIndex - n) & (CHANNEL_HISTORY_SIZE - 1)];
+    } else {
+        return rcSamples[chan][rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1)];  // return last value
+    }
+}
+
+static uint16_t calculateRcChannelMEAN(uint8_t chan)
+{
+    int rcDataMean = 0;
+    for (int i = 0; i < PPM_AND_PWM_SAMPLE_COUNT; i++)
+        rcDataMean += getRcChannelHistory(chan, i);
+    return rcDataMean / PPM_AND_PWM_SAMPLE_COUNT;
+}
+
+static uint16_t calculateRcChannelMEDIAN(uint8_t chan)
+{
+    int a = getRcChannelHistory(chan, 0);
+    int b = getRcChannelHistory(chan, 1);
+    int c = getRcChannelHistory(chan, 2);
+    return max(min(a,b), min(max(a,b),c));
+}
+
 
 void processRxChannels(void)
 {
@@ -271,6 +281,9 @@ void processRxChannels(void)
         shouldCheckPulse = isPPMDataBeingReceived();
         resetPPMDataReceivedState();
     }
+
+    // channel history index
+    rcSampleIndex++;
 
     for (chan = 0; chan < rxRuntimeConfig.channelCount; chan++) {
 
@@ -292,10 +305,12 @@ void processRxChannels(void)
         if (sample < PULSE_MIN || sample > PULSE_MAX)
             sample = rxConfig->midrc;
 
+        storeRcChannelSample(chan, sample);
+
         if (isRxDataDriven()) {
-            rcData[chan] = sample;
+            rcData[chan] = calculateRcChannelMEDIAN(sample);
         } else {
-            rcData[chan] = calculateNonDataDrivenChannel(chan, sample);
+            rcData[chan] = calculateRcChannelMEAN(chan);
         }
     }
 }
@@ -315,8 +330,6 @@ void processDataDrivenRx(void)
 
 void processNonDataDrivenRx(void)
 {
-    rcSampleIndex++;
-
     processRxChannels();
 }
 

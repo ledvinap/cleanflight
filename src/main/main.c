@@ -439,18 +439,46 @@ void processLoopback(void) {
 #define processLoopback()
 #endif
 
+#if 0
+timerQueueRec_t t1,t2;
+void testCb(struct timerQueueRec_s *self)
+{
+    if(self == &t1) {
+        LED1_ON;
+        timerQueue_Start(self, 2997);
+    } else {
+        LED1_OFF;
+        timerQueue_Start(self, 3003);
+    }
+}
+
+void test(void)
+{
+    timerQueue_Config(&t1, testCb);
+    timerQueue_Start(&t1, 0);
+    timerQueue_Config(&t2, testCb);
+    timerQueue_Start(&t2, 0);
+}
+#else
+void test(void) {}
+#endif
+
+
 int main(void) {
 #if 0
-static int markme=0;
-markme++;
-ATOMIC_BLOCK_NB(0xff) {
-   ATOMIC_BARRIER(markme);
-   markme++;
-};
-markme++;
+    static int markme=0;
+    markme++;
+    ATOMIC_BLOCK_NB(0xff) {
+        ATOMIC_BARRIER(markme);
+        markme++;
+    };
+    markme++;
 #endif
     init();
 
+#if 1
+    test();
+#endif
     while (1) {
         loop();
         processLoopback();

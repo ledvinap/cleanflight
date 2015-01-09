@@ -79,7 +79,7 @@
 #include "blackbox.h"
 
 const serialPortConfig_t blackboxPortConfig = {
-    .mode = MODE_TX,
+    .mode = MODE_TX | MODE_U_REMAP,
     .baudRate = 115200,
 };
 

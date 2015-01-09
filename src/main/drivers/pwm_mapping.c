@@ -74,8 +74,11 @@ static const uint16_t multiPPM[] = {
     PWM1  | (MAP_TO_PPM_INPUT << 8),     // PPM input
     PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
     PWM10 | (MAP_TO_MOTOR_OUTPUT << 8),     // Swap to servo if needed
+#if 0
+    // remapped uart is here ... 
     PWM11 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM12 | (MAP_TO_MOTOR_OUTPUT << 8),
+#endif
     PWM13 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM14 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM5  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed

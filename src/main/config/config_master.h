@@ -16,6 +16,49 @@
  */
 
 #pragma once
+#include <common/axis.h>
+#include "common/color.h"
+
+#include "config/config.h"
+
+//#include "drivers/light_ws2811strip.h"
+//#include "drivers/system.h"
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
+#include "drivers/serial.h"
+#include "drivers/gpio.h"
+#include "drivers/timer.h"
+#include "drivers/pwm_rx.h"
+
+#include "flight/flight.h"
+//#include "flight/failsafe.h"
+#include "flight/mixer.h"
+//#include "flight/navigation.h"
+
+#include "sensors/battery.h"
+#include "sensors/sensors.h"
+#include "sensors/acceleration.h"
+#include "sensors/barometer.h"
+#include "sensors/boardalignment.h"
+#include "sensors/gyro.h"
+
+//#include "config/runtime_config.h"
+#include "rx/rx.h"
+//#include "io/rc_controls.h"
+#include "io/escservo.h"
+#include "io/gps.h"
+//#include "io/gimbal.h"
+#include "io/serial.h"
+#include "io/ledstrip.h"
+
+//#include "config/runtime_config.h"
+//#include "config/config.h"
+#include "config/config_profile.h"
+
+#include "telemetry/telemetry.h"
+//#include "drivers/accgyro.h"
+
+
 
 // System-wide
 typedef struct master_t {

@@ -235,9 +235,10 @@ static bool isRxDataDriven(void) {
 static uint8_t rcSampleIndex = 0;
 static int16_t rcSamples[MAX_SUPPORTED_RC_CHANNEL_COUNT][CHANNEL_HISTORY_SIZE];
 
-void rcChannelHistoryStore(int chan, uint16_t sample)
+void rcChannelHistoryStore(unsigned chan, uint16_t sample)
 {
-    rcSamples[chan][rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1)] = sample;
+    if(chan < MAX_SUPPORTED_RC_CHANNEL_COUNT)
+        rcSamples[chan][rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1)] = sample;
 }
 
 uint16_t rcChannelHistoryGet(int chan, int n)
@@ -275,11 +276,9 @@ static uint16_t rcChannel_Median(int chan)
     uint16_t median = max(min(a,b), min(max(a,b),c));
     if(median)
         return median;
-    // at most one sample is valid here
-    if(a) return a;
-    if(b) return b;
-    if(c) return c;
-    return rxConfig->midrc;
+    // at most one sample is nonzero here
+    median = a + b + c;
+    return median ? median : rxConfig->midrc;
 }
 
 

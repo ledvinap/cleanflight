@@ -27,7 +27,6 @@
 #define LED1_PIN    Pin_4 // PB4 (LED)
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOB
 
-
 #define BEEP_GPIO   GPIOA
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA

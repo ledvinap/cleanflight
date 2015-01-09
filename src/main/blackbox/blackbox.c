@@ -25,6 +25,7 @@
 #include "common/maths.h"
 #include "common/axis.h"
 #include "common/color.h"
+#include "common/utils.h"
 
 #include "drivers/gpio.h"
 #include "drivers/sensor.h"
@@ -88,11 +89,13 @@ const serialPortConfig_t blackboxPortConfig = {
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
 
 // Some macros to make writing FLIGHT_LOG_FIELD_* constants shorter:
+#if 0
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
 #define CONCAT_HELPER(x,y) x ## y
 #define CONCAT(x,y) CONCAT_HELPER(x, y)
+#endif
 
 #define PREDICT(x) CONCAT(FLIGHT_LOG_FIELD_PREDICTOR_, x)
 #define ENCODING(x) CONCAT(FLIGHT_LOG_FIELD_ENCODING_, x)

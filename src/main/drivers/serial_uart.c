@@ -291,7 +291,12 @@ void uartRelease(serialPort_t *serial)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
     uartUpdateState(&self->port, 0, 0);
-    // DMA channels should be released
+    // stop DMA, disable interrupts
+    if (self->port.mode & MODE_U_DMARX)
+        DMA_DeInit(self->rxDMAChannel);
+    if(self->port.mode & MODE_U_DMATX)
+        DMA_DeInit(self->txDMAChannel);
+    USART_ITConfig(self->USARTx, USART_IT_TXE | USART_IT_RXNE, DISABLE);
     USART_Cmd(self->USARTx, DISABLE);
     self->port.mode = 0;
 }
@@ -349,8 +354,8 @@ void uartIrqHandler(uartPort_t *self)
         }
     }
 
-    if (!(self->port.mode & MODE_U_DMATX) && (flags & USART_FLAG_TXE)) {
-        if (self->port.txBufferTail != self->port.txBufferHead) {
+    if (flags & USART_FLAG_TXE) {
+        if (!(self->port.mode & MODE_U_DMATX) && self->port.txBufferTail != self->port.txBufferHead) {
             USART_SendData(self->USARTx, self->port.txBuffer[self->port.txBufferTail]);
             self->port.txBufferTail = (self->port.txBufferTail + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferTail + 1;
         } else {

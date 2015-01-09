@@ -914,7 +914,7 @@ void finishBlackbox(void)
 {
     if (blackboxState != BLACKBOX_STATE_DISABLED && blackboxState != BLACKBOX_STATE_STOPPED) {
         blackboxSetState(BLACKBOX_STATE_STOPPED);
-        
+
         releaseBlackboxPort();
     }
 }

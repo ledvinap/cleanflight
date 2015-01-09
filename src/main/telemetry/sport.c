@@ -442,16 +442,14 @@ void handleSPortTelemetry(void)
 {
     if(!telemHeapLen)  // this should never happend
         return;
-    while(telemPktQueueEmpty()) {
-        if(tq_cmp(telemHeap[0], millis() << 16) <= 0) { // time is up
-            tlm_Id id = telemHeap[0] & 0xffff;
-            telemQueueDeleteIdx(0);
-            int res = generatePacket(id);
-            if(res <= 0 || res >= 10000) {   // TODO
-                res = 10000; // try 10s later
-            }
-            telemQueueInsert(millis() + res, id);
+    while(telemPktQueueEmpty() && tq_cmp(telemHeap[0], millis() << 16) <= 0) { // got packet to send
+        tlm_Id id = telemHeap[0] & 0xffff;
+        telemQueueDeleteIdx(0);
+        int res = generatePacket(id);
+        if(res <= 0 || res >= 10000) {   // TODO
+            res = 10000; // try 10s later
         }
+        telemQueueInsert(millis() + res, id);
     }
 }
 

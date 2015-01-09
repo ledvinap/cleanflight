@@ -575,6 +575,7 @@ void mspReleasePortIfAllocated(serialPort_t *serialPort)
         mspPort_t *candidateMspPort = &mspPorts[portIndex];
         if (candidateMspPort->port == serialPort) {
             endSerialPortFunction(serialPort, FUNCTION_MSP);
+            serialRelease(serialPort);
             memset(candidateMspPort, 0, sizeof(mspPort_t));
         }
     }

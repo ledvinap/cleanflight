@@ -234,40 +234,52 @@ static bool isRxDataDriven(void) {
 
 static uint8_t rcSampleIndex = 0;
 static int16_t rcSamples[MAX_SUPPORTED_RC_CHANNEL_COUNT][CHANNEL_HISTORY_SIZE];
-static bool rcSamplesCollected = false;
 
-void storeRcChannelSample(uint8_t chan, uint16_t sample)
+void rcChannelHistoryStore(int chan, uint16_t sample)
 {
-    unsigned sampleIndex = rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1);
-
-    rcSamples[chan][sampleIndex] = sample;
-    if(rcSampleIndex >= CHANNEL_HISTORY_SIZE)
-        rcSamplesCollected = true;
+    rcSamples[chan][rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1)] = sample;
 }
 
-uint16_t getRcChannelHistory(int chan, int n)
+uint16_t rcChannelHistoryGet(int chan, int n)
 {
-    if(rcSamplesCollected) {
-        return rcSamples[chan][(rcSampleIndex - n) & (CHANNEL_HISTORY_SIZE - 1)];
-    } else {
-        return rcSamples[chan][rcSampleIndex & (CHANNEL_HISTORY_SIZE - 1)];  // return last value
-    }
+    return rcSamples[chan][(rcSampleIndex - n) & (CHANNEL_HISTORY_SIZE - 1)];
 }
 
-static uint16_t calculateRcChannelMEAN(uint8_t chan)
+void rcChannelHistoryTick(void)
+{
+    rcSampleIndex++;
+}
+
+static uint16_t rcChannel_Mean(int chan)
 {
     int rcDataMean = 0;
-    for (int i = 0; i < PPM_AND_PWM_SAMPLE_COUNT; i++)
-        rcDataMean += getRcChannelHistory(chan, i);
-    return rcDataMean / PPM_AND_PWM_SAMPLE_COUNT;
+    int sampleCount = 0;
+    for(int i = 0; i < PPM_AND_PWM_SAMPLE_COUNT; i++) {
+        int sample = rcChannelHistoryGet(chan, i);
+        if(sample) {
+            rcDataMean += sample;
+            sampleCount++;
+        }
+    }
+    if(sampleCount)
+        return rcDataMean / sampleCount;
+    else
+        return rxConfig->midrc;
 }
 
-static uint16_t calculateRcChannelMEDIAN(uint8_t chan)
+static uint16_t rcChannel_Median(int chan)
 {
-    int a = getRcChannelHistory(chan, 0);
-    int b = getRcChannelHistory(chan, 1);
-    int c = getRcChannelHistory(chan, 2);
-    return max(min(a,b), min(max(a,b),c));
+    int a = rcChannelHistoryGet(chan, 0);
+    int b = rcChannelHistoryGet(chan, 1);
+    int c = rcChannelHistoryGet(chan, 2);
+    uint16_t median = max(min(a,b), min(max(a,b),c));
+    if(median)
+        return median;
+    // at most one sample is valid here
+    if(a) return a;
+    if(b) return b;
+    if(c) return c;
+    return rxConfig->midrc;
 }
 
 
@@ -286,8 +298,7 @@ void processRxChannels(void)
         resetPPMDataReceivedState();
     }
 
-    // channel history index
-    rcSampleIndex++;
+    rcChannelHistoryTick();
 
     for (chan = 0; chan < rxRuntimeConfig.channelCount; chan++) {
 
@@ -307,14 +318,14 @@ void processRxChannels(void)
 
         // validate the range
         if (sample < PULSE_MIN || sample > PULSE_MAX)
-            sample = rxConfig->midrc;
+            sample = 0;
 
-        storeRcChannelSample(chan, sample);
+        rcChannelHistoryStore(chan, sample);
 
         if (isRxDataDriven()) {
-            rcData[chan] = calculateRcChannelMEDIAN(sample);
+            rcData[chan] = rcChannel_Median(chan);
         } else {
-            rcData[chan] = calculateRcChannelMEAN(chan);
+            rcData[chan] = rcChannel_Mean(chan);
         }
     }
 }

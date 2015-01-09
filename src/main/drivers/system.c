@@ -28,7 +28,7 @@
 #include "sound_beeper.h"
 #include "nvic.h"
 #include "adc.h"
-
+#include "timer.h"      // timer configuration needed, TODO!
 #include "system.h"
 
 #ifndef TIME_USE_TIMER

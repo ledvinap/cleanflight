@@ -54,7 +54,7 @@ typedef struct {
     channelType_t type;
     channelResources_t resourcesUsed;
 } timerChannelInfo_t;
-timerChannelInfo_t timerChannelInfo[USABLE_TIMER_CHANNEL_COUNT];
+timerChannelInfo_t timerChannelInfo[USABLE_IO_CHANNEL_COUNT];
 
 
 static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef *tim);
@@ -274,10 +274,10 @@ uint32_t timerGetRunningTimeCNTfast(TIM_TypeDef *tim)
 
 // allocate and configure timer channel. Timer priority is set to highest priority of its channels
 // caller must check if channel is free
-void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency)
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, uint16_t timerPeriod, int timerFrequency)
 {
     unsigned channel = timHw - timerHardware;
-    if(channel >= USABLE_TIMER_CHANNEL_COUNT)
+    if(channel >= USABLE_IO_CHANNEL_COUNT)
         return;
 
     if(type != TYPE_FREE)   // pass TYPE_FREE to keep old owner
@@ -285,17 +285,19 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResour
 
     timerChannelInfo[channel].resourcesUsed |= resources;
 
+    if(!timHw->tim) return;  // TODO - not timer channel
+
     if(resources & RESOURCE_TIMER_DUAL) {
         // we must mark other channel too
         unsigned dualChannel = timerChFindDualChannel(timHw) - timerHardware;
-        if(dualChannel < USABLE_TIMER_CHANNEL_COUNT)
+        if(dualChannel < USABLE_IO_CHANNEL_COUNT)
             timerChannelInfo[dualChannel].resourcesUsed |= RESOURCE_TIMER;
     }
 
     unsigned timer = lookupTimerIndex(timHw->tim);
     if(timer >= USED_TIMER_COUNT)
         return;
-    timerConfigure(timHw->tim, irqPriority, 0, timerFrequency);
+    timerConfigure(timHw->tim, irqPriority, timerPeriod, timerFrequency);
 }
 
 void timerChCCHandlerInit(timerCCHandlerRec_t *self, timerCCHandlerCallback *fn)
@@ -538,7 +540,7 @@ void timerChConfigOC(const timerHardware_t *timHw, bool outEnable, bool activeHi
 
 const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw)
 {
-    for(unsigned i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++)
+    for(unsigned i = 0; i < USABLE_IO_CHANNEL_COUNT; i++)
         if(timerHardware[i].tim == timHw->tim
            && timerHardware[i].channel == (timHw->channel ^ TIM_Channel_2))
             return &timerHardware[i];
@@ -548,7 +550,7 @@ const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw)
 channelResources_t timerChGetUsedResources(const timerHardware_t *timHw)
 {
     unsigned channel = timHw - timerHardware;
-    if(channel < USABLE_TIMER_CHANNEL_COUNT)
+    if(channel < USABLE_IO_CHANNEL_COUNT)
         return timerChannelInfo[channel].resourcesUsed;
     return 0;
 }
@@ -707,7 +709,7 @@ void timerInit(void)
     timerInitTarget();
 
 #ifdef STM32F303xC
-    for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
+    for (uint8_t timerIndex = 0; timerIndex < USABLE_IO_CHANNEL_COUNT; timerIndex++) {
         const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
         if(timerHardwarePtr->alternateFunction != 0xff)
             GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);
@@ -715,7 +717,7 @@ void timerInit(void)
 #endif
 
 // initialize timer channel structures
-    for(int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+    for(int i = 0; i < USABLE_IO_CHANNEL_COUNT; i++) {
         timerChannelInfo[i].type = TYPE_FREE;
         timerChannelInfo[i].resourcesUsed = 0;
     }
@@ -724,7 +726,7 @@ void timerInit(void)
     }
 #ifdef PINDEBUG
 // allocate debug pins here
-    for(int i=0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+    for(int i=0; i < USABLE_IO_CHANNEL_COUNT; i++) {
         if(pinDebugIsPinUsed(timerHardware[i].gpio, timerHardware[i].pin)) {
             // true pin allocation should be used when implemented
             timerChannelInfo[i].type = TYPE_PINDEBUG;
@@ -748,7 +750,7 @@ void timerStart(void)
     for(unsigned timer = 0; timer < USED_TIMER_COUNT; timer++) {
         int priority = -1;
         int irq = -1;
-        for(unsigned hwc = 0; hwc < USABLE_TIMER_CHANNEL_COUNT; hwc++)
+        for(unsigned hwc = 0; hwc < USABLE_IO_CHANNEL_COUNT; hwc++)
             if((timerChannelInfo[hwc].type != TYPE_FREE) && (timerHardware[hwc].tim == usedTimers[timer])) {
                 // TODO - move IRQ to timer info
                 irq = timerHardware[hwc].irq;

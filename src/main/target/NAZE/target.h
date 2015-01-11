@@ -141,10 +141,10 @@
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
 
-#define USABLE_TIMER_CHANNEL_COUNT (14)
+#define USABLE_IO_CHANNEL_COUNT (16)
 
 #define TIME_USE_TIMER    // base timming on some timer instead of systick
-#define TIME_TIMER TIM3
+#define TIME_TIMER TIM2
 
 // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
 #ifdef ALIENWII32

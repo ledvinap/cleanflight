@@ -6,7 +6,7 @@
 #include "drivers/timer.h"
 #include "drivers/timer_impl.h"
 
-const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT + 2] = {   // TODO!!!
+const timerHardware_t timerHardware[USABLE_IO_CHANNEL_COUNT] = {
     { TIM2, GPIOA, Pin_0,  TIM_Channel_1, TIM2_IRQn,    0, Mode_IPD}, // PIN1   PPM    PWM1  PPM   PWM1    ; ADC12_IN0
     { TIM2, GPIOA, Pin_1,  TIM_Channel_2, TIM2_IRQn,    0, Mode_IPD}, // PIN2          PWM2        PWM2    ; ADC12_IN1
     { TIM2, GPIOA, Pin_2,  TIM_Channel_3, TIM2_IRQn,    0, Mode_IPD}, // PIN3          PWM3        PWM3    ; ADC12_IN2 USART2_TX

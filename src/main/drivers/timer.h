@@ -76,6 +76,7 @@ typedef enum {
     TYPE_PPMINPUT,
     TYPE_PWMOUTPUT_MOTOR,
     TYPE_PWMOUTPUT_FAST,
+    TYPE_PWMOUTPUT_ONESHOT,
     TYPE_PWMOUTPUT_SERVO,
     TYPE_SOFTSERIAL_RX,
     TYPE_SOFTSERIAL_TX,
@@ -121,7 +122,7 @@ void timerChITConfigDualLo(const timerHardware_t* timHw, FunctionalState newStat
 void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
 void timerChClearCCFlag(const timerHardware_t* timHw);
 
-void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency);
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, uint16_t period, int timerFrequency);
 
 const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw);
 channelResources_t timerChGetUsedResources(const timerHardware_t *timHw);

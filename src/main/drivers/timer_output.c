@@ -33,7 +33,7 @@ void timerOut_Config(timerOutputRec_t* self, const timerHardware_t* timHw, chann
     self->timCCR = timerChCCR(timHw);
     self->callback = callback;
     self->flags = flags;
-    timerChInit(timHw, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, priority, 1000000);
+    timerChInit(timHw, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, priority, 0, 1000000);
     timerChCCHandlerInit(&self->compareCb, timerOut_timerCompareEvent);
     // Enable PWM for advanced timers here, it is not cleared during release
     if(self->timHw->outputEnable)

@@ -38,12 +38,12 @@ void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channel
     self->timer = timer;
     self->timeout = 0;
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
-        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority, 1000000);
+        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority, 0, 1000000);
         self->CCR = timerChCCRLo(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_dualCaptureEventStart);
         timerChCCHandlerInit(&self->edgeHiCb, timerIn_dualCaptureEventStore);
     } else {
-        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER, priority, 1000000);
+        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER, priority, 0, 1000000);
         self->CCR = timerChCCR(timHw);
         timerChCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);
     }

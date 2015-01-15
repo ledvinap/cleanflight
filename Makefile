@@ -80,7 +80,8 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(USBFS_DIR)/inc \
 		   $(CMSIS_DIR)/CM1/CoreSupport \
 		   $(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F30x \
-		   $(ROOT)/src/main/vcp
+		   $(ROOT)/src/main/vcp \
+		   $(ROOT)/lib/main/p99
 
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_256k.ld
 

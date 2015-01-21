@@ -229,7 +229,7 @@ void init(void)
 #endif
 #endif
 
-#if !defined(SPARKY)
+#ifdef USE_ADC
     drv_adc_config_t adc_params;
 
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);

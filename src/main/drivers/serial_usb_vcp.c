@@ -17,16 +17,16 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "platform.h"
+
+#include "build_config.h"
 
 #include "usb_core.h"
 #include "usb_init.h"
 #include "vcp/hw_config.h"
-
-#include <stdbool.h>
-#include <string.h>
-
 
 #include "drivers/system.h"
 #include "common/utils.h"
@@ -42,11 +42,17 @@ extern const struct serialPortVTable usbVcpVTable;
 
 void usbVcpUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
+    UNUSED(instance);
+    UNUSED(baudRate);
+
     // TODO implement
 }
 
 void usbVcpConfigure(serialPort_t *serial, const serialPortConfig_t *config)
 {
+    UNUSED(instance);
+    UNUSED(mode);
+
     // TODO implement
 }
 

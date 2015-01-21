@@ -65,6 +65,7 @@
     { .fieldheader = { .type = CDEF_TYPE_METATAG(CDEF_MEMBER_TYPE(mdef)) } }, \
     { .name = BOOST_PP_STRINGIZE(CDEF_MEMBER_NAME(mdef)) },             \
     { .offset = offsetof(struct BOOST_PP_CAT(CDEF_NAME(def), _s), CDEF_MEMBER_NAME(mdef)) }, \
+ { CDEF_MEMBER_PROPERTIES_SEQ(mdef) } \
     { .default = CDEF_PROPERTIES_GETFIRST(CDEF_MEMBER_PROPERTIES_SEQ(mdef), DEFAULT) }, \
 /**/
 
@@ -148,72 +149,24 @@
         escAndServoConfig,                                              \
         (minthrottle, UINT16, COND(ALIENWII32, DEFAULT(1000)), DEFAULT(1150), \
          DOC("Set the minimum throttle command sent to the ESC. This is the minimum value that allows motors to run at a idle speed.") ), \
-        (maxthrottle, UINT16, DEFAULT(2000, ALIENWII32), DEFAULT(1850),            \
+        (maxthrottle, UINT16, COND(ALIENWII32, DEFAULT(200)), DEFAULT(1850), \
          DOC("Maximum value for the ESCs at full power") ),             \
-        (mincommand,  UINT16, DEAFULT(1000),                             \
+        (mincommand,  UINT16, DEFAULT(1000),                             \
          DOC("Value for the ESCs when they are not armed") )           \
         )                                                               \
     /**/
 
-#define m (minthrottle, UINT16, DEFAULT(1000, ALIENWII32), DEFAULT(1150),          \
-           DOC("Set the minimum throttle command sent to the ESC. This is the minimum value that allows motors to run at a idle speed.") )
 
 #define CDEF_COND__ALIENWII32 1
 #define CDEF_COND__TRUE       1
 #define CDEF_COND__FALSE      0
 
-#define t (COND((FALSE, NONE), DEFAULT(1000), COND(FALSE, TEST(2))))(DEFAULT(1150))(TEST(1))
-#define t2 (DEFAULT(1))(DOC(3))(TEST(2))
 
-BOOST_PP_SEQ_FILTER(CDEF_PROPERTIES_TAG_EQUAL_P, DOC, t2) 
+#define d CONFIG_ESC_SERVO
+#define m (minthrottle, UINT16, COND(ALIENWII32, DEFAULT(1000)), DEFAULT(1150), \
+         DOC("Set the minimum throttle command sent to the ESC. This is the minimum value that allows motors to run at a idle speed.") )
+//CDEF_METAINFO(CONFIG_ESC_SERVO)
 
-CDEF_PROPERTIES_TAG_EQUAL_P(1, DOC, TEST())
+CDEF_PROPERTIES_GETFIRST(m, DEFAULT)
 
-CDEF_PROPERTIES_GETFIRST(t2, DOC)
-
-CDEF_PROPERTIES_EXPAND_EVAL_COND(TRUE, DEFAULT(1000), TEST(2))
-
-
-#define seq (COND(TRUE, DEFAULT(1000), TEST(2)))(DEFAULT(1150))(TEST(1))
-
-P99_PASTE2(CDEF_PROPERTIES_APPLY_COND_EVAL_, COND2(TRUE, DEFAULT(1000), TEST(2)))
-
-CDEF_PROPERTIES_APPLY_COND_EVAL_COND(TRUE, DEFAULT(1000), TEST(2))
-
-OOST_PP_SEQ_HEAD(seq)
-
- BOOST_PP_SEQ_TAIL(seq)
-                  res)
-
-CDEF_STRUCT_DECLARE(CONFIG_ESC_SERVO);
-CDEF_METAINFO(CONFIG_ESC_SERVO);
-
-CDEF_COND_SEQ((FALS))
-
-CDEF_PROPERTIES_A_COND((FALSE,TRUE), DOC("test"), DOC("test2"))
-
-CDEF_MEMBER_SEQ(CONFIG_ESC_SERVO)
-
-BOOST_PP_VARIADIC_SIZE()
-
-CDEF_STRUCT_MEMBER_PROPERTIES_GETFIRST(CDEF_MEMBER_PROPERTIES_LIST(m), DOC)
-
-CDEF_MEMBER_PROPERTIES_LIST(m)
-
-CDEF_CHECK_COND(BOOST_PP_VARIADIC_TO_LIST(FALSE, TRUE))
-
-CDEF_STRUCT_MEMBER_PROPERTIES_A_DEFAULT(10000, TRUE)
-
-CDEF_STRUCT_MEMBER_PROPERTIES_APPLY_MACRO(1, CDEF_STRUCT_MEMBER_PROPERTIES_A_, DEFAULT(1000, FALSE))
-
-BOOST_PP_LIST_FILTER(CDEF_STRUCT_MEMBER_PROPERTIES_IS_TAG_EQUAL, DEFAULT, CDEF_MEMBER_PROPERTIES_LIST(m))
-
-CDEF_STRUCT_MEMBER_PROPERTIES_IS_TAG_EQUAL(d, DEFAULT, DEFAULT(1000, ALIENWII32))
-
-CDEF_MEMBER_PROPERTIES_LIST(m)
-
-
-BOOST_PP_VARIADIC_SIZE(1,2)
-
-#define S (1)
-BOOST_PP_SEQ_SIZE(S)
+CDEF_METAINFO_MEMBER(r,d,m)

@@ -834,7 +834,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         if(masterConfig.batteryConfig.multiwiiCurrentMeterOutput) {
             serialize16((uint16_t)constrain(amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps
         } else {
-            serialize16(constrain(amperage, -8000, 0x7FFF)); // send amperage in 0.01 A steps
+            serialize16(constrain(amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps
         }
         break;
     case MSP_RC_TUNING:

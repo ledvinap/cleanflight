@@ -139,7 +139,7 @@ typedef enum  {
 #ifdef GPS
     tlm_GPS, tlm_GPS_Speed,
 #endif
-    tlm_Time
+    tlm_Time, tlm_Status
 } tlm_Id;
 
 struct tlm_info_s {
@@ -162,6 +162,7 @@ const struct tlm_info_s tlm_info[] = {
     {tlm_GPS_Speed, 500},
 #endif
     {tlm_Time, 5000},
+    {tlm_Status, 250},  // sent as T2 now
 };
 
 
@@ -290,6 +291,50 @@ void tlm_sendGPS(void)
 }
 #endif
 
+static void tlm_sendStatus(void) {
+    uint32_t tmpi;
+    // the t1Cnt simply allows the telemetry view to show at least some changes
+    static int t1Cnt=0;
+    if (++t1Cnt > 2) {
+        t1Cnt = 1;
+    }
+    tmpi = t1Cnt * 10000; // start off with at least one digit so the most significant 0 won't be cut off
+    // the Taranis seems to be able to fit 5 digits on the screen
+    // the Taranis seems to consider this number a signed 16 bit integer, maximum is 32767, use values up to 20000
+
+    if (ARMING_FLAG(OK_TO_ARM))
+        tmpi += 1;
+    if (ARMING_FLAG(PREVENT_ARMING))
+        tmpi += 2;
+    if (ARMING_FLAG(ARMED))
+        tmpi += 4;
+
+    if (FLIGHT_MODE(ANGLE_MODE))
+        tmpi += 10;
+    if (FLIGHT_MODE(HORIZON_MODE))
+        tmpi += 20;
+    if (FLIGHT_MODE(AUTOTUNE_MODE))
+        tmpi += 40;
+    if (FLIGHT_MODE(PASSTHRU_MODE))
+        tmpi += 40;
+
+    if (FLIGHT_MODE(MAG_MODE))
+        tmpi += 100;
+    if (FLIGHT_MODE(BARO_MODE))
+        tmpi += 200;
+    if (FLIGHT_MODE(SONAR_MODE))
+        tmpi += 400;
+
+    if (FLIGHT_MODE(GPS_HOLD_MODE))
+        tmpi += 1000;
+    if (FLIGHT_MODE(GPS_HOME_MODE))
+        tmpi += 2000;
+    if (FLIGHT_MODE(HEADFREE_MODE))
+        tmpi += 4000;
+
+    pushPacket(T2_FIRST_ID, tmpi);
+}
+
 // generate packet for given telemetry ID
 // return 0 if packet not generated or delay in ms for next call with this id
 static int generatePacket(tlm_Id id) {
@@ -353,6 +398,9 @@ static int generatePacket(tlm_Id id) {
         unsigned hours = minutes / 60;
         pushPacket(GPS_TIME_DATE_FIRST_ID, ((hours & 0xff) << 24) | ((minutes % 60) << 16) | ((seconds % 60) << 8));
         }
+        break;
+    case tlm_Status:
+        tlm_sendStatus();
         break;
     }
     return tlm_info[id].delta_t; // default replan time

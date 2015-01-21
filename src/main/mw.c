@@ -84,7 +84,7 @@ enum {
 };
 
 /* for VBAT monitoring frequency */
-#define VBATFREQ 6        // to read battery voltage - nth number of loop iterations
+#define VBATFREQ 1        // to read battery voltage - nth number of loop iterations
 
 int16_t debug[4];
 uint32_t currentTime = 0;

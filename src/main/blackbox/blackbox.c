@@ -1220,7 +1220,7 @@ static bool blackboxWriteSysinfo()
         break;
         case 9:
             blackboxPrintf("H acc_1G:%u\n", acc_1G);
-            
+
             xmitState.u.serialBudget -= strlen("H acc_1G:%u\n");
         break;
         case 10:

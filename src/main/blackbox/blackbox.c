@@ -741,7 +741,6 @@ static void writeIntraframe(void)
         writeUnsignedVB(blackboxCurrent->amperageLatest);
     }
 
-
 #ifdef MAG
         if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_MAG)) {
             for (x = 0; x < XYZ_AXIS_COUNT; x++)

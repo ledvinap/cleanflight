@@ -356,7 +356,7 @@ static void detectBaro()
 {
     // Detect what pressure sensors are available. baro->update() is set to sensor-specific update function
 
-    #ifdef BARO
+#ifdef BARO
 #ifdef USE_BARO_BMP085
 
     const bmp085Config_t *bmp085Config = NULL;

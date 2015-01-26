@@ -47,13 +47,24 @@
 
 #define ACC_SPI_MPU6000_ALIGN CW270_DEG
 
+// External I2C BARO
+#define BARO
+#define USE_BARO_MS5611
+#define USE_BARO_BMP085
+
+// External I2C MAG
+#define MAG
+#define USE_MAG_HMC5883
+
 #define INVERTER
 #define BEEPER
+#define DISPLAY
 
+#define USE_VCP
 #define USE_USART1
 #define USE_USART3
 #define USE_SOFTSERIAL1
-#define SERIAL_PORT_COUNT 3
+#define SERIAL_PORT_COUNT 4
 
 #define SOFTSERIAL_1_TIMER TIM3
 #define SOFTSERIAL_1_TIMER_TX_HARDWARE 1 // PWM 2
@@ -68,6 +79,9 @@
 #define USE_SPI
 #define USE_SPI_DEVICE_1
 #define USE_SPI_DEVICE_2
+
+#define USE_I2C
+#define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
 
 #define USE_ADC
 

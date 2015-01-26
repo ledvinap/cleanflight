@@ -32,10 +32,12 @@
 /* Includes ------------------------------------------------------------------*/
 //#include "platform_config.h"
 #include "usb_type.h"
-#if defined(STM32F30X)
-# include "stm32f30x.h"
-#elif defined(STM32F10X)
-# include "stm32f10x.h"
+#ifdef STM32F303
+#include "stm32f30x.h"
+#endif
+
+#ifdef STM32F10X
+#include "stm32f10x.h"
 #endif
 
 /* Exported types ------------------------------------------------------------*/

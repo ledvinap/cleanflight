@@ -164,7 +164,7 @@ static void sendBaro(void)
     sendDataHead(ID_ALTITUDE_BP);
     serialize16(BaroAlt / 100);
     sendDataHead(ID_ALTITUDE_AP);
-    serialize16(abs(BaroAlt % 100));
+    serialize16(ABS(BaroAlt % 100));
 }
 
 #ifdef GPS
@@ -253,7 +253,7 @@ static void sendTime(void)
 static void GPStoDDDMM_MMMM(int32_t mwiigps, gpsCoordinateDDDMMmmmm_t *result)
 {
     int32_t absgps, deg, min;
-    absgps = abs(mwiigps);
+    absgps = ABS(mwiigps);
     deg    = absgps / GPS_DEGREES_DIVIDER;
     absgps = (absgps - deg * GPS_DEGREES_DIVIDER) * 60;        // absgps = Minutes left * 10^7
     min    = absgps / GPS_DEGREES_DIVIDER;                     // minutes left

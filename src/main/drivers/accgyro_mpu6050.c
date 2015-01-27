@@ -384,10 +384,10 @@ void mpu6050EnableFifo(void)
 }
 
 int mpu6050ReadFifo(uint8_t *buffer, int maxLen) {
-    int len = min(min(maxLen, 64), mpu6050GetFifoLen());
+    int len = MIN(MIN(maxLen, 64), mpu6050GetFifoLen());
     uint8_t* p = buffer;
     while(len>0) {
-        int tlen=min(6, len);
+        int tlen=MIN(6, len);
         i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, tlen, p);
         len-=tlen; p+=tlen;
     }

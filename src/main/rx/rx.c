@@ -276,7 +276,7 @@ static uint16_t rcChannel_Median(int chan)
     int a = rcChannelHistoryGet(chan, 0);
     int b = rcChannelHistoryGet(chan, 1);
     int c = rcChannelHistoryGet(chan, 2);
-    uint16_t median = max(min(a,b), min(max(a,b),c));
+    uint16_t median = MAX(MIN(a, b), MIN(MAX(a, b), c));
     if(median)
         return median;
     // at most one sample is nonzero here

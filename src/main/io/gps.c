@@ -291,62 +291,62 @@ void gpsInitUblox(void)
                     serialRelease(gpsPort);
                     gpsSerialPortConfig.baudRate = newBaudRate;
                     gpsSerialPortConfig.mode |= MODE_TX;   // TODO - we need to switch TX on when changing from NMEA
-                    serialConfigure(gpsPort, &gpsSerialPortConfig);
-                    return;
-                }
+                serialConfigure(gpsPort, &gpsSerialPortConfig);
+                return;
+            }
 
-                // print our FIXED init string for the baudrate we want to be at
-                serialPrint(gpsPort, gpsInitData[gpsData.baudrateIndex].ubx);
+            // print our FIXED init string for the baudrate we want to be at
+            serialPrint(gpsPort, gpsInitData[gpsData.baudrateIndex].ubx);
 
+            gpsData.state_position++;
+        } else {
+            // we're now (hopefully) at the correct rate, next state will switch to it
+            gpsSetState(GPS_CHANGE_BAUD);
+        }
+        break;
+    case GPS_CHANGE_BAUD:
+        serialRelease(gpsPort);
+        gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
+        serialConfigure(gpsPort, &gpsSerialPortConfig);
+        gpsSetState(GPS_CONFIGURE);
+        break;
+    case GPS_CONFIGURE:
+
+        // Either use specific config file for GPS or let dynamically upload config
+        if( gpsConfig->autoConfig == GPS_AUTOCONFIG_OFF ) {
+            gpsSetState(GPS_RECEIVING_DATA);
+            break;
+        }
+
+        if (gpsData.messageState == GPS_MESSAGE_STATE_IDLE) {
+            gpsData.messageState++;
+        }
+
+        if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
+
+            if (gpsData.state_position < sizeof(ubloxInit)) {
+                serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
                 gpsData.state_position++;
             } else {
-                // we're now (hopefully) at the correct rate, next state will switch to it
-                gpsSetState(GPS_CHANGE_BAUD);
-            }
-            break;
-        case GPS_CHANGE_BAUD:
-            serialRelease(gpsPort);
-            gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
-            serialConfigure(gpsPort, &gpsSerialPortConfig);
-            gpsSetState(GPS_CONFIGURE);
-            break;
-        case GPS_CONFIGURE:
-
-            // Either use specific config file for GPS or let dynamically upload config
-            if( gpsConfig->autoConfig == GPS_AUTOCONFIG_OFF ) {
-                gpsSetState(GPS_RECEIVING_DATA);
-                break;
-            }
-
-            if (gpsData.messageState == GPS_MESSAGE_STATE_IDLE) {
+                gpsData.state_position = 0;
                 gpsData.messageState++;
             }
+        }
 
-            if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
-
-                if (gpsData.state_position < sizeof(ubloxInit)) {
-                    serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
-                    gpsData.state_position++;
-                } else {
-                    gpsData.state_position = 0;
-                    gpsData.messageState++;
-                }
+        if (gpsData.messageState == GPS_MESSAGE_STATE_SBAS) {
+            if (gpsData.state_position < UBLOX_SBAS_MESSAGE_LENGTH) {
+                serialWrite(gpsPort, ubloxSbas[gpsConfig->sbasMode].message[gpsData.state_position]);
+                gpsData.state_position++;
+            } else {
+                gpsData.messageState++;
             }
+        }
 
-            if (gpsData.messageState == GPS_MESSAGE_STATE_SBAS) {
-                if (gpsData.state_position < UBLOX_SBAS_MESSAGE_LENGTH) {
-                    serialWrite(gpsPort, ubloxSbas[gpsConfig->sbasMode].message[gpsData.state_position]);
-                    gpsData.state_position++;
-                } else {
-                    gpsData.messageState++;
-                }
-            }
-
-            if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
-                // ublox should be initialised, try receiving
-                gpsSetState(GPS_RECEIVING_DATA);
-            }
-            break;
+        if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
+            // ublox should be initialised, try receiving
+            gpsSetState(GPS_RECEIVING_DATA);
+        }
+        break;
     }
 }
 

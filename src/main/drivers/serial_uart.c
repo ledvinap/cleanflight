@@ -44,7 +44,12 @@
 static void uartReconfigureState(uartPort_t *self);
 extern const struct serialPortVTable uartVTable;
 
+
 static void usartConfigurePinInversion(uartPort_t *self) {
+#if !defined(INVERTER) && !defined(STM32F303xC)
+    UNUSED(self);
+#endif
+
 #ifdef INVERTER
     if (self->USARTx == INVERTER_USART) {
         // Enable hardware inverter if available.

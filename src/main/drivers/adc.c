@@ -18,12 +18,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "build_config.h"
+
 #include "platform.h"
 #include "system.h"
 
 #include "adc.h"
 #include "adc_impl.h"
 
+#ifdef USE_ADC
 adc_config_t adcConfig[ADC_CHANNEL_COUNT];
 volatile uint16_t adcValues[ADC_CHANNEL_COUNT];
 
@@ -53,3 +56,10 @@ uint16_t adcGetChannel(uint8_t channel)
     return adcValues[adcConfig[channel].dmaIndex];
 }
 
+#else
+uint16_t adcGetChannel(uint8_t channel)
+{
+    UNUSED(channel);
+    return 0;
+}
+#endif

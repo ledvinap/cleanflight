@@ -44,7 +44,6 @@
 
 void updateSerialRxFunctionConstraint(functionConstraint_t *functionConstraintToUpdate);
 
-void mspInit(serialConfig_t *serialConfig);
 void cliInit(serialConfig_t *serialConfig);
 
 // this exists so the user can reference scenarios by a number in the CLI instead of an unuser-friendly bitmask.
@@ -71,8 +70,7 @@ const serialPortFunctionScenario_e serialPortScenarios[SERIAL_PORT_SCENARIO_COUN
 static serialConfig_t *serialConfig;
 static serialPort_t *serialPorts[SERIAL_PORT_COUNT];
 
-#if defined(STM32F30X)
-
+#ifdef STM32F303xC
 static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 #ifdef USE_VCP
     {SERIAL_PORT_USB_VCP,     NULL, SCENARIO_UNUSED, FUNCTION_NONE},
@@ -93,13 +91,13 @@ const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USB_VCP,       9600,   115200,   SPF_NONE },
 #endif
 #ifdef USE_USART1
-    {SERIAL_PORT_USART1,        9600,   115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_USART1,        9600,   250000,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
 #endif
 #ifdef USE_USART2
-    {SERIAL_PORT_USART2,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_USART2,        9600,   250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
 #endif
 #ifdef USE_USART3
-    {SERIAL_PORT_USART3,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+    {SERIAL_PORT_USART3,        9600,   250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
 #endif
 };
 
@@ -118,7 +116,7 @@ const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
 #ifdef USE_VCP
     {SERIAL_PORT_USB_VCP,       9600, 115200,   SPF_NONE },
 #endif
-    {SERIAL_PORT_USART1,        9600, 115200,                           SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
+    {SERIAL_PORT_USART1,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE},
     {SERIAL_PORT_SOFTSERIAL1,   9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_SINGLEWIRE | SPF_IS_SOFTWARE_INVERTABLE}
 };

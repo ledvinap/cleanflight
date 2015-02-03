@@ -130,7 +130,7 @@ static void sbusDataReceive(uint16_t c)
     if ((int32_t)(sbusTimeoutAt - now) < 0) {
         sbusFramePosition = 0;
     }
-    sbusTimeoutAt = now + 1000;   // 1ms intercharacter timeout
+    sbusTimeoutAt = now + 2500;
 
     sbusFrame.bytes[sbusFramePosition] = (uint8_t)c;
 

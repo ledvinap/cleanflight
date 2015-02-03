@@ -247,7 +247,6 @@ static void sendTime(void)
     serialize16(seconds % 60);
 }
 
-#ifdef GPS
 // Frsky pdf: dddmm.mmmm
 // .mmmm is returned in decimal fraction of minutes.
 static void GPStoDDDMM_MMMM(int32_t mwiigps, gpsCoordinateDDDMMmmmm_t *result)
@@ -302,7 +301,6 @@ static void sendGPS(void)
     sendDataHead(ID_E_W);
     serialize16(localGPS_coord[LON] < 0 ? 'W' : 'E');
 }
-#endif
 
 
 /*
@@ -485,12 +483,12 @@ void handleFrSkyTelemetry(void)
             sendGpsAltitude();
             sendSatalliteSignalQualityAsTemperature2();
         }
+#endif
+
         //  Send GPS information to display compass information
         if (sensors(SENSOR_GPS) || (telemetryConfig->gpsNoFixLatitude != 0 && telemetryConfig->gpsNoFixLongitude != 0)) {
             sendGPS();
         }
-#endif
-
         sendTelemetryTail();
     }
 

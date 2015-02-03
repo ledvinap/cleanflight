@@ -112,7 +112,7 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
     batteryCriticalVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage;
 }
 
-#define ADCVREF 3300L   // in mV
+#define ADCVREF 3300   // in mV
 int32_t currentSensorToCentiamps(uint16_t src)
 {
     int32_t millivolts;

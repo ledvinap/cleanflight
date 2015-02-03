@@ -33,7 +33,7 @@
 #include "inverter.h"
 #include "nvic.h"
 
-#include "io.h" 
+#include "io.h"
 
 #include "timer.h"
 

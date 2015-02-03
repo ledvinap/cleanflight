@@ -20,6 +20,7 @@
 #include "flight/pid.h"
 
 #include "sensors/barometer.h"
+#include "flight/mixer.h"
 
 extern int32_t AltHold;
 extern int32_t vario;

@@ -30,7 +30,7 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 
-#include "flight/flight.h"
+#include "flight/pid.h"
 //#include "flight/failsafe.h"
 #include "flight/mixer.h"
 //#include "flight/navigation.h"

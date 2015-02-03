@@ -47,11 +47,14 @@
 #include "sensors/gyro.h"
 #include "sensors/barometer.h"
 #include "sensors/battery.h"
-#include "flight/flight.h"
+#include "flight/pid.h"
+#include "flight/altitudehold.h"
 #include "io/gps.h"
 
 #include "telemetry/telemetry.h"
 #include "telemetry/sport.h"
+
+extern int16_t accSmooth[XYZ_AXIS_COUNT];
 
 static serialPort_t *sPortPort;
 

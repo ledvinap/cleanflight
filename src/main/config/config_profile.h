@@ -21,6 +21,7 @@
 #include "io/gimbal.h"
 #include "flight/failsafe.h"
 #include "flight/navigation.h"
+#include "flight/imu.h"
 
 typedef struct profile_s {
     pidProfile_t pidProfile;

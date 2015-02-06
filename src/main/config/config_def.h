@@ -10,20 +10,19 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple.hpp>
 #include <boost/preprocessor/variadic.hpp>
+#include <boost/preprocessor/debug/assert.hpp>
+#include <boost/preprocessor/punctuation/is_begin_parens.hpp>
 
 #include <p99_args.h>
 
-// return parameter if it is single tupple, otherwise return tupple containing arguments
-#define TO_TUPLE_IDENTITY(x) x
-#define TO_TUPLE(...) BOOST_PP_IIF(P99_IS_EMPTY(BOOST_PP_TUPLE_EAT() __VA_ARGS__),TO_TUPLE_IDENTITY,BOOST_PP_VARIADIC_TO_TUPLE)(__VA_ARGS__)
-
-// return definition tupple for given type tag
+// return definition tuple for given type tag
 // macro CDEF_TYPE_INFO__<type> must be defined for each type
-#define CDEF_TYPE_INFO_TUPPLE(typetag) BOOST_PP_CAT(CDEF_TYPE_INFO__, typetag)
+// macro CDEF_TYPE_INFO_DEFINED_<type> must be defined as comma (,)
+#define CDEF_TYPE_INFO_TUPLE(typetag) BOOST_PP_ASSERT(BOOST_PP_IS_BEGIN_PARENS(BOOST_PP_CAT(CDEF_TYPE_INFO_DEFINED__, typetag))) BOOST_PP_CAT(CDEF_TYPE_INFO__, typetag)
 // return C type
-#define CDEF_TYPE_CDECL(typetag) BOOST_PP_TUPLE_ELEM(0, CDEF_TYPE_INFO_TUPPLE(typetag))
+#define CDEF_TYPE_CDECL(typetag) BOOST_PP_TUPLE_ELEM(0, CDEF_TYPE_INFO_TUPLE(typetag))
 // return C type enum
-#define CDEF_TYPE_METATAG(typetag) BOOST_PP_CAT(cdef_tag_, typetag)
+#define CDEF_TYPE_METATAG(typetag) BOOST_PP_CAT(CDEF_TAG_, typetag)
 
 // name return name from structure definition
 #define CDEF_NAME(def) BOOST_PP_TUPLE_ELEM(0, def)
@@ -42,7 +41,8 @@
 #define CDEF_STRUCT_DECLARE(def)                                        \
     typedef struct BOOST_PP_CAT(CDEF_NAME(def), _s) {                   \
         BOOST_PP_SEQ_FOR_EACH(CDEF_STRUCT_DECLARE_MEMBER, def, CDEF_MEMBER_SEQ(def)) \
-    } BOOST_PP_CAT(CDEF_NAME(def), _t)
+    } BOOST_PP_CAT(CDEF_NAME(def), _t)                                  \
+    /**/
 
 // declaration of one member variable
 #define CDEF_STRUCT_DECLARE_MEMBER(r, _, mdef)                          \
@@ -61,13 +61,12 @@
     { .name = BOOST_PP_STRINGIZE(CDEF_NAME(def)) },          \
     /**/
 
-#define CDEF_METAINFO_MEMBER(r, def, mdef)                       \
+#define CDEF_METAINFO_MEMBER(r, def, mdef)                              \
     { .fieldheader = { .type = CDEF_TYPE_METATAG(CDEF_MEMBER_TYPE(mdef)) } }, \
     { .name = BOOST_PP_STRINGIZE(CDEF_MEMBER_NAME(mdef)) },             \
     { .offset = offsetof(struct BOOST_PP_CAT(CDEF_NAME(def), _s), CDEF_MEMBER_NAME(mdef)) }, \
- { CDEF_MEMBER_PROPERTIES_SEQ(mdef) } \
-    { .default = CDEF_PROPERTIES_GETFIRST(CDEF_MEMBER_PROPERTIES_SEQ(mdef), DEFAULT) }, \
-/**/
+    { .default = CDEF_PROPERTIES_TAGFIRST(CDEF_MEMBER_PROPERTIES_SEQ(mdef), DEFAULT) }, \
+    /**/
 
 
 // numeric tags for used properties. Used to implement comparison etc.
@@ -81,65 +80,85 @@
 
     /**/
 
-#define CDEF_PROPERTIES_GETFIRST(seq, tag)                              \
-    BOOST_PP_SEQ_HEAD(BOOST_PP_SEQ_FOR_EACH(CDEF_PROPERTIES_APPLY_M,    \
-                                            CDEF_PROPERTIES_APPLY__,    \
-                                            BOOST_PP_SEQ_FILTER(CDEF_PROPERTIES_TAG_EQUAL_P, tag, seq) )) \
+// return sequence of results for selected tag after expand and apply
+#define CDEF_PROPERTIES_TAG(seq, tag)                                   \
+    CDEF_PROPERTIES_EXPAND(seq,tag)                                     \
     /**/
 
-// do no use cat here, applied macro may use it
-#define CDEF_PROPERTIES_APPLY_M(d, data, elem) CDEF_PROPERTIES_APPLY_M_I(d, data, elem)
-#define CDEF_PROPERTIES_APPLY_M_I(d, data, elem) data ## elem
+#define CDEF_PROPERTIES_TAGCOUNT(seq, tag)                  \
+    BOOST_PP_SEQ_SIZE(CDEF_PROPERTIES_TAG(seq, tag))        \
+    /**/
+
+#define CDEF_PROPERTIES_TAGFIRST(seq, tag)                          \
+    BOOST_PP_SEQ_HEAD(CDEF_PROPERTIES_TAG(seq, tag)(/*default*/))   \
+    /**/
+
+
+#define CDEF_PROPERTIES_APPLY(d, tag, elem) CDEF_PROPERTIES_APPLY_I(d, tag, elem)
+#define CDEF_PROPERTIES_APPLY_I(d, tag, elem) CDEF_PROPERTIES_APPLY__ ## elem
 
 // elem is <tag>(params), data is <tag>
 #define CDEF_PROPERTIES_TAG_EQUAL_P(d, data, elem)                      \
     BOOST_PP_EQUAL(                                                     \
-        BOOST_PP_CAT(CDEF_PROPERTIES_TAG__, elem),         \
-        BOOST_PP_CAT(CDEF_PROPERTIES_TAG__, data)() )      \
+        BOOST_PP_CAT(CDEF_PROPERTIES_TAG__, elem),                      \
+        BOOST_PP_CAT(CDEF_PROPERTIES_TAG__, data)() )                   \
     /**/
 
-// expand all expandable properties in given sequence
-#define CDEF_PROPERTIES_EXPAND(seq)                                     \
-    BOOST_PP_TUPLE_ELEM(1, BOOST_PP_WHILE(CDEF_PROPERTIES_EXPAND_P,     \
+// expand all expandable properties in given sequence, then filter by tag and apply result
+// while state tuple is (tag, seq, res)
+#define CDEF_PROPERTIES_EXPAND(seq, tag)                                \
+    BOOST_PP_TUPLE_ELEM(2, BOOST_PP_WHILE(CDEF_PROPERTIES_EXPAND_P,     \
                                           CDEF_PROPERTIES_EXPAND_O,     \
-                                          (seq,BOOST_PP_SEQ_NIL)))      \
+                                          (tag, seq, /*empty*/)))       \
     /**/
 
-// repeat until sequence is empty
-#define CDEF_PROPERTIES_EXPAND_P(d, state) \
-    BOOST_PP_SEQ_SIZE(BOOST_PP_TUPLE_ELEM(0,state))
+// predicate, repeat until input sequence is empty
+#define CDEF_PROPERTIES_EXPAND_P(d, state)              \
+    BOOST_PP_SEQ_SIZE(BOOST_PP_TUPLE_ELEM(1, state))    \
+    /**/
 
-#define CDEF_PROPERTIES_EXPAND_O(d, state) CDEF_PROPERTIES_EXPAND_O_D(d, BOOST_PP_TUPLE_ELEM(0, state), BOOST_PP_TUPLE_ELEM(1, state))
-#define CDEF_PROPERTIES_EXPAND_O_D(d, seq, res)                     \
-    BOOST_PP_IIF(P99_IS_EMPTY(BOOST_PP_CAT(CDEF_PROPERTIES_EXPAND_TEST_, BOOST_PP_SEQ_HEAD(seq))), \
-                 (CDEF_PROPERTIES_EXPAND_EVAL(BOOST_PP_SEQ_HEAD(seq)) BOOST_PP_SEQ_TAIL(seq), \
-                  res),                                                 \
-                 (BOOST_PP_SEQ_TAIL(seq),                               \
-                  BOOST_PP_SEQ_PUSH_BACK(res, BOOST_PP_SEQ_HEAD(seq)) ) ) \
-        /**/
+// operation
+// expand or apply head of input sequence
+#define CDEF_PROPERTIES_EXPAND_O(d, state)                              \
+    BOOST_PP_IIF(P99_HAS_COMMA(BOOST_PP_CAT(CDEF_PROPERTIES_EXPAND_TEST__, BOOST_PP_SEQ_HEAD(BOOST_PP_TUPLE_ELEM(1, state)))), \
+                 CDEF_PROPERTIES_EXPAND_O_EXPAND,                       \
+                 CDEF_PROPERTIES_EXPAND_O_TESTAPPLY                     \
+        )(d, BOOST_PP_TUPLE_ELEM(0, state), BOOST_PP_TUPLE_ELEM(1, state), BOOST_PP_TUPLE_ELEM(2, state)) \
+    /**/
+
+// replace head of input seq with its expansion
+// retrun state tuple (tag, seq, res)
+#define CDEF_PROPERTIES_EXPAND_O_EXPAND(d, tag, seq, res)               \
+    (tag, CDEF_PROPERTIES_EXPAND_EVAL(BOOST_PP_SEQ_HEAD(seq)) BOOST_PP_SEQ_TAIL(seq), res) \
+    /**/
+
+// take one elemment from input seq, check if it is tag we are interrested int, append result of apply to res
+// retrun state tuple (tag, seq, res)
+#define CDEF_PROPERTIES_EXPAND_O_TESTAPPLY(d, tag, seq, res)            \
+    (tag,                                                               \
+     BOOST_PP_SEQ_TAIL(seq),                                            \
+     res BOOST_PP_IIF(CDEF_PROPERTIES_TAG_EQUAL_P(d, tag, BOOST_PP_SEQ_HEAD(seq)), \
+                      CDEF_PROPERTIES_APPLY,                            \
+                      BOOST_PP_TUPLE_EAT()                              \
+         )(d, tag, BOOST_PP_SEQ_HEAD(seq))                              \
+    )                                                                   \
+    /**/
 
 // list of properties that can be expanded
-#define CDEF_PROPERTIES_EXPAND_TEST_COND(...) /* empty */
+#define CDEF_PROPERTIES_EXPAND_TEST__COND(...) ,
 
-// return sequernce of expanded PROPERTIES
-#define CDEF_PROPERTIES_EXPAND_EVAL(expand_with_param) CDEF_PROPERTIES_EXPAND_EVAL_I(expand_with_param)
-#define CDEF_PROPERTIES_EXPAND_EVAL_I(expand_with_param) CDEF_PROPERTIES_EXPAND_EVAL_ ## expand_with_param
+// return sequence of expanded PROPERTIES
+#define CDEF_PROPERTIES_EXPAND_EVAL(tag_param) CDEF_PROPERTIES_EXPAND_EVAL_I(tag_param)
+#define CDEF_PROPERTIES_EXPAND_EVAL_I(tag_param) CDEF_PROPERTIES_EXPAND_EVAL__ ## tag_param
 
-// expects COND(test, property[,property]) or (COND((test1, test2),  property[,property])
-#define CDEF_PROPERTIES_EXPAND_EVAL_COND(cond_or_condtupple, ...)       \
-    BOOST_PP_IIF(                                                       \
-        CDEF_COND_SEQ(BOOST_PP_TUPLE_TO_SEQ(TO_TUPLE(cond_or_condtupple))), \
-        BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__),                          \
-        BOOST_PP_EMPTY() )                                              \
-/**/
-
-// check condition sequence - scans sequence and returns 1 if any CDEF_COND_<cond> is set
-#define CDEF_COND_SEQ(seq) BOOST_PP_SEQ_FOLD_LEFT(CDEF_COND_SEQ_OP_OR, 0, seq)
-#define CDEF_COND_SEQ_OP_OR(d, state, elem) BOOST_PP_OR(state, CDEF_COND(elem))
+// expects COND(test, property[,property])
+#define CDEF_PROPERTIES_EXPAND_EVAL__COND(cond, ...)                    \
+    BOOST_PP_IIF(CDEF_COND(cond), BOOST_PP_VARIADIC_TO_SEQ, BOOST_PP_TUPLE_EAT())(__VA_ARGS__) \
+    /**/
 
 // return 1 if CDEF_COND__<tag> is defined as 1
-#define CDEF_COND(tag) P99_IS_EMPTY(BOOST_PP_CAT(CDEF_COND_IS_, BOOST_PP_CAT(CDEF_COND__,tag)))
-#define CDEF_COND_IS_1 /* empty */
+#define CDEF_COND(tag) P99_HAS_COMMA(BOOST_PP_CAT(CDEF_COND_IS__, BOOST_PP_CAT(CDEF_COND__,tag)))
+#define CDEF_COND_IS__1 ,
 
 
 
@@ -157,16 +176,28 @@
     /**/
 
 
-#define CDEF_COND__ALIENWII32 1
+#define CDEF_COND__ALIENWII32 0
 #define CDEF_COND__TRUE       1
 #define CDEF_COND__FALSE      0
 
 
 #define d CONFIG_ESC_SERVO
-#define m (minthrottle, UINT16, COND(ALIENWII32, DEFAULT(1000)), DEFAULT(1150), \
+#define m (minthrottle, UINT16, COND(ALIENWII32, DEFAULT(1000), COND(ALIENWII32, DEFAULT(2000))), DEFAULT(1150), \
          DOC("Set the minimum throttle command sent to the ESC. This is the minimum value that allows motors to run at a idle speed.") )
-//CDEF_METAINFO(CONFIG_ESC_SERVO)
 
-CDEF_PROPERTIES_GETFIRST(m, DEFAULT)
+#define m2 (minthrottle, UINT16, DEFAULT(1150), COND(ALIENWII32, DEFAULT(1000)), DEFAULT(1150))
 
-CDEF_METAINFO_MEMBER(r,d,m)
+#define seq (a)
+
+//BOOST_PP_SEQ_TAIL(seq)
+
+CDEF_METAINFO(d)
+
+CDEF_PROPERTIES_TAGFIRST(CDEF_MEMBER_PROPERTIES_SEQ(m), DOC)
+//CDEF_PROPERTIES_EXPAND(CDEF_MEMBER_PROPERTIES_SEQ(m), DEFAULT)
+//CDEF_MEMBER_PROPERTIES_SEQ(m2)
+CDEF_STRUCT_DECLARE(CONFIG_ESC_SERVO)
+//CDEF_MEMBER_PROPERTIES_SEQ(m)
+
+//CDEF_PROPERTIES_FILTERAPPLY_M(1, DEFAULT, DEFAULT(1150))
+//CDEF_METAINFO_MEMBER(r,d,m)

@@ -48,13 +48,15 @@ SRC_DIR		 = $(ROOT)/src/main
 OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
-INCLUDE_DIRS	 = $(SRC_DIR)
+INCLUDE_DIRS	 = $(SRC_DIR) $(ROOT)/lib/main/boost_preprocessor/include
 LINKER_DIR	 = $(ROOT)/src/main/target
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
 USBFS_DIR	= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
 USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
+
+INCLUDE_DIRS	 := $(INCLUDE_DIRS) $(ROOT)/lib/main/boost_preprocessor/include
 
 ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO SPRACINGF3 SPARKY ALIENWIIF3))
 
@@ -83,13 +85,12 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 ifneq ($(TARGET),SPRACINGF3)
 INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(USBFS_DIR)/inc \
-		   $(ROOT)/lib/main/p99
 		   $(ROOT)/src/main/vcp
 
 VPATH := $(VPATH):$(USBFS_DIR)/src
 
 DEVICE_STDPERIPH_SRC := $(DEVICE_STDPERIPH_SRC)\
-		   $(USBPERIPH_SRC) 
+		   $(USBPERIPH_SRC)
 
 endif
 

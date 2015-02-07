@@ -26,6 +26,8 @@
 #include "adc.h"
 #include "adc_impl.h"
 
+//#define DEBUG_ADC_CHANNELS
+
 #ifdef USE_ADC
 adc_config_t adcConfig[ADC_CHANNEL_COUNT];
 volatile uint16_t adcValues[ADC_CHANNEL_COUNT];
@@ -39,7 +41,7 @@ void adcInit(drv_adc_config_t *init)
 
 uint16_t adcGetChannel(uint8_t channel)
 {
-#if DEBUG_ADC_CHANNELS
+#ifdef DEBUG_ADC_CHANNELS
     if (adcConfig[0].enabled) {
         debug[0] = adcValues[adcConfig[0].dmaIndex];
     }

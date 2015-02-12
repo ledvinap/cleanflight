@@ -14,8 +14,6 @@
 #include <boost/preprocessor/punctuation.hpp>
 #include <boost/preprocessor/punctuation/is_begin_parens.hpp>
 
-#include <p99_args.h>
-
 // return definition tuple for given type tag
 // macro CDEF_TYPE_INFO__<type> must be defined for each type
 // macro CDEF_TYPE_INFO_DEFINED_<type> must be defined as comma (,)
@@ -202,8 +200,8 @@
     /**/
 
 // return 1 if CDEF_COND__<tag> is defined as 1
-#define CDEF_COND(tag) P99_HAS_COMMA(BOOST_PP_CAT(CDEF_COND_IS__, BOOST_PP_CAT(CDEF_COND__,tag)))
-#define CDEF_COND_IS__1 ,
+#define CDEF_COND(tag) BOOST_PP_IS_BEGIN_PARENS(BOOST_PP_CAT(CDEF_COND_IS__, BOOST_PP_CAT(CDEF_COND__,tag)))
+#define CDEF_COND_IS__1 ()
 
 
 

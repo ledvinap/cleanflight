@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "sensors/sensors.h"
+#include "drivers/accgyro.h"
+#include "common/axis.h"
+
 // Type of accelerometer used/detected
 typedef enum AccelSensors {
     ACC_DEFAULT = 0,
@@ -53,3 +57,5 @@ void accSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims);
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims);
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse);
+
+void accHandleData(int16_t ADC[XYZ_AXIS_COUNT]);

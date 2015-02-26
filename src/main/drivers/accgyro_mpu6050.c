@@ -18,10 +18,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "platform.h"
 
 #include "common/maths.h"
+
+#include "sensors/acceleration.h"
+#include "sensors/gyro.h"
 
 #include "system.h"
 #include "gpio.h"
@@ -127,7 +131,22 @@
 #define MPU_RA_FIFO_R_W         0x74
 #define MPU_RA_WHO_AM_I         0x75
 
-#define MPU6050_SMPLRT_DIV      0       // 8000Hz
+// MPU_RA_FIFO_EN
+#define MPU_RV_TEMP_FIFO_EN     0x80
+#define MPU_RV_XG_FIFO_EN       0x40
+#define MPU_RV_YG_FIFO_EN       0x20
+#define MPU_RV_ZG_FIFO_EN       0x10
+#define MPU_RV_ACCEL_FIFO_EN    0x08
+#define MPU_RV_SLV2_FIFO_EN     0x04
+#define MPU_RV_SLV1_FIFO_EN     0x02
+#define MPU_RV_SLV0_FIFO_EN     0x01
+// MPU_RA_USER_CTRL
+#define MPU_RV_FIFO_EN          0x40
+#define MPU_RV_I2C_MST_EN       0x20
+#define MPU_RV_I2C_IF_DIS       0x10
+#define MPU_RV_FIFO_RESET       0x04
+#define MPU_RV_I2C_MST_RESET    0x02
+#define MPU_RV_SIG_COND_RESET   0x01
 
 enum lpf_e {
     INV_FILTER_256HZ_NOLPF2 = 0,
@@ -165,6 +184,7 @@ static void mpu6050AccInit(void);
 static void mpu6050AccRead(int16_t *accData);
 static void mpu6050GyroInit(void);
 static void mpu6050GyroRead(int16_t *gyroData);
+void mpu6050FifoEnable(void);
 
 typedef enum {
     MPU_6050_HALF_RESOLUTION,
@@ -336,11 +356,12 @@ static void mpu6050GyroInit(void)
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
     delay(100);
-    if(mpuLowPassFilter == INV_FILTER_256HZ_NOLPF2)         // keep 1khz sampling frequency
-        i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x07); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
-    else
-        i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x03); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
+
+    if(mpuLowPassFilter == INV_FILTER_256HZ_NOLPF2)         // keep 1khz sampling frequency if internal filter is disabled
+        i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x07); //SMPLRT_DIV    -- SMPLRT_DIV = 7  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+    else
+        i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00);
     i2cWrite(MPU6050_ADDRESS, MPU_RA_CONFIG, mpuLowPassFilter); //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
 
@@ -350,6 +371,9 @@ static void mpu6050GyroInit(void)
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_INT_PIN_CFG,
             0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
+
+    // TODO ! fifo enabled here !
+    mpu6050FifoEnable();
 }
 
 static void mpu6050GyroRead(int16_t *gyroData)
@@ -365,32 +389,53 @@ static void mpu6050GyroRead(int16_t *gyroData)
     gyroData[2] = (int16_t)((buf[4] << 8) | buf[5]);
 }
 
-uint16_t mpu6050GetFifoLen(void)
+int mpu6050GetFifoLen(void)
 {
     uint8_t buf[2];
     i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_COUNTH, 2, buf);
     return (buf[0] << 8) | buf[1];
 }
 
-void mpu6050EnableFifo(void)
+void mpu6050FifoEnable(void)
 {
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_CONFIG, INV_FILTER_188HZ);
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0);
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, 0x04);  // flush FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, 0x40);  // enable FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_FIFO_EN, 0x08);    // collect accell
-    uint8_t buf[10];
-    i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_EN, 1, buf);
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_RESET);   // flush FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_EN);      // enable FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_FIFO_EN, MPU_RV_XG_FIFO_EN | MPU_RV_YG_FIFO_EN | MPU_RV_ZG_FIFO_EN | MPU_RV_ACCEL_FIFO_EN);
 }
 
-int mpu6050ReadFifo(uint8_t *buffer, int maxLen) {
-    int len = MIN(MIN(maxLen, 64), mpu6050GetFifoLen());
-    uint8_t* p = buffer;
-    while(len>0) {
-        int tlen=MIN(6, len);
-        i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, tlen, p);
-        len-=tlen; p+=tlen;
+void mpu6050FifoFlush(void)
+{
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_RESET);   // flush FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_EN);      // enable FIFO
+}
+
+int mpu6050FifoRead(uint8_t *buffer, int maxLen) {
+    int fifoLen = mpu6050GetFifoLen();
+    int len = MIN(maxLen, fifoLen);
+    memset(buffer+len, 0xde, maxLen-len);
+    if(!i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, len, buffer))
+        return -1;
+    for(int i=len;i<maxLen;i++)
+        if(buffer[i]!=0xde)
+            while(1);
+    return len;
+}
+
+void mpu6050GyroAccFetch(void)
+{
+    int16_t gyroAccBuffer[8][6];   // TODO - uint8_t limitation for size
+    int len = mpu6050FifoRead((uint8_t*)gyroAccBuffer, sizeof(gyroAccBuffer));
+    int idx=0;
+    while(len > 0) {
+        if(len < 12) {
+            // partial read. TODO
+            mpu6050FifoFlush();
+            return;
+        }
+        for(int i = 0; i < 6; i++)
+            gyroAccBuffer[idx][i] = (gyroAccBuffer[idx][i] << 8) | (gyroAccBuffer[idx][i] >> 8);
+        accHandleData(&gyroAccBuffer[idx][0]);
+        gyroHandleData(&gyroAccBuffer[idx][3]);
+        len -= 12; idx++;
     }
-    return p-buffer;
 }
-

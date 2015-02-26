@@ -32,3 +32,9 @@ bool mpu6050AccDetect(const mpu6050Config_t *config,acc_t *acc);
 bool mpu6050GyroDetect(const mpu6050Config_t *config, gyro_t *gyro, uint16_t lpf);
 void mpu6050DmpLoop(void);
 void mpu6050DmpResetFifo(void);
+
+void mpu6050FifoEnable(void);
+void mpu6050FifoFlush(void);
+int mpu6050GetFifoLen(void);
+int mpu6050FifoRead(uint8_t *buffer, int maxLen);
+void mpu6050GyroAccFetch(void);

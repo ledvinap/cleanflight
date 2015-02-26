@@ -30,5 +30,8 @@ typedef struct gyroConfig_s {
 void useGyroConfig(gyroConfig_t *gyroConfigToUse);
 void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void gyroUpdate(void);
+void gyroHandleData(int16_t ADC[XYZ_AXIS_COUNT]);
+void gyroAccFetch(void);
+
 bool isGyroCalibrationComplete(void);
 

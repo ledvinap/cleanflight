@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "platform.h"
 
@@ -28,11 +29,17 @@
 #include "sensors/sensors.h"
 #include "io/statusindicator.h"
 #include "sensors/boardalignment.h"
+#include "sensors/acceleration.h"
 
 #include "sensors/gyro.h"
 
+int mpu6050FifoRead(uint8_t *buffer, int maxLen);
+void mpu6050FifoFlush(void);
+
 uint16_t calibratingG = 0;
 int16_t gyroADC[XYZ_AXIS_COUNT];
+int16_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+int8_t gyroADClastIdx;
 int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
 
 static gyroConfig_t *gyroConfig;
@@ -65,7 +72,7 @@ bool isOnFirstGyroCalibrationCycle(void)
     return calibratingG == CALIBRATING_GYRO_CYCLES;
 }
 
-static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThreshold)
+static void performGyroCalibration(uint8_t gyroMovementCalibrationThreshold)
 {
     int8_t axis;
     static int32_t g[3];
@@ -108,17 +115,34 @@ static void applyGyroZero(void)
         gyroADC[axis] -= gyroZero[axis];
     }
 }
+void gyroAccFetch(void)
+{
+    mpu6050GyroAccFetch();
+}
+
+void gyroHandleData(int16_t *ADC) {
+    if(gyroADClastIdx < ACCGYRO_FILTER_SIZE)
+        memcpy(gyroADClast[gyroADClastIdx++], ADC, sizeof(gyroADClast[0]));
+}
 
 void gyroUpdate(void)
 {
-    // FIXME When gyro.read() fails due to i2c or other error gyroZero is continually re-applied to gyroADC resulting in a old reading that gets worse over time.
-
     // range: +/- 8192; +/- 2000 deg/sec
+#ifdef ACCGYRO_FIFO
+    if(gyroADClastIdx) {
+        memcpy(gyroADC, gyroADClast[gyroADClastIdx-1], sizeof(gyroADC));
+        gyroADClastIdx = 0;
+    } else {  // reuse old value, we got nothing beter now (TODO?)
+        memcpy(gyroADC, gyroADClast[0], sizeof(gyroADC));
+    }
+#else
     gyro.read(gyroADC);
+#endif
+
     alignSensors(gyroADC, gyroADC, gyroAlign);
 
     if (!isGyroCalibrationComplete()) {
-        performAcclerationCalibration(gyroConfig->gyroMovementCalibrationThreshold);
+        performGyroCalibration(gyroConfig->gyroMovementCalibrationThreshold);
     }
 
     applyGyroZero();

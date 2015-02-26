@@ -45,6 +45,7 @@
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
+#include "drivers/accgyro_mpu6050.h"
 
 
 #include "io/escservo.h"
@@ -1432,7 +1433,7 @@ static void cliVibration(char *cmdline)
 {
     UNUSED(cmdline);
     printf("Y,c,p\r\n");
-    mpu6050EnableFifo();
+    mpu6050FifoEnable();
     static uint8_t data[32];
 
     int xf = 0,yf = 0,zf = 0;
@@ -1496,7 +1497,7 @@ static void cliVibration(char *cmdline)
     while(true) {
         unsigned dlen=0;
         do {
-            dlen += mpu6050ReadFifo(data + dlen, 6 - dlen);
+            dlen += mpu6050FifoRead(data + dlen, 6 - dlen);
         } while(dlen<6);
 
         int x=(int16_t)(data[0] << 8) | data[1];
@@ -1520,7 +1521,6 @@ static void cliVibration(char *cmdline)
 
                 period +=  ((per << 7) - period) >> 7;
 
-                int p=period>>7;
 #if 0
                 int pos=TIM4->CNT;
                 if(pos > (TIM4->ARR/2))

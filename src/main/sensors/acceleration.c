@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "platform.h"
 
@@ -35,6 +36,8 @@
 #include "sensors/acceleration.h"
 
 int16_t accADC[XYZ_AXIS_COUNT];
+int16_t accADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+int8_t accADClastIdx = 0;
 
 acc_t acc;                       // acc access functions
 uint8_t accHardware = ACC_DEFAULT;  // which accel chip is used/detected
@@ -163,7 +166,7 @@ void performInflightAccelerationCalibration(rollAndPitchTrims_t *rollAndPitchTri
     }
 }
 
-void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
+static void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
 {
     accADC[X] -= accelerationTrims->raw[X];
     accADC[Y] -= accelerationTrims->raw[Y];
@@ -172,7 +175,17 @@ void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
 
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
+#ifdef ACCGYRO_FIFO
+    if(accADClastIdx) {
+        memcpy(accADC, accADClast[accADClastIdx-1], sizeof(accADC));
+        accADClastIdx = 0;
+    } else {  // reuse old value, we got nothing beter now (TODO?)
+        memcpy(accADC, accADClast[0], sizeof(accADC));
+    }
+#else
+#error
     acc.read(accADC);
+#endif
     alignSensors(accADC, accADC, accAlign);
 
     if (!isAccelerationCalibrationComplete()) {
@@ -189,4 +202,10 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse)
 {
     accelerationTrims = accelerationTrimsToUse;
+}
+
+void accHandleData(int16_t ADC[XYZ_AXIS_COUNT])
+{
+    if(accADClastIdx < ACCGYRO_FILTER_SIZE)
+        memcpy(accADClast[accADClastIdx++], ADC, sizeof(accADClast[0]));
 }

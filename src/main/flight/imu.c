@@ -304,6 +304,10 @@ void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode)
 {
     static int16_t gyroYawSmooth = 0;
 
+#ifdef ACCGYRO_FIFO
+    gyroAccFetch();   // fetch new data from FIFO(s)
+#endif
+
     gyroUpdate();
     if (sensors(SENSOR_ACC)) {
         updateAccelerationReadings(accelerometerTrims); // TODO rename to accelerometerUpdate and rename many other 'Acceleration' references to be 'Accelerometer'

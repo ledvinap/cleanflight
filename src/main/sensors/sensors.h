@@ -17,6 +17,7 @@
 
 #pragma once
 
+#define ACCGYRO_FILTER_SIZE 8                    // maximum number of samples guring one cycle (TODO - move)
 
 typedef struct int16_flightDynamicsTrims_s {
     int16_t roll;

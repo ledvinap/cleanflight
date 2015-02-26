@@ -82,7 +82,7 @@ void I2C2_EV_IRQHandler(void)
     i2c_ev_handler();
 }
 
-#define I2C_DEFAULT_TIMEOUT 30000
+#define I2C_DEFAULT_TIMEOUT 3000
 static volatile uint16_t i2cErrorCount = 0;
 
 static volatile bool error = false;
@@ -123,7 +123,8 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
 
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
-            while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
+            while (I2Cx->CR1 & 0x0200 && --timeout > 0)                 // wait for any stop to finish sending
+                delayMicroseconds(1);
             if (timeout == 0) {
                 return i2cHandleHardwareFailure();
             }
@@ -133,7 +134,8 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
     }
 
     timeout = I2C_DEFAULT_TIMEOUT;
-    while (busy && --timeout > 0) { ; }
+    while (busy && --timeout > 0)
+        delayMicroseconds(1);
     if (timeout == 0) {
         return i2cHandleHardwareFailure();
     }
@@ -165,7 +167,8 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
 
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
-            while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
+            while (I2Cx->CR1 & 0x0200 && --timeout > 0)                 // wait for any stop to finish sending
+                delayMicroseconds(1);
             if (timeout == 0)
                 return i2cHandleHardwareFailure();
             I2C_GenerateSTART(I2Cx, ENABLE);                            // send the start for the new job
@@ -174,7 +177,8 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
     }
 
     timeout = I2C_DEFAULT_TIMEOUT;
-    while (busy && --timeout > 0) { ; }
+    while (busy && --timeout > 0)
+        delayMicroseconds(1);
     if (timeout == 0)
         return i2cHandleHardwareFailure();
 

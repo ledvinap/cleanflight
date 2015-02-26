@@ -86,13 +86,11 @@
 #define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
 #define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
 
-
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-
 #define BLACKBOX
 #define SERIAL_RX
 #define GPS
 #define DISPLAY
+#define USE_SERVOS
 
 #define LED_STRIP
 #if 1

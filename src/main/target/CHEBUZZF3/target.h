@@ -35,9 +35,17 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 18
 
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+
 #define GYRO
 #define USE_GYRO_L3GD20
 #define USE_GYRO_MPU6050
+
+#define L3GD20_SPI                      SPI1
+#define L3GD20_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOE
+#define L3GD20_CS_GPIO                  GPIOE
+#define L3GD20_CS_PIN                   GPIO_Pin_3
 
 #define GYRO_L3GD20_ALIGN CW90_DEG
 #define GYRO_MPU6050_ALIGN CW0_DEG
@@ -90,9 +98,6 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_3
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_9
 
-
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-
 #define GPS
 #define LED_STRIP
 #if 1
@@ -117,5 +122,6 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+#define USE_SERVOS
 
 #define USABLE_TIMER_CHANNEL_COUNT (18 + 1)

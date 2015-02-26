@@ -98,8 +98,6 @@
 #define RSSI_ADC_CHANNEL            ADC_Channel_1
 
 
-#define SENSORS_SET (SENSOR_ACC)
-
 #define GPS
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
@@ -108,6 +106,7 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+#define USE_SERVOS
 
 #define SPEKTRUM_BIND
 // USART3, PB11 (Flexport)

@@ -469,6 +469,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         if (type == MAP_TO_PPM_INPUT && !init->usePPM)
             continue;
 
+#ifdef USE_SERVOS
         if (init->useServos && !init->airplane) {
 #if defined(NAZE)
             // remap PWM9+10 as servos
@@ -505,6 +506,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             if (timerIndex >= PWM5 && timerIndex <= PWM8)
                 type = MAP_TO_SERVO_OUTPUT;
         }
+#endif
 
 #ifdef CC3D
         if (init->useParallelPWM) {
@@ -539,8 +541,10 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             }
             pwmOutputConfiguration.motorCount++;
         } else if (type == MAP_TO_SERVO_OUTPUT) {
+#ifdef USE_SERVOS
             pwmServoConfig(timerHardwarePtr, pwmOutputConfiguration.servoCount, init->servoPwmRate, init->servoCenterPulse);
             pwmOutputConfiguration.servoCount++;
+#endif
         }
     }
 

@@ -40,7 +40,6 @@ int16_t accADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
 int8_t accADClastIdx = 0;
 
 acc_t acc;                       // acc access functions
-uint8_t accHardware = ACC_DEFAULT;  // which accel chip is used/detected
 sensor_align_e accAlign = 0;
 uint16_t acc_1G = 256;          // this is the 1G measured acceleration.
 

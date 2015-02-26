@@ -44,8 +44,10 @@ typedef struct {
 static pwmOutputPort_t pwmOutputPorts[MAX_PWM_OUTPUT_PORTS];
 
 static pwmOutputPort_t *motors[MAX_PWM_MOTORS];
-static pwmOutputPort_t *servos[MAX_PWM_SERVOS];
 
+#ifdef USE_SERVOS
+static pwmOutputPort_t *servos[MAX_PWM_SERVOS];
+#endif
 #define PWM_BRUSHED_TIMER_MHZ 8
 
 static uint8_t allocatedOutputPortCount = 0;
@@ -137,13 +139,6 @@ void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
     }
 }
 
-void pwmWriteServo(uint8_t index, uint16_t value)
-{
-    if (servos[index] && index < MAX_SERVOS)
-        *servos[index]->ccr = value;
-}
-
-
 void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
     uint32_t hz = PWM_BRUSHED_TIMER_MHZ * 1000000;
@@ -163,7 +158,15 @@ void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIn
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
+#ifdef USE_SERVOS
 void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse)
 {
     servos[servoIndex] = pwmOutConfig(timerHardware, TYPE_PWMOUTPUT_SERVO, PWM_TIMER_HZ, PWM_TIMER_HZ / servoPwmRate, servoCenterPulse);
 }
+
+void pwmWriteServo(uint8_t index, uint16_t value)
+{
+    if (servos[index] && index < MAX_SERVOS)
+        *servos[index]->ccr = value;
+}
+#endif

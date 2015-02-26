@@ -45,6 +45,9 @@
 #define USE_MAG_HMC5883
 #define MAG_HMC5883_ALIGN CW270_DEG
 
+#define USE_FLASHFS
+#define USE_FLASH_M25P16
+
 #define BEEPER
 #define LED0
 
@@ -72,7 +75,7 @@
 #ifndef UART3_GPIO
 #define UART3_TX_PIN        GPIO_Pin_10 // PB10 (AF7)
 #define UART3_RX_PIN        GPIO_Pin_11 // PB11 (AF7)
-#define UART2_GPIO_AF       GPIO_AF_7
+#define UART3_GPIO_AF       GPIO_AF_7
 #define UART3_GPIO          GPIOB
 #define UART3_TX_PINSOURCE  GPIO_PinSource10
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
@@ -81,8 +84,23 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1) // PB6/SCL, PB7/SDA
 
-//#define USE_SPI
-//#define USE_SPI_DEVICE_2 // PB12,13,14,15 on AF5
+#define USE_SPI
+#define USE_SPI_DEVICE_2 // PB12,13,14,15 on AF5
+
+#define SPI2_GPIO               GPIOB
+#define SPI2_GPIO_PERIPHERAL    RCC_AHBPeriph_GPIOB
+#define SPI2_NSS_PIN            Pin_12
+#define SPI2_NSS_PIN_SOURCE     GPIO_PinSource12
+#define SPI2_SCK_PIN            Pin_13
+#define SPI2_SCK_PIN_SOURCE     GPIO_PinSource13
+#define SPI2_MISO_PIN           Pin_14
+#define SPI2_MISO_PIN_SOURCE    GPIO_PinSource14
+#define SPI2_MOSI_PIN           Pin_15
+#define SPI2_MOSI_PIN_SOURCE    GPIO_PinSource15
+
+#define M25P16_CS_GPIO          GPIOB
+#define M25P16_CS_PIN           GPIO_Pin_12
+#define M25P16_SPI_INSTANCE     SPI2
 
 #define USE_ADC
 
@@ -120,11 +138,10 @@
 #define WS2811_DMA_CHANNEL              DMA1_Channel2
 #define WS2811_IRQ                      DMA1_Channel2_IRQn
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-
 #define GPS
 #define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
 #define DISPLAY
+#define USE_SERVOS

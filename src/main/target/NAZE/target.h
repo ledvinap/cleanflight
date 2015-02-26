@@ -55,9 +55,18 @@
 #define NAZE_SPI_CS_GPIO      GPIOB
 #define NAZE_SPI_CS_PIN       GPIO_Pin_12
 
+// We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
+#define M25P16_CS_GPIO        NAZE_SPI_CS_GPIO
+#define M25P16_CS_PIN         NAZE_SPI_CS_PIN
+#define M25P16_SPI_INSTANCE   NAZE_SPI_INSTANCE
+
 #define MPU6500_CS_GPIO       NAZE_SPI_CS_GPIO
 #define MPU6500_CS_PIN        NAZE_SPI_CS_PIN
 #define MPU6500_SPI_INSTANCE  NAZE_SPI_INSTANCE
+
+#define USE_FLASHFS
+
+#define USE_FLASH_M25P16
 
 #define GYRO
 #define USE_GYRO_MPU3050
@@ -139,8 +148,6 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-
 #define GPS
 
 #define LED_STRIP
@@ -150,6 +157,7 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+#define USE_SERVOS
 
 #define CurrentMeter_TIMER 7 // OUT6
 
@@ -167,8 +175,8 @@
 #ifdef ALIENWII32
 #undef TARGET_BOARD_IDENTIFIER
 #define TARGET_BOARD_IDENTIFIER "AWF1" // AlienWii32 F1.
-#define BRUSHED_MOTORS
 #define HARDWARE_BIND_PLUG
+
 // Hardware bind plug at PB5 (Pin 41)
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5

@@ -21,6 +21,8 @@
 #include "platform.h"
 #include "version.h"
 
+#ifdef BLACKBOX
+
 #include "common/maths.h"
 #include "common/axis.h"
 #include "common/color.h"
@@ -603,6 +605,10 @@ static void validateBlackboxConfig()
         masterConfig.blackbox_rate_num /= div;
         masterConfig.blackbox_rate_denom /= div;
     }
+
+    if (masterConfig.blackbox_device >= BLACKBOX_DEVICE_END) {
+        masterConfig.blackbox_device = BLACKBOX_DEVICE_SERIAL;
+    }
 }
 
 void startBlackbox(void)
@@ -636,6 +642,9 @@ void startBlackbox(void)
     }
 }
 
+/**
+ * Begin Blackbox shutdown.
+ */
 void finishBlackbox(void)
 {
     if (blackboxState == BLACKBOX_STATE_RUNNING) {
@@ -743,8 +752,10 @@ static void loadBlackboxState(void)
     blackboxCurrent->BaroAlt = BaroAlt;
 #endif
 
+#ifdef USE_SERVOS
     //Tail servo for tricopters
     blackboxCurrent->servo[5] = servo[5];
+#endif
 }
 
 /**
@@ -783,7 +794,8 @@ static bool sendFieldDefinition(const char * const *headerNames, unsigned int he
 
         charsWritten = blackboxPrint("H Field ");
         charsWritten += blackboxPrint(headerNames[xmitState.headerIndex]);
-        charsWritten += blackboxPrint(":");
+        blackboxWrite(':');
+        charsWritten++;
 
         xmitState.u.fieldIndex++;
         needComma = false;
@@ -1114,13 +1126,18 @@ void handleBlackbox(void)
              *
              * Don't wait longer than it could possibly take if something funky happens.
              */
-            if (millis() > xmitState.u.startTime + 200 || isBlackboxDeviceIdle()) {
+            if (millis() > xmitState.u.startTime + 200 || blackboxDeviceFlush()) {
                 blackboxDeviceClose();
                 blackboxSetState(BLACKBOX_STATE_STOPPED);
             }
         break;
         default:
         break;
+    }
+
+    // Did we run out of room on the device? Stop!
+    if (isBlackboxDeviceFull()) {
+        blackboxSetState(BLACKBOX_STATE_STOPPED);
     }
 }
 
@@ -1137,3 +1154,5 @@ void initBlackbox(void)
         blackboxSetState(BLACKBOX_STATE_DISABLED);
     }
 }
+
+#endif

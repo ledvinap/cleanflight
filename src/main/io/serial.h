@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "drivers/serial.h"
+
 typedef enum {
     FUNCTION_NONE                = 0,
     FUNCTION_MSP                 = (1 << 0),
@@ -151,3 +153,5 @@ const serialPortFunctionList_t *getSerialPortFunctionList(void);
 
 void evaluateOtherData(uint8_t sr);
 void handleSerial(void);
+
+void serialInit(serialConfig_t *initialSerialConfig);

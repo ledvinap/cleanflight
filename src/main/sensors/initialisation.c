@@ -51,6 +51,7 @@
 
 #include "drivers/gpio.h"
 #include "drivers/system.h"
+#include "drivers/io.h"
 
 #include "config/runtime_config.h"
 

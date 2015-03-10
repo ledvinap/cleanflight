@@ -17,5 +17,10 @@
 
 #pragma once
 
+#include "sensors/battery.h"
+
+struct failsafe_s;
+
 void beepcodeUpdateState(batteryState_e batteryState);
 void queueConfirmationBeep(uint8_t duration);
+void beepcodeInit(struct failsafe_s *initialFailsafe);

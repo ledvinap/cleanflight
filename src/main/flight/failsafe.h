@@ -38,7 +38,6 @@ typedef struct failsafeVTable_s {
     void (*checkPulse)(uint8_t channel, uint16_t pulseDuration);
     bool (*isEnabled)(void);
     void (*enable)(void);
-
 } failsafeVTable_t;
 
 typedef struct failsafe_s {
@@ -50,4 +49,5 @@ typedef struct failsafe_s {
 } failsafe_t;
 
 void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse);
-
+struct rxConfig_s;
+failsafe_t* failsafeInit(struct rxConfig_s *intialRxConfig);

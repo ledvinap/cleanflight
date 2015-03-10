@@ -75,7 +75,7 @@ bool canUseTelemetryWithCurrentConfiguration(void)
     return true;
 }
 
-void telemetryInit()
+void telemetryInit(void)
 {
     if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT) {
         telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_SMARTPORT_TELEMETRY, FUNCTION_MSP);

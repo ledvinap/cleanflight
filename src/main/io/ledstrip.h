@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "flight/failsafe.h"
+
 #define MAX_LED_STRIP_LENGTH 32
 #define CONFIGURABLE_COLOR_COUNT 16
 
@@ -81,7 +83,7 @@ typedef struct ledConfig_s {
 extern uint8_t ledCount;
 extern uint8_t ledsInRingCount;
 
-
+void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
 
 bool parseLedStripConfig(uint8_t ledIndex, const char *config);
 void updateLedStrip(void);

@@ -41,12 +41,12 @@ extern uint16_t acc_1G;
 
 extern int16_t accADC[XYZ_AXIS_COUNT];
 
-typedef struct rollAndPitchTrims_s {
+typedef struct rollAndPitchTrims_s_def {
     int16_t roll;
     int16_t pitch;
 } rollAndPitchTrims_t_def;
 
-typedef union {
+typedef union rollAndPitchTrims_u {
     int16_t raw[2];
     rollAndPitchTrims_t_def values;
 } rollAndPitchTrims_t;

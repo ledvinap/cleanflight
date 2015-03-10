@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "drivers/pwm_mapping.h"
+
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
 
@@ -110,3 +112,6 @@ void mixerResetMotors(void);
 void mixTable(void);
 void writeMotors(void);
 void stopMotors(void);
+
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers);
+void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);

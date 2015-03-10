@@ -18,9 +18,12 @@
 #pragma once
 
 extern int16_t magHold;
+union rollAndPitchTrims_u;
 
-void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta);
+void applyAndSaveAccelerometerTrimsDelta(union rollAndPitchTrims_u *rollAndPitchTrimsDelta);
 void handleInflightCalibrationStickPosition();
+
+void loop(void);
 
 void mwDisarm(void);
 void mwArm(void);

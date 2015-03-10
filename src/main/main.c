@@ -26,9 +26,11 @@
 #include "common/color.h"
 #include "common/atomic.h"
 #include "common/maths.h"
+#include "common/printf.h"
+
+#include "mw.h"
 
 #include "drivers/nvic.h"
-
 #include "drivers/sensor.h"
 #include "drivers/system.h"
 #include "drivers/gpio.h"
@@ -61,6 +63,7 @@
 #include "io/gimbal.h"
 #include "io/ledstrip.h"
 #include "io/display.h"
+#include "io/beeper.h"
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
@@ -70,6 +73,7 @@
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
+#include "sensors/initialisation.h"
 
 #include "telemetry/telemetry.h"
 #include "blackbox/blackbox.h"
@@ -103,25 +107,6 @@ serialPort_t *loopbackPort;
 #endif
 
 failsafe_t *failsafe;
-
-void printfSupportInit(void);
-void timerInit(void);
-void telemetryInit(void);
-void serialInit(serialConfig_t *initialSerialConfig);
-failsafe_t* failsafeInit(rxConfig_t *intialRxConfig);
-pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
-void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMixers);
-void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
-void rxInit(rxConfig_t *rxConfig, failsafe_t *failsafe);
-void beepcodeInit(failsafe_t *initialFailsafe);
-void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
-void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
-bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
-void imuInit(void);
-void displayInit(rxConfig_t *intialRxConfig);
-void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
-void loop(void);
-void spektrumBind(rxConfig_t *rxConfig);
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c

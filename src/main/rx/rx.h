@@ -82,11 +82,13 @@ typedef struct rxRuntimeConfig_s {
     uint8_t auxChannelCount;
 } rxRuntimeConfig_t;
 
+typedef uint16_t (*rcReadRawDataPtr)(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);        // used by receiver driver to return channel data
+
 extern rxRuntimeConfig_t rxRuntimeConfig;
 
+struct failsafe_s;
+void rxInit(rxConfig_t *rxConfig, struct failsafe_s *initialFailsafe);
 void useRxConfig(rxConfig_t *rxConfigToUse);
-
-typedef uint16_t (*rcReadRawDataPtr)(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);        // used by receiver driver to return channel data
 
 void updateRx(void);
 bool shouldProcessRx(uint32_t currentTime);

@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "rx/rx.h"
+
 typedef enum {
     PAGE_WELCOME,
     PAGE_ARMED,
@@ -36,3 +38,5 @@ void displayEnablePageCycling(void);
 void displayDisablePageCycling(void);
 void displayResetPageCycling(void);
 void displaySetNextPageChangeAt(uint32_t futureMicros);
+
+void displayInit(rxConfig_t *rxConfigToUse);

@@ -53,6 +53,8 @@ typedef struct telemetryConfig_s {
     frskyUnit_e frsky_unit;
 } telemetryConfig_t;
 
+void telemetryInit(void);
+
 void checkTelemetryState(void);
 void handleTelemetry(void);
 

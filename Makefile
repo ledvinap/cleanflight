@@ -226,6 +226,7 @@ COMMON_SRC	 = build_config.c \
 		   common/maths.c \
 		   common/printf.c \
 		   common/typeconversion.c \
+		   common/encoding.c \
 		   main.c \
 		   mw.c \
 		   flight/altitudehold.c \
@@ -441,6 +442,7 @@ endif
 
 ifeq ($(OPBL),yes)
 ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
+TARGET_FLAGS := -DOPBL $(TARGET_FLAGS)
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k_opbl.ld
 .DEFAULT_GOAL := binary
 else
@@ -497,6 +499,8 @@ CC3D_SRC	 = \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
+		   drivers/flash_m25p16.c \
+		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)

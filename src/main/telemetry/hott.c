@@ -106,9 +106,12 @@ static const serialPortConfig_t hottSerialPortConfig = {
 };
 
 
-static serialPort_t *hottPort;
+static serialPort_t *hottPort = NULL;
+static serialPortConfig_t *portConfig;
 
 static telemetryConfig_t *telemetryConfig;
+static bool hottTelemetryEnabled =  false;
+static portSharing_e hottPortSharing;
 
 static HOTT_GPS_MSG_t hottGPSMessage;
 static HOTT_EAM_MSG_t hottEAMMessage;
@@ -250,35 +253,35 @@ static void hottSerialWrite(uint8_t c)
     serialWrite(hottPort, c);
 }
 
-static serialPortConfig_t previousSerialPortConfig;
-
 void freeHoTTTelemetryPort(void)
 {
-    // FIXME only need to do this if the port is shared
-    serialConfigure(hottPort, &previousSerialPortConfig);
-    endSerialPortFunction(hottPort, FUNCTION_TELEMETRY);
+    closeSerialPort(hottPort);
+    hottPort = NULL;
+    hottTelemetryEnabled = false;
 }
 
 void initHoTTTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
     telemetryConfig = initialTelemetryConfig;
+    portConfig = findSerialPortConfig(FUNCTION_TELEMETRY_HOTT);
+    hottPortSharing = determinePortSharing(portConfig, FUNCTION_TELEMETRY_HOTT);
 
     initialiseMessages();
 }
 
 void configureHoTTTelemetryPort(void)
 {
-    hottPort = findOpenSerialPort(FUNCTION_TELEMETRY);
-    if (hottPort) {
-        serialGetConfig(hottPort, &previousSerialPortConfig);
-        serialRelease(hottPort);
-        //waitForSerialPortToFinishTransmitting(hottPort); // FIXME locks up the system
-
-        serialConfigure(hottPort, &hottSerialPortConfig);
-        beginSerialPortFunction(hottPort, FUNCTION_TELEMETRY);
-    } else {
-        hottPort = openSerialPort(FUNCTION_TELEMETRY, &hottSerialPortConfig);
+    if (!portConfig) {
+        return;
     }
+
+    hottPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_HOTT, &hottSerialPortConfig);
+
+    if (!hottPort) {
+        return;
+    }
+
+    hottTelemetryEnabled = true;
 }
 
 static void hottSendResponse(uint8_t *buffer, int length)
@@ -386,7 +389,7 @@ static void hottCheckSerialData(uint32_t currentMicros)
     uint8_t requestId = serialRead(hottPort);
     uint8_t address = serialRead(hottPort);
 
-    if (requestId == HOTT_BINARY_MODE_REQUEST_ID) {
+    if ((requestId == 0) || (requestId == HOTT_BINARY_MODE_REQUEST_ID) || (address == HOTT_TELEMETRY_NO_SENSOR_ID)) {
         processBinaryModeRequest(address);
     }
 }
@@ -431,11 +434,29 @@ static inline bool shouldCheckForHoTTRequest()
     return true;
 }
 
+void checkHoTTTelemetryState(void)
+{
+    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(hottPortSharing);
+
+    if (newTelemetryEnabledValue == hottTelemetryEnabled) {
+        return;
+    }
+
+    if (newTelemetryEnabledValue)
+        configureHoTTTelemetryPort();
+    else
+        freeHoTTTelemetryPort();
+}
+
 void handleHoTTTelemetry(void)
 {
     static uint32_t serialTimer;
-    uint32_t now = micros();
 
+    if (!hottTelemetryEnabled) {
+        return;
+    }
+
+    uint32_t now = micros();
 
     if (shouldPrepareHoTTMessages(now)) {
         hottPrepareMessages();
@@ -458,7 +479,4 @@ void handleHoTTTelemetry(void)
     serialTimer = now;
 }
 
-uint32_t getHoTTTelemetryProviderBaudRate(void) {
-    return hottSerialPortConfig.baudRate;
-}
 #endif

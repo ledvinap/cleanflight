@@ -17,7 +17,7 @@
 
 #pragma once
 
-extern adc_config_t adcConfig[ADC_CHANNEL_COUNT];
-extern volatile uint16_t adcValues[ADC_CHANNEL_COUNT];
+#include <stdint.h>
 
-void adcInitHw(drv_adc_config_t *init);
+uint32_t castFloatBytesToInt(float f);
+uint32_t zigzagEncode(int32_t value);

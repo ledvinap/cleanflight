@@ -42,10 +42,6 @@
 #include "telemetry/sport.h"
 #include "telemetry/smartport.h"
 
-static bool isTelemetryConfigurationValid = false; // flag used to avoid repeated configuration checks
-static bool telemetryEnabled = false;
-static bool telemetryPortIsShared;
-
 static telemetryConfig_t *telemetryConfig;
 
 void useTelemetryConfig(telemetryConfig_t *telemetryConfigToUse)
@@ -53,201 +49,47 @@ void useTelemetryConfig(telemetryConfig_t *telemetryConfigToUse)
     telemetryConfig = telemetryConfigToUse;
 }
 
-bool isTelemetryPortShared(void)
-{
-    return telemetryPortIsShared;
-}
-
-bool canUseTelemetryWithCurrentConfiguration(void)
-{
-    if (!feature(FEATURE_TELEMETRY)) {
-        return false;
-    }
-
-    if (telemetryConfig->telemetry_provider != TELEMETRY_PROVIDER_SMARTPORT && !canOpenSerialPort(FUNCTION_TELEMETRY)) {
-        return false;
-    }
-
-    if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT && !canOpenSerialPort(FUNCTION_SMARTPORT_TELEMETRY)) {
-        return false;
-    }
-
-    return true;
-}
-
 void telemetryInit(void)
 {
-    if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT) {
-        telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_SMARTPORT_TELEMETRY, FUNCTION_MSP);
-    } else {
-        telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_TELEMETRY, FUNCTION_MSP);
-    }
-    isTelemetryConfigurationValid = canUseTelemetryWithCurrentConfiguration();
+    initFrSkyTelemetry(telemetryConfig);
+    initHoTTTelemetry(telemetryConfig);
+    initMSPTelemetry(telemetryConfig);
+    initSmartPortTelemetry(telemetryConfig);
+    initSPortTelemetry(telemetryConfig);
 
-    switch(telemetryConfig->telemetry_provider) {
-    case TELEMETRY_PROVIDER_FRSKY:
-        initFrSkyTelemetry(telemetryConfig);
-        break;
-    case TELEMETRY_PROVIDER_HOTT:
-        initHoTTTelemetry(telemetryConfig);
-        break;
-    case TELEMETRY_PROVIDER_MSP:
-        initMSPTelemetry(telemetryConfig);
-        break;
-    case TELEMETRY_PROVIDER_SMARTPORT:
-        initSmartPortTelemetry(telemetryConfig);
-        break;
-    case TELEMETRY_PROVIDER_SPORT:
-        initSPortTelemetry(telemetryConfig);
-        break;
-    }
     checkTelemetryState();
 }
 
-bool determineNewTelemetryEnabledState(void)
+bool determineNewTelemetryEnabledState(portSharing_e portSharing)
 {
-    bool enabled = true;
+    bool enabled = portSharing == PORTSHARING_NOT_SHARED;
 
-    if (telemetryPortIsShared) {
-        if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT) {
-            if (isSmartPortTimedOut()) {
-                enabled = false;
-            }
-        } else {
-            if (telemetryConfig->telemetry_switch)
-                enabled = IS_RC_MODE_ACTIVE(BOXTELEMETRY);
-            else
-                enabled = ARMING_FLAG(ARMED);
-        }
+    if (portSharing == PORTSHARING_SHARED) {
+        if (telemetryConfig->telemetry_switch)
+            enabled = IS_RC_MODE_ACTIVE(BOXTELEMETRY);
+        else
+            enabled = ARMING_FLAG(ARMED);
     }
 
     return enabled;
 }
 
-bool shouldChangeTelemetryStateNow(bool newState)
-{
-    return newState != telemetryEnabled;
-}
-
-uint32_t getTelemetryProviderBaudRate(void)
-{
-    switch(telemetryConfig->telemetry_provider) {
-    case TELEMETRY_PROVIDER_FRSKY:
-        return getFrSkyTelemetryProviderBaudRate();
-    case TELEMETRY_PROVIDER_HOTT:
-        return getHoTTTelemetryProviderBaudRate();
-    case TELEMETRY_PROVIDER_MSP:
-        return getMSPTelemetryProviderBaudRate();
-    case TELEMETRY_PROVIDER_SMARTPORT:
-        return getSmartPortTelemetryProviderBaudRate();
-    case TELEMETRY_PROVIDER_SPORT:
-        return getSPortTelemetryProviderBaudRate();
-    }
-    return 0;
-}
-
-static void configureTelemetryPort(void)
-{
-    switch(telemetryConfig->telemetry_provider) {
-    case TELEMETRY_PROVIDER_FRSKY:
-        configureFrSkyTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_HOTT:
-        configureHoTTTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_MSP:
-        configureMSPTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_SMARTPORT:
-        configureSmartPortTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_SPORT:
-        configureSPortTelemetryPort();
-        break;
-    }
-}
-
-
-void freeTelemetryPort(void)
-{
-    switch(telemetryConfig->telemetry_provider) {
-    case TELEMETRY_PROVIDER_FRSKY:
-        freeFrSkyTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_HOTT:
-        freeHoTTTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_MSP:
-        freeMSPTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_SMARTPORT:
-        freeSmartPortTelemetryPort();
-        break;
-    case TELEMETRY_PROVIDER_SPORT:
-        freeSPortTelemetryPort();
-        break;
-    }
-}
-
 void checkTelemetryState(void)
 {
-    if (!isTelemetryConfigurationValid) {
-        return;
-    }
-
-    bool newEnabledState = determineNewTelemetryEnabledState();
-
-    if (!shouldChangeTelemetryStateNow(newEnabledState)) {
-        return;
-    }
-
-    if (newEnabledState)
-        configureTelemetryPort();
-    else
-        freeTelemetryPort();
-
-    telemetryEnabled = newEnabledState;
+    checkFrSkyTelemetryState();
+    checkHoTTTelemetryState();
+    checkMSPTelemetryState();
+    checkSmartPortTelemetryState();
+    checkSPortTelemetryState();
 }
 
 void handleTelemetry(void)
 {
-    if (!isTelemetryConfigurationValid || !determineNewTelemetryEnabledState())
-        return;
-
-    if (!telemetryEnabled) {
-        return;
-    }
-
-    switch(telemetryConfig->telemetry_provider) {
-    case TELEMETRY_PROVIDER_FRSKY:
-       handleFrSkyTelemetry();
-        break;
-    case TELEMETRY_PROVIDER_HOTT:
-        handleHoTTTelemetry();
-        break;
-    case TELEMETRY_PROVIDER_MSP:
-        handleMSPTelemetry();
-        break;
-    case TELEMETRY_PROVIDER_SMARTPORT:
-        handleSmartPortTelemetry();
-        break;
-    case TELEMETRY_PROVIDER_SPORT:
-        handleSPortTelemetry();
-        break;
-    }
-}
-
-bool telemetryAllowsOtherSerial(int serialPortFunction)
-{
-    if (!feature(FEATURE_TELEMETRY)) {
-        return true;
-    }
-
-    if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT && isSerialPortFunctionShared(FUNCTION_SMARTPORT_TELEMETRY, (serialPortFunction_e)serialPortFunction)) {
-        return canSmartPortAllowOtherSerial();
-    }
-
-    return true;
+    handleFrSkyTelemetry();
+    handleHoTTTelemetry();
+    handleMSPTelemetry();
+    handleSmartPortTelemetry();
+    handleSPortTelemetry();
 }
 
 #endif

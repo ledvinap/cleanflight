@@ -32,57 +32,87 @@
 #ifdef TELEMETRY
 
 #include "drivers/serial.h"
-#include "telemetry/telemetry.h"
 #include "io/serial.h"
 #include "io/serial_msp.h"
 
-static telemetryConfig_t *telemetryConfig;
+#include "telemetry/telemetry.h"
+#include "telemetry/msp.h"
 
-static serialPort_t *mspTelemetryPort;
+static telemetryConfig_t *telemetryConfig;
+static serialPortConfig_t *portConfig;
+
+static bool mspTelemetryEnabled =  false;
+static portSharing_e mspPortSharing;
 
 static const serialPortConfig_t mspTelemetrySerialPortConfig = {
     .mode = MODE_TX | MODE_RX | MODE_DEFAULT_FAST,   // TODO - maybe SMALL mode is ok, but how will it work with regular MSP?
     .baudRate =  19200
 };
 
+
+static serialPort_t *mspTelemetryPort = NULL;
+
 void initMSPTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
     telemetryConfig = initialTelemetryConfig;
+    portConfig = findSerialPortConfig(FUNCTION_TELEMETRY_MSP);
+    mspPortSharing = determinePortSharing(portConfig, FUNCTION_TELEMETRY_MSP);
+}
+
+void checkMSPTelemetryState(void)
+{
+    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(mspPortSharing);
+
+    if (newTelemetryEnabledValue == mspTelemetryEnabled) {
+        return;
+    }
+
+    if (newTelemetryEnabledValue)
+        configureMSPTelemetryPort();
+    else
+        freeMSPTelemetryPort();
 }
 
 void handleMSPTelemetry(void)
 {
+    if (!mspTelemetryEnabled) {
+        return;
+    }
+
+    if (!mspTelemetryPort) {
+        return;
+    }
+
     sendMspTelemetry();
 }
 
-static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 void freeMSPTelemetryPort(void)
 {
-    // FIXME only need to reset the port if the port is shared
-    serialConfigure(mspTelemetryPort, &previousSerialConfig);
-    endSerialPortFunction(mspTelemetryPort, FUNCTION_TELEMETRY);
+    mspReleasePortIfAllocated(mspTelemetryPort);
+    closeSerialPort(mspTelemetryPort);
+    mspTelemetryPort = NULL;
+    mspTelemetryEnabled = false;
 }
 
 void configureMSPTelemetryPort(void)
 {
-    mspTelemetryPort = findOpenSerialPort(FUNCTION_TELEMETRY);
-    if (mspTelemetryPort) {
-        serialGetConfig(mspTelemetryPort, &previousSerialConfig);
-        serialRelease(mspTelemetryPort);
+    if (!portConfig) {
+        return;
+    }
 
-        //waitForSerialPortToFinishTransmitting(mspTelemetryPort); // FIXME locks up the system
+    baudRate_e baudRateIndex = portConfig->telemetry_baudrateIndex;
+    if (baudRateIndex == BAUD_AUTO) {
+        baudRateIndex = BAUD_19200;
+    }
 
-        serialConfigure(mspTelemetryPort, &mspTelemetrySerialPortConfig);
-        beginSerialPortFunction(mspTelemetryPort, FUNCTION_TELEMETRY);
-    } else {
-        mspTelemetryPort = openSerialPort(FUNCTION_TELEMETRY, &mspTelemetrySerialPortConfig);
+    mspTelemetryPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_MSP, &mspTelemetrySerialPortConfig);
+
+    if (!mspTelemetryPort) {
+        return;
     }
     mspSetTelemetryPort(mspTelemetryPort);
-}
 
-uint32_t getMSPTelemetryProviderBaudRate(void)
-{
-    return mspTelemetrySerialPortConfig.baudRate;
+    mspTelemetryEnabled = true;
 }
 
 #endif

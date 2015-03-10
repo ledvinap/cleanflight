@@ -4,12 +4,13 @@
 
 #include "blackbox_io.h"
 
-#include "platform.h"
 #include "version.h"
+#include "build_config.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
 #include "common/color.h"
+#include "common/encoding.h"
 
 #include "drivers/gpio.h"
 #include "drivers/sensor.h"
@@ -69,8 +70,9 @@ const serialPortConfig_t blackboxPortConfig = {
 // How many bytes should we transmit per loop iteration?
 uint8_t blackboxWriteChunkSize = 16;
 
-static serialPort_t *blackboxPort;
-static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
+static serialPort_t *blackboxPort = NULL;
+static portSharing_e blackboxPortSharing;
+
 
 void blackboxWrite(uint8_t value)
 {
@@ -151,7 +153,7 @@ void blackboxWriteUnsignedVB(uint32_t value)
 void blackboxWriteSignedVB(int32_t value)
 {
     //ZigZag encode to make the value always positive
-    blackboxWriteUnsignedVB((uint32_t)((value << 1) ^ (value >> 31)));
+    blackboxWriteUnsignedVB(zigzagEncode(value));
 }
 
 void blackboxWriteS16(int16_t value)
@@ -444,18 +446,18 @@ bool blackboxDeviceOpen(void)
     blackboxWriteChunkSize = MAX((masterConfig.looptime * 9) / 1250, 4);
 
     switch (masterConfig.blackbox_device) {
-    case BLACKBOX_DEVICE_SERIAL:
-        blackboxPort = findOpenSerialPort(FUNCTION_BLACKBOX);
-        if (blackboxPort) {
-            serialGetConfig(blackboxPort, &previousSerialConfig);
-            serialRelease(blackboxPort);
-            serialConfigure(blackboxPort, &blackboxPortConfig);
-            beginSerialPortFunction(blackboxPort, FUNCTION_BLACKBOX);
-        } else {
-            blackboxPort = openSerialPort(FUNCTION_BLACKBOX, &blackboxPortConfig);
-        }
+        case BLACKBOX_DEVICE_SERIAL:
+            {
+                serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+                if (!portConfig) {
+                    return false;
+                }
+                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
 
-        return blackboxPort != NULL;
+                blackboxPort = openSerialPort(portConfig->identifier, &blackboxPortConfig);
+                return blackboxPort != NULL;
+            }
+            break;
 #ifdef USE_FLASHFS
     case BLACKBOX_DEVICE_FLASH:
         if (flashfsGetSize() == 0 || isBlackboxDeviceFull()) {
@@ -476,19 +478,22 @@ void blackboxDeviceClose(void)
 {
     switch (masterConfig.blackbox_device) {
         case BLACKBOX_DEVICE_SERIAL:
-            serialRelease(blackboxPort);
-            serialConfigure(blackboxPort, &previousSerialConfig);
-
-            endSerialPortFunction(blackboxPort, FUNCTION_BLACKBOX);
+            closeSerialPort(blackboxPort);
+            blackboxPort = NULL;
 
             /*
              * Normally this would be handled by mw.c, but since we take an unknown amount
              * of time to shut down asynchronously, we're the only ones that know when to call it.
              */
-            if (isSerialPortFunctionShared(FUNCTION_BLACKBOX, FUNCTION_MSP)) {
+            if (blackboxPortSharing == PORTSHARING_SHARED) {
                 mspAllocateSerialPorts(&masterConfig.serialConfig);
             }
-        break;
+            break;
+#ifdef USE_FLASHFS
+        case BLACKBOX_DEVICE_FLASH:
+            // No-op since the flash doesn't have a "close" and there's nobody else to hand control of it to.
+            break;
+#endif
     }
 }
 

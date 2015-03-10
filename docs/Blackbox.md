@@ -121,9 +121,9 @@ tubing instead.
 ![OpenLog installed](Wiring/blackbox-installation-1.jpg "OpenLog installed with double-sided tape, SDCard slot pointing outward")
 
 ### Onboard dataflash storage
-The full version of the Naze32 has an onboard "m25p16" 2 megayte dataflash storage chip which can be used to store
-flight logs instead of using an OpenLog. This is the small chip at the base of the Naze32's direction arrow. 
-This chip is not present on the "Acro" version of the Naze32.
+The full version of the Naze32 and the CC3D have an onboard "m25p16" 2 megayte dataflash storage chip which can be used
+to store flight logs instead of using an OpenLog. This is a small chip with 8 fat legs, which can be found at the base
+of the Naze32's direction arrow. This chip is not present on the "Acro" version of the Naze32.
 
 ## Enabling the Blackbox (CLI)
 In the [Cleanflight Configurator][] , enter the CLI tab. Enable the Blackbox feature by typing in `feature BLACKBOX` and
@@ -135,8 +135,7 @@ Enter `set blackbox_device=0` to switch to logging to a serial port (this is the
 You then need to let Cleanflight know which of [your serial ports][] you connected the OpenLog to. A 115200 baud port
 is required (such as `serial_port_1` on the Naze32, the two-pin Tx/Rx header in the center of the board).
 
-For example, use `set serial_port_1_scenario=11` to switch the main serial port to MSP, CLI, Blackbox and GPS
-Passthrough. You can also use the GUI to configure a port for the Blackbox feature on the Ports tab.
+You can use the GUI to configure a port for the Blackbox feature on the Ports tab.
 
 ### Onboard dataflash
 Enter `set blackbox_device=1` to switch to logging to an onboard dataflash chip, if your flight controller has one.

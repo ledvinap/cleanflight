@@ -313,6 +313,7 @@ uartPort_t *serialUSART3(const serialPortConfig_t *config)
 
     return s;
 }
+#endif
 
 static void handleUsartTxDma(uartPort_t *s)
 {
@@ -345,7 +346,7 @@ void DMA1_Channel7_IRQHandler(void)
 #endif
 
 // USART3 Tx DMA Handler
-#ifdef USE_USART2_TX_DMA
+#ifdef USE_USART3_TX_DMA
 void DMA1_Channel2_IRQHandler(void)
 {
     uartPort_t *s = &uartPort3;
@@ -356,18 +357,23 @@ void DMA1_Channel2_IRQHandler(void)
 #endif
 
 
+#ifdef USE_USART1
 void USART1_IRQHandler(void)
 {
     uartIrqHandler(&uartPort1);
 }
+#endif
 
+#ifdef USE_USART2
 void USART2_IRQHandler(void)
 {
     uartIrqHandler(&uartPort2);
 }
+#endif
 
+#ifdef USE_USART3
 void USART3_IRQHandler(void)
 {
     usartIrqHandler(&uartPort3);
 }
-
+#endif

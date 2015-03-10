@@ -61,7 +61,8 @@
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
 
-static serialPort_t *frskyPort;
+static serialPort_t *frskyPort = NULL;
+static serialPortConfig_t *portConfig;
 
 static const serialPortConfig_t frskySerialPortConfig = {
     .mode = MODE_TX,
@@ -69,6 +70,9 @@ static const serialPortConfig_t frskySerialPortConfig = {
 };
 
 static telemetryConfig_t *telemetryConfig;
+static bool frskyTelemetryEnabled =  false;
+static portSharing_e frskyPortSharing;
+
 
 extern batteryConfig_t *batteryConfig;
 
@@ -255,6 +259,7 @@ static void sendTime(void)
     serialize16(seconds % 60);
 }
 
+#ifdef GPS
 // Frsky pdf: dddmm.mmmm
 // .mmmm is returned in decimal fraction of minutes.
 static void GPStoDDDMM_MMMM(int32_t mwiigps, gpsCoordinateDDDMMmmmm_t *result)
@@ -309,6 +314,7 @@ static void sendGPS(void)
     sendDataHead(ID_E_W);
     serialize16(localGPS_coord[LON] < 0 ? 'W' : 'E');
 }
+#endif
 
 
 /*
@@ -406,38 +412,29 @@ static void sendHeading(void)
 void initFrSkyTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
     telemetryConfig = initialTelemetryConfig;
+    portConfig = findSerialPortConfig(FUNCTION_TELEMETRY_FRSKY);
+    frskyPortSharing = determinePortSharing(portConfig, FUNCTION_TELEMETRY_FRSKY);
 }
-
-static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
 
 void freeFrSkyTelemetryPort(void)
 {
-    // FIXME only need to reset the port if the port is shared
-    serialConfigure(frskyPort, &previousSerialConfig);
-
-    endSerialPortFunction(frskyPort, FUNCTION_TELEMETRY);
+    closeSerialPort(frskyPort);
+    frskyPort = NULL;
+    frskyTelemetryEnabled = false;
 }
 
 void configureFrSkyTelemetryPort(void)
 {
-    frskyPort = findOpenSerialPort(FUNCTION_TELEMETRY);
-    if (frskyPort) {
-        serialGetConfig(frskyPort, &previousSerialConfig);
-        serialRelease(frskyPort);
-        //waitForSerialPortToFinishTransmitting(frskyPort); // FIXME locks up the system
-
-        serialConfigure(frskyPort, &frskySerialPortConfig);
-        beginSerialPortFunction(frskyPort, FUNCTION_TELEMETRY);
-    } else {
-        // TODO - telemetryConfig->telemetry_inversion needs to be used
-        frskyPort = openSerialPort(FUNCTION_TELEMETRY, &frskySerialPortConfig);
+    if (!portConfig) {
+        return;
     }
-}
 
+    frskyPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_FRSKY, &frskySerialPortConfig);
+    if (!frskyPort) {
+        return;
+    }
 
-bool canSendFrSkyTelemetry(void)
-{
-    return serialTotalBytesWaiting(frskyPort) == 0;
+    frskyTelemetryEnabled = true;
 }
 
 bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
@@ -445,9 +442,23 @@ bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
     return currentMillis - lastCycleTime >= CYCLETIME;
 }
 
+void checkFrSkyTelemetryState(void)
+{
+    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(frskyPortSharing);
+
+    if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
+        return;
+    }
+
+    if (newTelemetryEnabledValue)
+        configureFrSkyTelemetryPort();
+    else
+        freeFrSkyTelemetryPort();
+}
+
 void handleFrSkyTelemetry(void)
 {
-    if (!canSendFrSkyTelemetry()) {
+    if (!frskyTelemetryEnabled) {
         return;
     }
 
@@ -507,7 +518,4 @@ void handleFrSkyTelemetry(void)
     }
 }
 
-uint32_t getFrSkyTelemetryProviderBaudRate(void) {
-    return frskySerialPortConfig.baudRate;
-}
 #endif

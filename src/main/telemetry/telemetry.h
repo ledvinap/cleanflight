@@ -26,15 +26,6 @@
 #define TELEMETRY_COMMON_H_
 
 typedef enum {
-    TELEMETRY_PROVIDER_FRSKY = 0,
-    TELEMETRY_PROVIDER_HOTT,
-    TELEMETRY_PROVIDER_MSP,
-    TELEMETRY_PROVIDER_SMARTPORT,
-    TELEMETRY_PROVIDER_SPORT,
-    TELEMETRY_PROVIDER_MAX = TELEMETRY_PROVIDER_SPORT
-} telemetryProvider_e;
-
-typedef enum {
     FRSKY_FORMAT_DMS = 0,
     FRSKY_FORMAT_NMEA
 } frskyGpsCoordFormat_e;
@@ -43,8 +34,8 @@ typedef enum {
     FRSKY_UNIT_METRICS = 0,
     FRSKY_UNIT_IMPERIALS
 } frskyUnit_e;
+
 typedef struct telemetryConfig_s {
-    telemetryProvider_e telemetry_provider;
     uint8_t telemetry_switch;               // Use aux channel to change serial output & baudrate( MSP / Telemetry ). It disables automatic switching to Telemetry when armed.
     portMode_t telemetry_mode;              // TODO - maybe handle singlewire/halfduplex here?
     float gpsNoFixLatitude;
@@ -58,9 +49,8 @@ void telemetryInit(void);
 void checkTelemetryState(void);
 void handleTelemetry(void);
 
-uint32_t getTelemetryProviderBaudRate(void);
+bool determineNewTelemetryEnabledState(portSharing_e portSharing);
+
 void useTelemetryConfig(telemetryConfig_t *telemetryConfig);
-bool telemetryAllowsOtherSerial(int serialPortFunction);
-bool isTelemetryPortShared(void);
 
 #endif /* TELEMETRY_COMMON_H_ */

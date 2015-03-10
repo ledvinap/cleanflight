@@ -66,7 +66,6 @@ enum
     SPSTATE_INITIALIZED,
     SPSTATE_WORKING,
     SPSTATE_TIMEDOUT,
-    SPSTATE_DEINITIALIZED,
 };
 
 enum
@@ -142,10 +141,13 @@ serialPortConfig_t smartPortPortConfig = {
     .baudRate = 57600,
 };
 
-static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
+static serialPort_t *smartPortSerialPort = NULL; // The 'SmartPort'(tm) Port.
+static serialPortConfig_t *portConfig;
 
-static serialPort_t *smartPortSerialPort; // The 'SmartPort'(tm) Port.
 static telemetryConfig_t *telemetryConfig;
+static bool smartPortTelemetryEnabled =  false;
+static portSharing_e smartPortPortSharing;
+
 extern void serialInit(serialConfig_t *); // from main.c // FIXME remove this dependency
 
 char smartPortState = SPSTATE_UNINITIALIZED;
@@ -213,65 +215,38 @@ static void smartPortSendPackage(uint16_t id, uint32_t val)
 void initSmartPortTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
     telemetryConfig = initialTelemetryConfig;
+    portConfig = findSerialPortConfig(FUNCTION_TELEMETRY_SMARTPORT);
+    smartPortPortSharing = determinePortSharing(portConfig, FUNCTION_TELEMETRY_SMARTPORT);
 }
 
 void freeSmartPortTelemetryPort(void)
 {
-    if (smartPortState == SPSTATE_UNINITIALIZED)
-        return;
-    if (smartPortState == SPSTATE_DEINITIALIZED)
-        return;
-
-    if (isTelemetryPortShared()) {
-        endSerialPortFunction(smartPortSerialPort, FUNCTION_SMARTPORT_TELEMETRY);
-        smartPortState = SPSTATE_DEINITIALIZED;
-        serialInit(&masterConfig.serialConfig);
-    } else {
-        serialRelease(smartPortSerialPort);
-        serialConfigure(smartPortSerialPort, &previousSerialConfig);
-        endSerialPortFunction(smartPortSerialPort, FUNCTION_SMARTPORT_TELEMETRY);
-        smartPortState = SPSTATE_DEINITIALIZED;
-    }
+    closeSerialPort(smartPortSerialPort);
     smartPortSerialPort = NULL;
+
+    smartPortState = SPSTATE_UNINITIALIZED;
+    smartPortTelemetryEnabled = false;
 }
 
 void configureSmartPortTelemetryPort(void)
 {
-    if (smartPortState != SPSTATE_UNINITIALIZED) {
-        // do not allow reinitialization
+    if (!portConfig) {
         return;
     }
 
-    smartPortSerialPort = findOpenSerialPort(FUNCTION_SMARTPORT_TELEMETRY);
-    if (smartPortSerialPort) {
-        serialGetConfig(smartPortSerialPort, &previousSerialConfig);
-        serialRelease(smartPortSerialPort);
-        //waitForSerialPortToFinishTransmitting(smartPortPort); // FIXME locks up the system
-        serialConfigure(smartPortSerialPort, &smartPortPortConfig);
-        beginSerialPortFunction(smartPortSerialPort, FUNCTION_SMARTPORT_TELEMETRY);
-    } else {
-        smartPortSerialPort = openSerialPort(FUNCTION_SMARTPORT_TELEMETRY, &smartPortPortConfig);
+    smartPortSerialPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_SMARTPORT, &smartPortPortConfig);
 
-        if (smartPortSerialPort) {
-            smartPortState = SPSTATE_INITIALIZED;
-        } else {
-            // failed, resume MSP and CLI
-            if (isTelemetryPortShared()) {
-                smartPortState = SPSTATE_DEINITIALIZED;
-                serialInit(&masterConfig.serialConfig);
-            }
-        }
+    if (!smartPortSerialPort) {
+        return;
     }
+
+    smartPortState = SPSTATE_INITIALIZED;
+    smartPortTelemetryEnabled = true;
 }
 
 bool canSendSmartPortTelemetry(void)
 {
-    return smartPortState == SPSTATE_INITIALIZED || smartPortState == SPSTATE_WORKING;
-}
-
-bool canSmartPortAllowOtherSerial(void)
-{
-    return smartPortState == SPSTATE_DEINITIALIZED;
+    return smartPortSerialPort && (smartPortState == SPSTATE_INITIALIZED || smartPortState == SPSTATE_WORKING);
 }
 
 bool isSmartPortTimedOut(void)
@@ -279,15 +254,29 @@ bool isSmartPortTimedOut(void)
     return smartPortState >= SPSTATE_TIMEDOUT;
 }
 
-uint32_t getSmartPortTelemetryProviderBaudRate(void)
+void checkSmartPortTelemetryState(void)
 {
-    return smartPortPortConfig.baudRate;
+    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(smartPortPortSharing);
+
+    if (newTelemetryEnabledValue == smartPortTelemetryEnabled) {
+        return;
+    }
+
+    if (newTelemetryEnabledValue)
+        configureSmartPortTelemetryPort();
+    else
+        freeSmartPortTelemetryPort();
 }
 
 void handleSmartPortTelemetry(void)
 {
-    if (!canSendSmartPortTelemetry())
+    if (!smartPortTelemetryEnabled) {
         return;
+    }
+
+    if (!canSendSmartPortTelemetry()) {
+        return;
+    }
 
     while (serialTotalBytesWaiting(smartPortSerialPort) > 0) {
         uint8_t c = serialRead(smartPortSerialPort);

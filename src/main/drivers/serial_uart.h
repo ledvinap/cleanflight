@@ -21,10 +21,10 @@
 // The two largest things that need to be sent are: 1, MSP responses, 2, UBLOX SVINFO packet.
 #define UART1_RX_BUFFER_SIZE    256
 #define UART1_TX_BUFFER_SIZE    256
-#define UART2_RX_BUFFER_SIZE    128
-#define UART2_TX_BUFFER_SIZE    64
-#define UART3_RX_BUFFER_SIZE    128
-#define UART3_TX_BUFFER_SIZE    64
+#define UART2_RX_BUFFER_SIZE    256
+#define UART2_TX_BUFFER_SIZE    256
+#define UART3_RX_BUFFER_SIZE    256
+#define UART3_TX_BUFFER_SIZE    256
 
 struct uartHwDef_s;
 

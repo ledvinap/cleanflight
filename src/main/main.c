@@ -107,8 +107,6 @@ extern uint32_t previousTime;
 serialPort_t *loopbackPort;
 #endif
 
-failsafe_t *failsafe;
-
 #ifdef STM32F303xC
 // from system_stm32f30x.c
 void SetSysClock(void);
@@ -346,11 +344,14 @@ void init(void)
 
     serialInit(&masterConfig.serialConfig);
 
-    failsafe = failsafeInit(&masterConfig.rxConfig);
+    mspInit(&masterConfig.serialConfig);
+    cliInit(&masterConfig.serialConfig);
 
-    beepcodeInit(failsafe);
+    failsafeInit(&masterConfig.rxConfig);
 
-    rxInit(&masterConfig.rxConfig, failsafe);
+    beepcodeInit();
+
+    rxInit(&masterConfig.rxConfig);
 
 #ifdef GPS
     if (feature(FEATURE_GPS)) {
@@ -372,7 +373,7 @@ void init(void)
 #endif
 
 #ifdef LED_STRIP
-    ledStripInit(masterConfig.ledConfigs, masterConfig.colors, failsafe);
+    ledStripInit(masterConfig.ledConfigs, masterConfig.colors);
 
     if (feature(FEATURE_LED_STRIP)) {
         ledStripEnable();
@@ -380,8 +381,9 @@ void init(void)
 #endif
 
 #ifdef TELEMETRY
-    if (feature(FEATURE_TELEMETRY))
+    if (feature(FEATURE_TELEMETRY)) {
         telemetryInit();
+    }
 #endif
 
 #ifdef USE_FLASHFS
@@ -390,7 +392,7 @@ void init(void)
         m25p16_init();
     }
 #endif
-#ifdef SPRACINGF3
+#if defined(SPRACINGF3) || defined(CC3D)
     m25p16_init();
 #endif
     flashfsInit();

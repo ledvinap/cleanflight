@@ -82,7 +82,7 @@ static uartPort_t uartPort3;
 #endif
 
 #ifdef USE_USART1
-uartPort_t *serialUSART1(const serialPortConfig_t *config)
+uartPort_t *serialUSART1(const serialPortMode_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx1Buffer[UART1_RX_BUFFER_SIZE];
@@ -157,7 +157,7 @@ uartPort_t *serialUSART1(const serialPortConfig_t *config)
 #endif
 
 #ifdef USE_USART2
-uartPort_t *serialUSART2(const serialPortConfig_t *config)
+uartPort_t *serialUSART2(const serialPortMode_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx2Buffer[UART2_RX_BUFFER_SIZE];
@@ -236,7 +236,7 @@ uartPort_t *serialUSART2(const serialPortConfig_t *config)
 }
 #endif
 
-uartPort_t *serialUSART3(const serialPortConfig_t *config)
+uartPort_t *serialUSART3(const serialPortMode_t *config)
 {
     uartPort_t *s;
     static volatile uint8_t rx3Buffer[UART3_RX_BUFFER_SIZE];

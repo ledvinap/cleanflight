@@ -125,7 +125,7 @@ bool xBusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
 
 // TODO    serialPort_t *xBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, xBusDataReceive, baudRate, MODE_RX, SERIAL_NOT_INVERTED);
 
-    return xBusPort != NULL;
+//    return xBusPort != NULL;
 }
 
 // The xbus mode B CRC calculations

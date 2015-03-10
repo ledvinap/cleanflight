@@ -62,7 +62,7 @@
 
 #ifdef BLACKBOX
 
-const serialPortConfig_t blackboxPortConfig = {
+const serialPortMode_t blackboxPortConfig = {
     .mode = MODE_TX | MODE_U_REMAP,
     .baudRate = 115200,
 };
@@ -454,7 +454,7 @@ bool blackboxDeviceOpen(void)
                 }
                 blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
 
-                blackboxPort = openSerialPort(portConfig->identifier, &blackboxPortConfig);
+                blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, &blackboxPortConfig);
                 return blackboxPort != NULL;
             }
             break;

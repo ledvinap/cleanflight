@@ -124,7 +124,7 @@ static const uartHwDef_t uartPort3Hw = {
 };
 #endif
 
-void serialUSARTHwInit(uartPort_t *self, const serialPortConfig_t *config)
+void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
 {
     UNUSED(config);
     const uartHwDef_t *def = self->hwDef;

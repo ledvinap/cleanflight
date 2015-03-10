@@ -37,7 +37,7 @@ typedef struct failsafeState_s {
 void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse);
 
 struct rxConfig_s;
-failsafe_t* failsafeInit(struct rxConfig_s *intialRxConfig);
+failsafeState_t* failsafeInit(struct rxConfig_s *intialRxConfig);
 
 void failsafeEnable(void);
 void failsafeOnRxCycle(void);

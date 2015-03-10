@@ -36,7 +36,7 @@ typedef struct uartHwDef_s {
     uint32_t remap;
 } uartHwDef_t;
 
-void serialUSARTHwInit(uartPort_t *self, const serialPortConfig_t *config);
+void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config);
 const uartHwDef_t* serialUSARTFindDef(USART_TypeDef *USARTx);
 
 void uartIrqHandler(uartPort_t *self);

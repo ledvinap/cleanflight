@@ -56,7 +56,7 @@ static volatile uint8_t spekFrame[SPEK_FRAME_SIZE];
 static void spektrumDataReceive(uint16_t c);
 static uint16_t spektrumReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
-static const serialPortConfig_t spektrumPortConfig = {
+static const serialPortMode_t spektrumPortConfig = {
     .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_DMARX), // don't enable DMA, we need rxCallback
     .baudRate = 115200,
     .rxCallback = spektrumDataReceive,

@@ -76,7 +76,7 @@ static uint16_t sbusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 static uint32_t sbusChannelData[SBUS_MAX_CHANNEL];
 
-static const serialPortConfig_t sBusPortConfig = {
+static const serialPortMode_t sBusPortConfig = {
     .mode = MODE_RX | MODE_SBUS | MODE_INVERTED | (MODE_DEFAULT_FAST & ~MODE_U_DMARX),  // don't enable RX_DMA, we need rxCallback
     .baudRate = 100000,
     .rxCallback = sbusDataReceive

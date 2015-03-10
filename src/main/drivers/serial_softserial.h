@@ -56,7 +56,7 @@ typedef struct softSerial_s {
     uint16_t         receiveErrors;
 } softSerial_t;
 
-serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t* config);
+serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortMode_t* config);
 
 // serialPort API
 bool isSoftSerialTransmitBufferEmpty(serialPort_t *instance);
@@ -65,7 +65,7 @@ int softSerialTotalBytesWaiting(serialPort_t *instance);
 int softSerialRead(serialPort_t *instance);
 
 void softSerialRelease(serialPort_t *instance);
-void softSerialConfigure(serialPort_t *instance, const serialPortConfig_t* config);
-void softSerialGetConfig(serialPort_t *instance, serialPortConfig_t* config);
+void softSerialConfigure(serialPort_t *instance, const serialPortMode_t* config);
+void softSerialGetConfig(serialPort_t *instance, serialPortMode_t* config);
 void softSerialUpdateState(serialPort_t *instance, portState_t keepMask, portState_t setMask);
 

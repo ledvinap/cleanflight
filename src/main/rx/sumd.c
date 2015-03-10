@@ -44,7 +44,7 @@ static bool sumdFrameDone = false;
 static uint32_t sumdChannels[SUMD_MAX_CHANNEL];
 
 static void sumdDataReceive(uint16_t c);
-static const serialPortConfig_t sumdPortConfig = {
+static const serialPortMode_t sumdPortConfig = {
     .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_DMARX),  // don't enable DMA, we need rxCallback
     .baudRate = 115200,
     .rxCallback = sumdDataReceive

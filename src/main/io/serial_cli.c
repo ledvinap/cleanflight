@@ -107,6 +107,7 @@ static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
 static void cliVibration(char *cmdline);
+static void cliReboot(void);
 
 #ifdef GPS
 static void cliGpsPassthrough(char *cmdline);
@@ -124,7 +125,7 @@ static void cliColor(char *cmdline);
 static void cliMixer(char *cmdline);
 #endif
 
-static serialPortConfig_t cliPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
+//static serialPortMode_t cliPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
 
 #ifdef USE_FLASHFS
 static void cliFlashInfo(char *cmdline);

@@ -75,7 +75,7 @@ static void usartConfigurePinInversion(uartPort_t *self) {
 
 }
 
-static void usartConfigurePins(uartPort_t *self, const serialPortConfig_t *config) {
+static void usartConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
     IOId_t tx,rx,rxi,txi;
     if(config->mode & MODE_U_REMAP) {
         rx = self->hwDef->rxChRemap;
@@ -107,7 +107,7 @@ static void usartConfigurePins(uartPort_t *self, const serialPortConfig_t *confi
     }
 }
 
-static void usartConfigureDMAorIRQ(uartPort_t *self, const serialPortConfig_t *config)
+static void usartConfigureDMAorIRQ(uartPort_t *self, const serialPortMode_t *config)
 {
     // Receive DMA or IRQ
     DMA_InitTypeDef DMA_InitStructure;
@@ -186,7 +186,7 @@ static void usartConfigureDMAorIRQ(uartPort_t *self, const serialPortConfig_t *c
     }
 }
 
-static void uartReconfigure(uartPort_t *self, const serialPortConfig_t *config)
+static void uartReconfigure(uartPort_t *self, const serialPortMode_t *config)
 {
     self->txDMAEmpty = true;
     // common serial initialisation code should move to serialPort::init()
@@ -246,7 +246,7 @@ static void uartReconfigureState(uartPort_t *self)
     USART_Cmd(self->USARTx, ENABLE);
 }
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config)
+serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortMode_t *config)
 {
     const uartHwDef_t* def;
     def = serialUSARTFindDef(USARTx);
@@ -281,7 +281,7 @@ void uartUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMa
     uartReconfigureState(self);
 }
 
-void uartConfigure(serialPort_t *serial, const serialPortConfig_t *config)
+void uartConfigure(serialPort_t *serial, const serialPortMode_t *config)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
     // just call reconfigure now. keep this in sync with uartRelease
@@ -306,7 +306,7 @@ void uartRelease(serialPort_t *serial)
     self->port.mode = 0;
 }
 
-void uartGetConfig(serialPort_t *serial, serialPortConfig_t* config)
+void uartGetConfig(serialPort_t *serial, serialPortMode_t* config)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
 

@@ -80,7 +80,7 @@ static void resetBuffers(softSerial_t *self)
     self->port.txBufferHead = 0;
 }
 
-serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortConfig_t *config)
+serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortMode_t *config)
 {
     softSerial_t *self = &(softSerialPorts[portIndex]);
     self->port.vTable = &softSerialVTable;
@@ -88,7 +88,7 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortCo
     return &self->port;
 }
 
-void softSerialConfigure(serialPort_t *serial, const serialPortConfig_t *config)
+void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
 {
     softSerial_t *self = container_of(serial, softSerial_t, port);
 
@@ -202,7 +202,7 @@ void softSerialRelease(serialPort_t *serial)
     self->port.mode = 0;
 }
 
-void softSerialGetConfig(serialPort_t *serial, serialPortConfig_t* config)
+void softSerialGetConfig(serialPort_t *serial, serialPortMode_t* config)
 {
     softSerial_t* self = container_of(serial, softSerial_t, port);
     config->baudRate = (1000000 << 8) / self->bitTime;

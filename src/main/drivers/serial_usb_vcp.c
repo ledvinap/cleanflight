@@ -48,7 +48,7 @@ void usbVcpUpdateState(serialPort_t *serial, portState_t andMask, portState_t or
     // TODO implement
 }
 
-void usbVcpConfigure(serialPort_t *serial, const serialPortConfig_t *config)
+void usbVcpConfigure(serialPort_t *serial, const serialPortMode_t *config)
 {
     UNUSED(instance);
     UNUSED(mode);
@@ -61,7 +61,7 @@ void usbVcpRelease(serialPort_t *serial)
     // TODO implement
 }
 
-void usbVcpGetConfig(serialPort_t *serial, serialPortConfig_t* config)
+void usbVcpGetConfig(serialPort_t *serial, serialPortMode_t* config)
 {
     usbVcpPort_t *self = container_of(serial, usbVcpPort_t, port);
 

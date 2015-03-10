@@ -85,7 +85,7 @@
 #include "serial_msp.h"
 
 static serialPort_t *mspSerialPort;
-static serialPortConfig_t mspPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
+static serialPortMode_t mspPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c

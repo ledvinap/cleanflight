@@ -235,7 +235,7 @@ bool doesConfigurationUsePort(serialPortIdentifier_e identifier)
 serialPort_t *openSerialPort(
     serialPortIdentifier_e identifier,
     serialPortFunction_e function,
-    const serialPortConfig_t *configPrm
+    const serialPortMode_t *configPrm
 )
 {
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
@@ -246,7 +246,7 @@ serialPort_t *openSerialPort(
 
     serialPort_t *serialPort = NULL;
 
-    serialPortConfig_t config = *configPrm;   // copy config to RAM
+    serialPortMode_t config = *configPrm;   // copy config to RAM
 
     switch(identifier) {
 #ifdef USE_VCP

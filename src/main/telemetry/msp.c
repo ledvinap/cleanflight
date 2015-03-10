@@ -44,7 +44,7 @@ static serialPortConfig_t *portConfig;
 static bool mspTelemetryEnabled =  false;
 static portSharing_e mspPortSharing;
 
-static const serialPortConfig_t mspTelemetrySerialPortConfig = {
+static const serialPortMode_t mspTelemetrySerialPortConfig = {
     .mode = MODE_TX | MODE_RX | MODE_DEFAULT_FAST,   // TODO - maybe SMALL mode is ok, but how will it work with regular MSP?
     .baudRate =  19200
 };

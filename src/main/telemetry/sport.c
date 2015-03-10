@@ -56,19 +56,22 @@
 
 extern int16_t accSmooth[XYZ_AXIS_COUNT];
 
-static serialPort_t *sPortPort;
-
 void telemetrySPortSerialRxCharCallback(uint16_t data);
 
 timerQueueRec_t telemetrySPortTimerQ;
 
-serialPortConfig_t sPortPortConfig = {
+serialPortMode_t sPortPortConfig = {
     .mode = MODE_RXTX | MODE_SINGLEWIRE | MODE_HALFDUPLEX | MODE_INVERTED | MODE_S_DUALTIMER,
     .baudRate = 57600,
     .rxCallback = telemetrySPortSerialRxCharCallback
 };
 
+static serialPort_t *sPortSerialPort = NULL; 
+static serialPortConfig_t *portConfig;
+
 static telemetryConfig_t *telemetryConfig;
+static bool sPortTelemetryEnabled =  false;
+static portSharing_e sPortPortSharing;
 
 extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
@@ -215,10 +218,10 @@ void set_crc(uint8_t* pkt)
 void tx_u8(uint8_t v)
 {
     if(v == 0x7d || v == 0x7e) {
-        serialWrite(sPortPort, 0x7D);
+        serialWrite(sPortSerialPort, 0x7D);
         v ^= 0x20;
     }
-    serialWrite(sPortPort, v);
+    serialWrite(sPortSerialPort, v);
 }
 
 
@@ -244,7 +247,7 @@ void telemetrySPortTimerQCallback(timerQueueRec_t *cb)
     for(unsigned i = 0; i < 8; i++)
         tx_u8(pkt[i]);
     // start transmitting only after full packet is in queue
-    serialUpdateState(sPortPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE); 
+    serialUpdateState(sPortSerialPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE); 
     telemPktQueuePop();
 }
 
@@ -412,6 +415,9 @@ static int generatePacket(tlm_Id id) {
 void initSPortTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
     telemetryConfig = initialTelemetryConfig;
+    portConfig = findSerialPortConfig(FUNCTION_TELEMETRY_SPORT);
+    sPortPortSharing = determinePortSharing(portConfig, FUNCTION_TELEMETRY_SPORT);
+
     // enqueue all packets
     // TODO - handle case when telemetry is not running - there is 32s overflow
     for(unsigned i = 0; i < ARRAYLEN(tlm_info); i++) {
@@ -422,27 +428,27 @@ void initSPortTelemetry(telemetryConfig_t *initialTelemetryConfig)
     timerQueue_Config(&telemetrySPortTimerQ, telemetrySPortTimerQCallback);
 }
 
-static serialPortConfig_t previousSerialConfig = SERIAL_CONFIG_INIT_EMPTY;
-
 void freeSPortTelemetryPort(void)
 {
-    serialRelease(sPortPort);
-    serialConfigure(sPortPort, &previousSerialConfig);
-    endSerialPortFunction(sPortPort, FUNCTION_TELEMETRY);
+    closeSerialPort(sPortSerialPort);
+    sPortSerialPort = NULL;
+
+    sPortTelemetryEnabled = false;
 }
 
 void configureSPortTelemetryPort(void)
 {
-    sPortPort = findOpenSerialPort(FUNCTION_TELEMETRY);
-    if (sPortPort) {
-        serialGetConfig(sPortPort, &previousSerialConfig);
-        serialRelease(sPortPort);
-        //waitForSerialPortToFinishTransmitting(sPortPort); // FIXME locks up the system
-        serialConfigure(sPortPort, &sPortPortConfig);
-        beginSerialPortFunction(sPortPort, FUNCTION_TELEMETRY);
-    } else {
-        sPortPort = openSerialPort(FUNCTION_TELEMETRY, &sPortPortConfig);
+    if (!portConfig) {
+        return;
     }
+
+    sPortSerialPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_SPORT, &sPortPortConfig);
+
+    if (!sPortSerialPort) {
+        return;
+    }
+
+    sPortTelemetryEnabled = true;
 }
 
 #define TELEM_HEAP_LEN ARRAYLEN(tlm_info)
@@ -489,8 +495,25 @@ static void telemQueueDeleteIdx(unsigned parent)
     telemHeap[parent] = last;
 }
 
+void checkSPortTelemetryState(void)
+{
+    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(sPortPortSharing);
+
+    if (newTelemetryEnabledValue == sPortTelemetryEnabled) {
+        return;
+    }
+
+    if (newTelemetryEnabledValue)
+        configureSPortTelemetryPort();
+    else
+        freeSPortTelemetryPort();
+}
+
 void handleSPortTelemetry(void)
 {
+    if (!sPortTelemetryEnabled)
+        return;
+
     if(!telemHeapLen)  // this should never happend
         return;
     while(telemPktQueueEmpty() && tq_cmp(telemHeap[0], millis() << 16) <= 0) { // got packet to send
@@ -504,7 +527,4 @@ void handleSPortTelemetry(void)
     }
 }
 
-uint32_t getSPortTelemetryProviderBaudRate(void) {
-    return sPortPortConfig.baudRate;
-}
 #endif

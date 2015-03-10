@@ -47,7 +47,7 @@ typedef struct {
     const struct uartHwDef_s* hwDef;
 } uartPort_t;
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortConfig_t *config);
+serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortMode_t *config);
 
 // serialPort API
 bool isUartTransmitBufferEmpty(serialPort_t *instance);
@@ -56,6 +56,6 @@ int uartTotalBytesWaiting(serialPort_t *instance);
 int uartRead(serialPort_t *instance);
 
 void uartRelease(serialPort_t *instance);
-void uartConfigure(serialPort_t *instance, const serialPortConfig_t* config);
-void uartGetConfig(serialPort_t *instance, serialPortConfig_t* config);
+void uartConfigure(serialPort_t *instance, const serialPortMode_t* config);
+void uartGetConfig(serialPort_t *instance, serialPortMode_t* config);
 void uartUpdateState(serialPort_t *instance, portState_t keepMask, portState_t setMask);

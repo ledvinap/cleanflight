@@ -86,8 +86,7 @@ typedef uint16_t (*rcReadRawDataPtr)(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t
 
 extern rxRuntimeConfig_t rxRuntimeConfig;
 
-struct failsafe_s;
-void rxInit(rxConfig_t *rxConfig, struct failsafe_s *initialFailsafe);
+void rxInit(rxConfig_t *rxConfig);
 void useRxConfig(rxConfig_t *rxConfigToUse);
 
 void updateRx(void);

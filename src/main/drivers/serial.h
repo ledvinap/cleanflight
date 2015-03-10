@@ -83,7 +83,7 @@ typedef struct  {
     uint32_t baudRate;
     serialReceiveCallback *rxCallback;
     uint8_t rxPin, txPin;
-} serialPortConfig_t;
+} serialPortMode_t;
 
 // use this to initialize structure used to store port config. serialConfigure can be safely called with it
 #define SERIAL_CONFIG_INIT_EMPTY { .mode = 0 }
@@ -96,8 +96,8 @@ struct serialPortVTable {
     int (*read)(serialPort_t *instance);
 
     void (*release)(serialPort_t *instance);
-    void (*configure)(serialPort_t *instance, const serialPortConfig_t* config);
-    void (*getConfig)(serialPort_t *instance, serialPortConfig_t* config);
+    void (*configure)(serialPort_t *instance, const serialPortMode_t* config);
+    void (*getConfig)(serialPort_t *instance, serialPortMode_t* config);
     void (*updateState)(serialPort_t *serial, portState_t keepMask, portState_t setMask);
 };
 
@@ -113,9 +113,9 @@ int serialReadBlock(serialPort_t *instance, const uint8_t *data, int len);
 // release port
 void serialRelease(serialPort_t *instance);
 // restore previous configuration
-void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config);
+void serialConfigure(serialPort_t *instance, const serialPortMode_t* config);
 // get actual configuration
-void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config);
+void serialGetConfig(serialPort_t *instance, serialPortMode_t* config);
 // change serial state, bits not in keepMask are reset(&), then bits in setmask are set (|)
 void serialUpdateState(serialPort_t *serial, portState_t keepMask, portState_t setMask);
 

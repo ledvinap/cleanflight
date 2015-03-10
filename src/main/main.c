@@ -57,6 +57,8 @@
 #include "rx/rx.h"
 
 #include "io/serial.h"
+#include "io/serial_msp.h"
+#include "io/serial_cli.h"
 #include "io/flashfs.h"
 #include "io/gps.h"
 #include "io/escservo.h"
@@ -65,6 +67,7 @@
 #include "io/ledstrip.h"
 #include "io/display.h"
 #include "io/beeper.h"
+
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
@@ -421,7 +424,7 @@ void init(void)
 
 #ifdef SOFTSERIAL_LOOPBACK
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
-    static serialPortConfig_t loopbackPortConfig = {
+    static serialPortMode_t loopbackPortConfig = {
         .mode = MODE_RXTX | MODE_DEFAULT_FAST,
         .baudRate = 115200,
     };

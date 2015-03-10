@@ -136,7 +136,7 @@ const uint16_t frSkyDataIdTable[] = {
 #define SMARTPORT_SERVICE_DELAY_MS 5 // telemetry requests comes in at roughly 12 ms intervals, keep this under that
 #define SMARTPORT_NOT_CONNECTED_TIMEOUT_MS 7000
 
-serialPortConfig_t smartPortPortConfig = {
+serialPortMode_t smartPortPortConfig = {
     .mode = MODE_RXTX | MODE_SINGLEWIRE | MODE_HALFDUPLEX | MODE_INVERTED | MODE_DEFAULT_FAST,
     .baudRate = 57600,
 };

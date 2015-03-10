@@ -56,12 +56,12 @@ void serialRelease(serialPort_t *instance)
     instance->vTable->release(instance);
 }
 
-void serialConfigure(serialPort_t *instance, const serialPortConfig_t* config)
+void serialConfigure(serialPort_t *instance, const serialPortMode_t* config)
 {
     instance->vTable->configure(instance, config);
 }
 
-void serialGetConfig(serialPort_t *instance, serialPortConfig_t* config)
+void serialGetConfig(serialPort_t *instance, serialPortMode_t* config)
 {
     instance->vTable->getConfig(instance, config);
 }

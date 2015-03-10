@@ -204,7 +204,7 @@ static void gpsSetState(uint8_t state)
     gpsData.messageState = GPS_MESSAGE_STATE_IDLE;
 }
 
-static serialPortConfig_t gpsSerialPortConfig;
+static serialPortMode_t gpsSerialPortConfig;
 
 void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
 {
@@ -243,7 +243,7 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
         mode &= ~MODE_TX;
 
     // no callback - buffer will be consumed in gpsThread()
-    gpsSerialPortConfig.baudRateIndex = gpsInitData[gpsData.baudrateIndex].baudrateIndex;
+    gpsSerialPortConfig.baudRate = baudRates[gpsInitData[gpsData.baudrateIndex].baudrateIndex];
     gpsSerialPortConfig.mode = mode;
 
     gpsPort = openSerialPort(gpsPortConfig->identifier, FUNCTION_GPS, &gpsSerialPortConfig);
@@ -262,7 +262,7 @@ void gpsInitNmea(void)
     case GPS_INITIALIZING:
     case GPS_CHANGE_BAUD:
         serialRelease(gpsPort);
-        gpsSerialPortConfig.baudRateIndex = gpsInitData[gpsData.baudrateIndex].baudrateIndex;
+        gpsSerialPortConfig.baudRate = baudRates[gpsInitData[gpsData.baudrateIndex].baudrateIndex];
         serialConfigure(gpsPort, &gpsSerialPortConfig);
         gpsSetState(GPS_RECEIVING_DATA);
         break;
@@ -310,7 +310,7 @@ void gpsInitUblox(void)
             break;
     case GPS_CHANGE_BAUD:
         serialRelease(gpsPort);
-        gpsSerialPortConfig.baudRate = gpsInitData[gpsData.state_position].baudrate;
+        gpsSerialPortConfig.baudRate = baudRates[gpsInitData[gpsData.state_position].baudrateIndex];
         serialConfigure(gpsPort, &gpsSerialPortConfig);
         gpsSetState(GPS_CONFIGURE);
         break;
@@ -1025,7 +1025,7 @@ static bool gpsNewFrameUBLOX(uint8_t data)
     return parsed;
 }
 
-static serialPortConfig_t gpsPassthroughPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
+//static serialPortMode_t gpsPassthroughPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
 
 void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort)
 {
@@ -1033,7 +1033,7 @@ void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort)
     waitForSerialPortToFinishTransmitting(gpsPassthroughPort);
 
     // reconfigure GPS, enable TX mode
-    serialPortConfig_t tmpCfg;
+    serialPortMode_t tmpCfg;
     serialGetConfig(gpsPort, &tmpCfg);
     bool changed=false;
     // enable TX     TODO - use parameter to allow this

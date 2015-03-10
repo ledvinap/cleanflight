@@ -64,7 +64,7 @@
 static serialPort_t *frskyPort = NULL;
 static serialPortConfig_t *portConfig;
 
-static const serialPortConfig_t frskySerialPortConfig = {
+static const serialPortMode_t frskySerialPortConfig = {
     .mode = MODE_TX,
     .baudRate = 9600
 };

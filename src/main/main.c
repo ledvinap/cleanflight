@@ -52,6 +52,7 @@
 #include "drivers/pin_debug.h"
 #include "drivers/dma.h"
 #include "drivers/flash_m25p16.h"
+#include "drivers/exti.h"
 
 #include "rx/rx.h"
 
@@ -168,6 +169,8 @@ void init(void)
     pinDebugInit();
 
     DMAInit();
+
+    EXTIInit();
 
     ledInit();
 

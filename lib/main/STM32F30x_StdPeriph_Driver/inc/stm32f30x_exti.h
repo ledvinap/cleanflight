@@ -175,7 +175,8 @@ typedef struct
 #define EXTI_Line35      ((uint32_t)0x23)  /*!< Internal interrupt line 35
                                                       Connected to the USART5 wakeup
                                                       event */
-                                                                                                                                                                                                                                                                                                                                                                                                                                                
+
+
 #define IS_EXTI_LINE_ALL(LINE) ((LINE) <= 0x23)
 #define IS_EXTI_LINE_EXT(LINE) (((LINE) <= 0x16) || (((LINE) == EXTI_Line29) || ((LINE) == EXTI_Line30) || \
                                ((LINE) == EXTI_Line31) || ((LINE) == EXTI_Line32) || ((LINE) == EXTI_Line33)))

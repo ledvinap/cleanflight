@@ -271,9 +271,9 @@ void calculateEstimatedAltitude(uint32_t currentTime)
         BaroAlt = sonarAlt;
     } else {
         BaroAlt -= baroAlt_offset;
-        if (sonarAlt > 0) {
-            sonarTransition = (300 - sonarAlt) / 100.0f;
-            BaroAlt = sonarAlt * sonarTransition + BaroAlt * (1.0f - sonarTransition);
+        if (sonarAlt > 0 && sonarAlt < 300) {
+            sonarTransition = (300 - sonarAlt) * 100 / (300 - 200);
+            BaroAlt = sonarAlt * sonarTransition / 100 + BaroAlt * (100 - sonarTransition) / 100;
         }
     }
 

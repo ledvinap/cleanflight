@@ -401,13 +401,10 @@ static void detectBaro()
 
     const bmp085Config_t *bmp085Config = NULL;
 
-#if defined(BARO_XCLR_GPIO) && defined(BARO_EOC_GPIO)
+#if defined(BARO_XCLR_IO) && defined(BARO_EOC_IO)
     static const bmp085Config_t defaultBMP085Config = {
-            .gpioAPB2Peripherals = BARO_APB2_PERIPHERALS,
-            .xclrGpioPin = BARO_XCLR_PIN,
-            .xclrGpioPort = BARO_XCLR_GPIO,
-            .eocGpioPin = BARO_EOC_PIN,
-            .eocGpioPort = BARO_EOC_GPIO
+        .xclrIO = BARO_XCLR_IO,
+        .eocIO = BARO_EOC_IO,
     };
     bmp085Config = &defaultBMP085Config;
 #endif

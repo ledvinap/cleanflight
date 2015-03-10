@@ -31,11 +31,8 @@
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
-#define BARO_XCLR_GPIO   GPIOC
-#define BARO_XCLR_PIN    Pin_13
-#define BARO_EOC_GPIO    GPIOC
-#define BARO_EOC_PIN     Pin_14
-#define BARO_APB2_PERIPHERALS RCC_APB2Periph_GPIOC
+#define BARO_XCLR_IO   IO_BARO_XCLR
+#define BARO_EOC_IO    IO_BARO_EOC
 
 #define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_GPIO GPIOB
@@ -167,7 +164,7 @@
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
 
-#define USABLE_IO_CHANNEL_COUNT (16)
+#define USABLE_IO_CHANNEL_COUNT (16+2)
 
 #define TIME_USE_TIMER    // base timming on some timer instead of systick
 #define TIME_TIMER TIM2

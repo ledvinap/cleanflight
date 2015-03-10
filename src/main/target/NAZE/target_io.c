@@ -26,10 +26,12 @@ const timerHardware_t timerHardware[USABLE_IO_CHANNEL_COUNT] = {      //        
     DEF_IO(PORTA, PIN9,  TIM1, TIMCH2), // IO15                             ;5 USART1_TX
     DEF_IO(PORTA, PIN10, TIM1, TIMCH3), // IO16                             ;5 USART1_TX
 
+    DEF_IO(PORTC, PIN13, NA,   NA),     // IO17  BARO XCLR
+    DEF_IO(PORTC, PIN14, NA,   NA),     // IO18  BARO EOC
 };
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
-#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB)
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC)
 
 void timerInitTarget(void)
 {

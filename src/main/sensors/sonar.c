@@ -40,6 +40,7 @@ static int32_t calculatedAltitude;
 void sonarInit(void)
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
+# if 0
     static const sonarHardware_t const sonarPWM56 = {
         .trigger_pin = Pin_8,   // PWM5 (PB8) - 5v tolerant
         .echo_pin = Pin_9,      // PWM6 (PB9) - 5v tolerant
@@ -56,10 +57,17 @@ void sonarInit(void)
     };
     // If we are using parallel PWM for our receiver, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
     if (feature(FEATURE_RX_PARALLEL_PWM)) {
-        hcsr04_init(&sonarPWM56);
+        hcsr04_Init(&sonarPWM56);
     } else {
-        hcsr04_init(&sonarRC78);
+        hcsr04_Init(&sonarRC78);
     }
+#else
+    static const sonarHardware_t const sonarHardware = {
+        .triggerIO = IO12,
+        .echoIO = IO11,
+    };
+    hcsr04_Init(&sonarHardware);
+#endif
 #elif defined(OLIMEXINO)
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
@@ -68,7 +76,7 @@ void sonarInit(void)
         .exti_pin_source = GPIO_PinSource1,
         .exti_irqn = EXTI1_IRQn
     };
-    hcsr04_init(&sonarHardware);
+    hcsr04_Init(&sonarHardware);
 #else
 #error Sonar not defined for target
 #endif
@@ -79,18 +87,18 @@ void sonarInit(void)
 
 void sonarUpdate(void)
 {
-    hcsr04_start_reading();
+    hcsr04_Poll();
 }
 
 int32_t sonarRead(void)
 {
-    return hcsr04_get_distance();
+    return hcsr04_GetDistance();
 }
 
 int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle)
 {
     // calculate sonar altitude only if the sonar is facing downwards(<25deg)
-    if (tiltAngle > 250)
+    if (tiltAngle > 250 || sonarAlt < 0)
         calculatedAltitude = -1;
     else
         calculatedAltitude = sonarAlt * (900.0f - tiltAngle) / 900.0f;

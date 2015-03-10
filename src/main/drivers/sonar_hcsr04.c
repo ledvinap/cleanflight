@@ -19,17 +19,27 @@
 #include <stdint.h>
 
 #include "platform.h"
-
 #include "system.h"
 #include "gpio.h"
+#include "common/utils.h"
+
+#include "drivers/exti.h"
+#include "drivers/io.h"
+#include "drivers/nvic.h"
 
 #include "sonar_hcsr04.h"
 
 #ifdef SONAR
 
+#define SONAR_INTERVAL 60    // time between normal measurements
+
+#ifndef USE_EXTI
+# error "HCSR-04 driver needs EXTI driver"
+#endif
+
 /* HC-SR04 consists of ultrasonic transmitter, receiver, and control circuits.
  * When trigged it sends out a series of 40KHz ultrasonic pulses and receives
- * echo froman object. The distance between the unit and the object is calculated
+ * echo from an object. The distance between the unit and the object is calculated
  * by measuring the traveling time of sound and output it as the width of a TTL pulse.
  *
  * *** Warning: HC-SR04 operates at +5V ***
@@ -40,90 +50,78 @@ static uint32_t lastMeasurementAt;
 static volatile int32_t measurement = -1;
 static sonarHardware_t const *sonarHardware;
 
-void ECHO_EXTI_IRQHandler(void)
+extiCallbackRec_t hcsr04_extiCallbackRec;
+
+void hcsr04_extiHandler(extiCallbackRec_t* cb)
 {
     static uint32_t timing_start;
     uint32_t timing_stop;
 
-    if (digitalIn(GPIOB, sonarHardware->echo_pin) != 0) {
+    UNUSED(cb);
+
+    if (IO_DigitalRead(sonarHardware->echoIO) != 0) {
         timing_start = micros();
     } else {
         timing_stop = micros();
-        if (timing_stop > timing_start) {
-            measurement = timing_stop - timing_start;
-        }
+        measurement = timing_stop - timing_start;
     }
-
-    EXTI_ClearITPendingBit(sonarHardware->exti_line);
 }
 
-void EXTI1_IRQHandler(void)
+void hcsr04_Init(const sonarHardware_t *initialSonarHardware)
 {
-    ECHO_EXTI_IRQHandler();
-}
-
-void EXTI9_5_IRQHandler(void)
-{
-    ECHO_EXTI_IRQHandler();
-}
-
-void hcsr04_init(const sonarHardware_t *initialSonarHardware)
-{
-    gpio_config_t gpio;
-    EXTI_InitTypeDef EXTIInit;
-
     sonarHardware = initialSonarHardware;
 
-    // enable AFIO for EXTI support
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-
-    // tp - trigger pin
-    gpio.pin = sonarHardware->trigger_pin;
-    gpio.mode = Mode_Out_PP;
-    gpio.speed = Speed_2MHz;
-    gpioInit(GPIOB, &gpio);
-
-    // ep - echo pin
-    gpio.pin = sonarHardware->echo_pin;
-    gpio.mode = Mode_IN_FLOATING;
-    gpioInit(GPIOB, &gpio);
+    if(sonarHardware->triggerIO != sonarHardware->echoIO) {
+        // separate trigger pin, configure it as output
+        IO_ConfigGPIO(sonarHardware->triggerIO, Mode_Out_PP);
+    }
+    // ep - echo pin, configure as input (even if same as trigger)
+    IO_ConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
 
     // setup external interrupt on echo pin
-    gpioExtiLineConfig(GPIO_PortSourceGPIOB, sonarHardware->exti_pin_source);
+    EXTIHandlerInit(&hcsr04_extiCallbackRec, hcsr04_extiHandler);
+    EXTIConfig(sonarHardware->echoIO, &hcsr04_extiCallbackRec, NVIC_PRIO_SONAR_EXTI, EXTI_Trigger_Rising_Falling); // TODO - priority!
+    EXTIEnable(sonarHardware->echoIO, true);
 
-    EXTI_ClearITPendingBit(sonarHardware->exti_line);
+    lastMeasurementAt = 0;      // force 1st measurement in hcsr04_get_distance()
+}
 
-    EXTIInit.EXTI_Line = sonarHardware->exti_line;
-    EXTIInit.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTIInit.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
-    EXTIInit.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTIInit);
-
-    NVIC_EnableIRQ(sonarHardware->exti_irqn);
-
-    lastMeasurementAt = millis() - 60; // force 1st measurement in hcsr04_get_distance()
+static int32_t cmp32(uint32_t a, uint32_t b)
+{
+    return a - b;
 }
 
 // measurement reading is done asynchronously, using interrupt
-void hcsr04_start_reading(void)
+void hcsr04_Poll(void)
 {
     uint32_t now = millis();
 
-    if (now < (lastMeasurementAt + 60)) {
+    if (cmp32(now, lastMeasurementAt) < SONAR_INTERVAL) {
         // the repeat interval of trig signal should be greater than 60ms
         // to avoid interference between connective measurements.
         return;
     }
 
     lastMeasurementAt = now;
-
-    digitalHi(GPIOB, sonarHardware->trigger_pin);
-    //  The width of trig signal must be greater than 10us
-    delayMicroseconds(11);
-    digitalLo(GPIOB, sonarHardware->trigger_pin);
+    // TODO - this needs some analysis to avoid race conditions
+    if(sonarHardware->triggerIO != sonarHardware->echoIO) {
+        IO_DigitalWrite(sonarHardware->triggerIO, true);
+        //  The width of trig signal must be greater than 10us
+        delayMicroseconds(10);
+        IO_DigitalWrite(sonarHardware->triggerIO, false);
+    } else {
+        EXTIEnable(sonarHardware->echoIO, false);
+        IO_ConfigGPIO(sonarHardware->echoIO, Mode_Out_PP);
+        IO_DigitalWrite(sonarHardware->echoIO, true);
+        delayMicroseconds(10);
+        IO_DigitalWrite(sonarHardware->echoIO, false);
+        IO_ConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
+        // TODO - there may be race if we don't enable EXTI soon enough
+    }
+    EXTIEnable(sonarHardware->echoIO, true);
 }
 
-int32_t hcsr04_get_distance(void)
+int32_t hcsr04_GetDistance(void)
 {
     // The speed of sound is 340 m/s or approx. 29 microseconds per centimeter.
     // The ping travels out and back, so to find the distance of the

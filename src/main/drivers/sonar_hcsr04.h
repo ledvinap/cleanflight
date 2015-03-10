@@ -17,15 +17,14 @@
 
 #pragma once
 
+#include <drivers/io.h>
+
 typedef struct sonarHardware_s {
-    uint16_t trigger_pin;
-    uint16_t echo_pin;
-    uint32_t exti_line;
-    uint8_t exti_pin_source;
-    IRQn_Type exti_irqn;
+    IOId_t triggerIO;
+    IOId_t echoIO;
 } sonarHardware_t;
 
-void hcsr04_init(const sonarHardware_t *sonarHardware);
+void hcsr04_Init(const sonarHardware_t *sonarHardware);
 
-void hcsr04_start_reading(void);
-int32_t hcsr04_get_distance(void);
+void hcsr04_Poll(void);
+int32_t hcsr04_GetDistance(void);

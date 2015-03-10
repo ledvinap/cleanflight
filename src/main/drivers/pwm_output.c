@@ -92,7 +92,11 @@ static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, chann
     timerChConfigGPIO(timerHardware, Mode_AF_PP);
 
     pwmOCConfig(timerHardware->tim, timerHardware->channel, value);
-    if (timerHardware->outputEnable)
+    if (timerHardware->tim == TIM1
+        || timerHardware->tim == TIM8
+        || timerHardware->tim == TIM15
+        || timerHardware->tim == TIM16
+        || timerHardware->tim == TIM17)
         TIM_CtrlPWMOutputs(timerHardware->tim, ENABLE);
     TIM_Cmd(timerHardware->tim, ENABLE);
 

@@ -17,4 +17,9 @@
 
 #pragma once
 
+#include "common/utils.h"
+
+// return index of timer in timer table. Lowest timer has index 0
+#define TIMER_INDEX(i) BITCOUNT((TIM_N(i) - 1) & USED_TIMERS)
+
 void timerInitTarget(void);

@@ -270,7 +270,7 @@ void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
     self->timerHardware = timerHardwarePtr;
 
     timerChInit(timerHardwarePtr, TYPE_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
-    timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
+    timerChConfigGPIO(timerHardwarePtr, Mode_IPD);
     timerChConfigIC(timerHardwarePtr, true, INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX);
 
     timerChCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
@@ -297,7 +297,7 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     self->timerHardware = timerHardwarePtr;
 
     timerChInit(timerHardwarePtr, TYPE_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
-    timerChConfigGPIO(timerHardwarePtr, timerHardwarePtr->gpioInputMode);
+    timerChConfigGPIO(timerHardwarePtr, Mode_IPD);
     timerChConfigIC(timerHardwarePtr, true, 0);
 
     timerChCCHandlerInit(&self->edgeCb, ppmEdgeCallback);

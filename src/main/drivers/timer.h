@@ -59,9 +59,7 @@ typedef struct {
     GPIO_TypeDef *gpio;
     uint32_t pin;
     uint8_t channel;
-    uint8_t irq;
-    uint8_t outputEnable;
-    GPIO_Mode gpioInputMode;
+    uint8_t tim_idx;                   // index of timer (only used timers considered)
 #ifdef STM32F303
     uint8_t gpioPinSource;             // TODO - this can be removed and pinSource calculated from pin
     uint8_t alternateFunction;

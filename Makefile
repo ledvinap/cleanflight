@@ -598,14 +598,14 @@ SIZE		 = arm-none-eabi-size
 #
 
 ifeq ($(DEBUG),GDB)
-OPTIMIZE	 = -O1
-LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
+OPTIMIZE	 = -Os
+LTO_FLAGS	 = $(OPTIMIZE) # -flto -fuse-linker-plugin
 else
 OPTIMIZE	 = -Os
 LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
 endif
 
-DEBUG_FLAGS	 = -ggdb3
+DEBUG_FLAGS	 = -ggdb3 -fno-eliminate-unused-debug-types
 
 CFLAGS		 = $(ARCH_FLAGS) \
 		   $(LTO_FLAGS) \

@@ -182,7 +182,6 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
         memcpy(accADC, accADClast[0], sizeof(accADC));
     }
 #else
-#error
     acc.read(accADC);
 #endif
     alignSensors(accADC, accADC, accAlign);

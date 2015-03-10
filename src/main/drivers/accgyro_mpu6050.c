@@ -373,7 +373,9 @@ static void mpu6050GyroInit(void)
             0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
 
     // TODO ! fifo enabled here !
+#ifdef ACCGYRO_FIFO
     mpu6050FifoEnable();
+#endif
 }
 
 static void mpu6050GyroRead(int16_t *gyroData)

@@ -455,8 +455,7 @@ bool blackboxDeviceOpen(void)
             blackboxPort = openSerialPort(FUNCTION_BLACKBOX, &blackboxPortConfig);
         }
 
-
-        break;
+        return blackboxPort != NULL;
 #ifdef USE_FLASHFS
     case BLACKBOX_DEVICE_FLASH:
         if (flashfsGetSize() == 0 || isBlackboxDeviceFull()) {
@@ -464,7 +463,6 @@ bool blackboxDeviceOpen(void)
         }
 
         return true;
-        break;
 #endif
     default:
         return false;

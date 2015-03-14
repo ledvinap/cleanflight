@@ -21,8 +21,8 @@ const timerHardware_t timerHardware[USABLE_IO_CHANNEL_COUNT] = {      //        
     DEF_IO(PORTA, PIN11, TIM1, TIMCH4), // IO10  OUT2   OUT2  MOT2  MOT2    ;5                        ; (M2 pad)
     DEF_IO(PORTB, PIN6,  TIM4, TIMCH1), // IO11  OUT3   OUT3  OUT1  OUT1    ;5 I2C1_SCL USART1_TX     ; 3
     DEF_IO(PORTB, PIN7,  TIM4, TIMCH2), // IO12  OUT4   OUT4  OUT2  OUT2    ;5 I2C1_SDA USART1_RX     ; 4
-    DEF_IO(PORTB, PIN8,  TIM4, TIMCH3), // IO13  OUT5   OUT5  OUT3  OUT3    ;5  I2C1_SCL CANRX        ; 5
-    DEF_IO(PORTB, PIN9,  TIM4, TIMCH4), // IO14  OUT6   OUT6  OUT4  OUT4    ;5  I2C1_SDA CANTX        ; 6
+    DEF_IO(PORTB, PIN8,  TIM4, TIMCH3), // IO13  OUT5   OUT5  OUT3  OUT3    ;5 I2C1_SCL CANRX        ; 5
+    DEF_IO(PORTB, PIN9,  TIM4, TIMCH4), // IO14  OUT6   OUT6  OUT4  OUT4    ;5 I2C1_SDA CANTX        ; 6
     DEF_IO(PORTA, PIN9,  TIM1, TIMCH2), // IO15                             ;5 USART1_TX
     DEF_IO(PORTA, PIN10, TIM1, TIMCH3), // IO16                             ;5 USART1_TX
 

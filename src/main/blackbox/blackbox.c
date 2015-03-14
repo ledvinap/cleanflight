@@ -332,7 +332,7 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
         case FLIGHT_LOG_FIELD_CONDITION_AT_LEAST_MOTORS_7:
         case FLIGHT_LOG_FIELD_CONDITION_AT_LEAST_MOTORS_8:
             return motorCount >= condition - FLIGHT_LOG_FIELD_CONDITION_AT_LEAST_MOTORS_1 + 1;
-        
+
         case FLIGHT_LOG_FIELD_CONDITION_TRICOPTER:
             return masterConfig.mixerMode == MIXER_TRI;
 

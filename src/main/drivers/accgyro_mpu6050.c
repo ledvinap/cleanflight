@@ -413,33 +413,40 @@ void mpu6050FifoFlush(void)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_EN);      // enable FIFO
 }
 
-int mpu6050FifoRead(uint8_t *buffer, int maxLen) {
-    int fifoLen = mpu6050GetFifoLen();
+int mpu6050FifoRead(uint8_t *buffer, int maxLen, int modulo) {
+    int fifoLen;
+    int tries=2;
+    do {
+        fifoLen = mpu6050GetFifoLen();
+        // read length again if only partial data are in FIFO (rest of registers will be writen very soon)
+        // this ensures that out-of-sync configiton is easily detected
+        pinDbgToggle(DBP_MPU6050_1);
+    } while(--tries && (fifoLen < maxLen && fifoLen % modulo));
     int len = MIN(maxLen, fifoLen);
-    memset(buffer+len, 0xde, maxLen-len);
-    if(!i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, len, buffer))
-        return -1;
-    for(int i=len;i<maxLen;i++)
-        if(buffer[i]!=0xde)
-            while(1);
+    if(len>12 && len <= 36)
+        pinDbgToggle(DBP_MPU6050_2);
+    if(len)
+        if(!i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, len, buffer))
+            return -1;
     return len;
 }
 
-void mpu6050GyroAccFetch(void)
+// return number of samples processed
+int mpu6050GyroAccFetch(void)
 {
     int16_t gyroAccBuffer[8][6];   // TODO - uint8_t limitation for size
-    int len = mpu6050FifoRead((uint8_t*)gyroAccBuffer, sizeof(gyroAccBuffer));
-    int idx=0;
+    int len = mpu6050FifoRead(((uint8_t*)gyroAccBuffer), sizeof(gyroAccBuffer), 12);
+    int idx = 0;
     while(len > 0) {
         if(len < 12) {
-            // partial read. TODO
             mpu6050FifoFlush();
-            return;
+            return -1;
         }
         for(int i = 0; i < 6; i++)
-            gyroAccBuffer[idx][i] = (gyroAccBuffer[idx][i] << 8) | (gyroAccBuffer[idx][i] >> 8);
+            gyroAccBuffer[idx][i] = __builtin_bswap16(gyroAccBuffer[idx][i]);
         accHandleData(&gyroAccBuffer[idx][0]);
         gyroHandleData(&gyroAccBuffer[idx][3]);
         len -= 12; idx++;
     }
+    return idx;
 }

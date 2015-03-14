@@ -36,5 +36,5 @@ void mpu6050DmpResetFifo(void);
 void mpu6050FifoEnable(void);
 void mpu6050FifoFlush(void);
 int mpu6050GetFifoLen(void);
-int mpu6050FifoRead(uint8_t *buffer, int maxLen);
-void mpu6050GyroAccFetch(void);
+int mpu6050FifoRead(uint8_t *buffer, int maxLen, int modulo);
+int mpu6050GyroAccFetch(void);

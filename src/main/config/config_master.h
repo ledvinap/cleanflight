@@ -68,7 +68,8 @@ typedef struct master_t {
 
     uint8_t mixerMode;
     uint32_t enabledFeatures;
-    uint16_t looptime;                      // imu loop time in us
+    uint16_t loopTime;                       // imu loop time in us
+    uint8_t loopTicks;                       // imu loop time in gyro periods
     uint8_t emf_avoidance;                   // change pll settings to avoid noise in the uhf band
 
     motorMixer_t customMixer[MAX_SUPPORTED_MOTORS]; // custom mixtable

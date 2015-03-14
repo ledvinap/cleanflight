@@ -624,7 +624,6 @@ void processRx(void)
 
 void loop(void)
 {
-    static uint32_t loopTime;
 #if defined(BARO) || defined(SONAR)
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
@@ -666,12 +665,28 @@ void loop(void)
 #endif
     }
 
+#define GYRO_READ_INTERVAL 500 
+
     currentTime = micros();
-    if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
+    static uint16_t loopLastGyroTicks = 0;  // TODO
+    static uint32_t gyroNextCheckAt = 0;    // TODO
 
-        debug[0] = currentTime - loopTime;
+    // try to fetch GYRO data
+    do {
+        if(cmp32(currentTime, gyroNextCheckAt) < 0)
+            break;  // do not check too soon
+        if(!gyroAccFetch())
+            break;  // not yet ready
 
-        loopTime = currentTime + masterConfig.looptime;
+        gyroNextCheckAt = currentTime + GYRO_READ_INTERVAL;
+
+        // TODO - apply received data filter here
+
+    } while(0);
+
+    // wait until enough gyro ticks passed
+    if(cmp16(gyroTicks, loopLastGyroTicks) >= masterConfig.loopTicks) {
+        loopLastGyroTicks = gyroTicks;
 
         imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 

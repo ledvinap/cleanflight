@@ -253,7 +253,8 @@ typedef struct {
 } clivalue_t;
 
 const clivalue_t valueTable[] = {
-    { "looptime",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.looptime, 0, 9000 },
+    { "looptime",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.loopTime, 0, 9000 },
+    { "loopticks",                  VAR_UINT8 | MASTER_VALUE,   &masterConfig.loopTicks, 0, 10 },
     { "emf_avoidance",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.emf_avoidance, 0, 1 },
 
     { "mid_rc",                     VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.midrc, 1200, 1700 },
@@ -1698,7 +1699,7 @@ static void cliVibration(char *cmdline)
     while(true) {
         unsigned dlen=0;
         do {
-            dlen += mpu6050FifoRead(data + dlen, 6 - dlen);
+            dlen += mpu6050FifoRead(data + dlen, 6 - dlen, 1);
         } while(dlen<6);
 
         int x=(int16_t)(data[0] << 8) | data[1];

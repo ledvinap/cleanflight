@@ -33,13 +33,11 @@
 
 #include "sensors/gyro.h"
 
-int mpu6050FifoRead(uint8_t *buffer, int maxLen);
-void mpu6050FifoFlush(void);
-
 uint16_t calibratingG = 0;
 int16_t gyroADC[XYZ_AXIS_COUNT];
 int16_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
 int8_t gyroADClastIdx;
+uint16_t gyroTicks = 0;
 int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
 
 static gyroConfig_t *gyroConfig;
@@ -108,21 +106,29 @@ static void performGyroCalibration(uint8_t gyroMovementCalibrationThreshold)
     calibratingG--;
 }
 
-static void applyGyroZero(void)
+static void applyGyroZero(int16_t *ADC)
 {
-    int8_t axis;
-    for (axis = 0; axis < 3; axis++) {
-        gyroADC[axis] -= gyroZero[axis];
+    for (int axis = 0; axis < 3; axis++) {
+        ADC[axis] -= gyroZero[axis];
     }
 }
-void gyroAccFetch(void)
+
+#include "drivers/accgyro_mpu6050.h"
+
+int gyroAccFetch(void)
 {
-    mpu6050GyroAccFetch();
+    // TODO!
+    return mpu6050GyroAccFetch
+();
 }
 
 void gyroHandleData(int16_t *ADC) {
-    if(gyroADClastIdx < ACCGYRO_FILTER_SIZE)
-        memcpy(gyroADClast[gyroADClastIdx++], ADC, sizeof(gyroADClast[0]));
+    if(gyroADClastIdx < ACCGYRO_FILTER_SIZE) {
+        alignSensors(ADC, gyroADClast[gyroADClastIdx], gyroAlign);
+        applyGyroZero(gyroADClast[gyroADClastIdx]);
+        gyroADClastIdx++;
+    }
+    gyroTicks++;
 }
 
 void gyroUpdate(void)
@@ -131,19 +137,17 @@ void gyroUpdate(void)
 #ifdef ACCGYRO_FIFO
     if(gyroADClastIdx) {
         memcpy(gyroADC, gyroADClast[gyroADClastIdx-1], sizeof(gyroADC));
-        gyroADClastIdx = 0;
     } else {  // reuse old value, we got nothing beter now (TODO?)
         memcpy(gyroADC, gyroADClast[0], sizeof(gyroADC));
     }
+    gyroADClastIdx = 0;
 #else
     gyro.read(gyroADC);
-#endif
-
     alignSensors(gyroADC, gyroADC, gyroAlign);
-
+    applyGyroZero(gyroADC);
+#endif
     if (!isGyroCalibrationComplete()) {
         performGyroCalibration(gyroConfig->gyroMovementCalibrationThreshold);
     }
-
-    applyGyroZero();
 }
+

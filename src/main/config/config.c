@@ -119,7 +119,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 94;
+static const uint8_t EEPROM_CONF_VERSION = 95;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -426,7 +426,8 @@ static void resetConf(void)
 
     resetSerialConfig(&masterConfig.serialConfig);
 
-    masterConfig.looptime = 3500;
+    masterConfig.loopTime = 3500;
+    masterConfig.loopTicks = 4;
     masterConfig.emf_avoidance = 0;
 
     resetPidProfile(&currentProfile->pidProfile);
@@ -512,7 +513,8 @@ static void resetConf(void)
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
     masterConfig.motor_pwm_rate = 32000;
-    masterConfig.looptime = 2000;
+    masterConfig.loopTime = 2000;
+    masterConfig.loopTicks = 2;
     currentProfile->pidProfile.pidController = 3;
     currentProfile->pidProfile.P8[ROLL] = 36;
     currentProfile->pidProfile.P8[PITCH] = 36;

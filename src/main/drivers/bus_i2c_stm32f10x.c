@@ -23,6 +23,8 @@
 
 #include "build_config.h"
 
+#include "common/atomic.h"
+
 #include "gpio.h"
 #include "system.h"
 
@@ -261,18 +263,25 @@ void i2c_ev_handler(void)
         if (reading && subaddress_sent) {                               // EV7_2, EV7_3
             if (bytes > 2) {                                            // EV7_2
                 I2C_AcknowledgeConfig(I2Cx, DISABLE);                   // turn off ACK
-                read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N-2
-                I2C_GenerateSTOP(I2Cx, ENABLE);                         // program the Stop
-                final_stop = 1;                                         // required to fix hardware
-                read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N - 1
+                ATOMIC_BLOCK(NVIC_PRIO_TIMER) {
+                    read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N-2
+                    I2C_GenerateSTOP(I2Cx, ENABLE);                         // program the Stop
+                    final_stop = 1;                                         // required to fix hardware
+                    read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N - 1
+                }
                 I2C_ITConfig(I2Cx, I2C_IT_BUF, ENABLE);                 // enable TXE to allow the final EV7
             } else {                                                    // EV7_3
-                if (final_stop)
-                    I2C_GenerateSTOP(I2Cx, ENABLE);                     // program the Stop
-                else
+                if (final_stop) {
+                    ATOMIC_BLOCK(NVIC_PRIO_TIMER) {
+                        I2C_GenerateSTOP(I2Cx, ENABLE);                     // program the Stop
+                        read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N - 1
+                        read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N
+                    }
+                } else {
                     I2C_GenerateSTART(I2Cx, ENABLE);                    // program a rep start
-                read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N - 1
-                read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N
+                    read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N - 1
+                    read_p[index++] = (uint8_t)I2Cx->DR;                    // read data N
+                }
                 index++;                                                // to show job completed
             }
         } else {                                                        // EV8_2, which may be due to a subaddress sent or a write completion

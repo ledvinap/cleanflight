@@ -27,14 +27,14 @@ typedef enum {
 
 typedef enum {
     FUNCTION_NONE                = 0,
-    FUNCTION_MSP                 = (1 << 0),
-    FUNCTION_GPS                 = (1 << 1),
-    FUNCTION_TELEMETRY_FRSKY     = (1 << 2),
-    FUNCTION_TELEMETRY_HOTT      = (1 << 3),
-    FUNCTION_TELEMETRY_MSP       = (1 << 4),
-    FUNCTION_TELEMETRY_SPORT     = (1 << 5),
-    FUNCTION_RX_SERIAL           = (1 << 6),
-    FUNCTION_BLACKBOX            = (1 << 7),
+    FUNCTION_MSP                 = (1 << 0), // 1
+    FUNCTION_GPS                 = (1 << 1), // 2
+    FUNCTION_TELEMETRY_FRSKY     = (1 << 2), // 4
+    FUNCTION_TELEMETRY_HOTT      = (1 << 3), // 8
+    FUNCTION_TELEMETRY_MSP       = (1 << 4), // 16
+    FUNCTION_TELEMETRY_SMARTPORT = (1 << 5), // 32
+    FUNCTION_RX_SERIAL           = (1 << 6), // 64
+    FUNCTION_BLACKBOX            = (1 << 7), // 128
     FUNCTION_TELEMETRY_SMARTPORT = (1 << 8),
 } serialPortFunction_e;
 
@@ -44,7 +44,9 @@ typedef enum {
     BAUD_19200,
     BAUD_38400,
     BAUD_57600,
-    BAUD_115200
+    BAUD_115200,
+    BAUD_230400,
+    BAUD_250000,
 } baudRate_e;
 
 extern uint32_t baudRates[];

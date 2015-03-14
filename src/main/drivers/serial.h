@@ -28,13 +28,14 @@ typedef enum portMode_t {
     MODE_SINGLEWIRE   = 1 << 3,
     MODE_HALFDUPLEX   = 1 << 4,
     MODE_INVERTED     = 1 << 5,
+    MODE_STOPBITS2    = 1 << 6,
 // driver specific modes below
 // softserial specific
-    MODE_S_DUALTIMER  = 1 << 6, // try to claim adjacent timer channel in softserial mode
+    MODE_S_DUALTIMER  = 1 << 7, // try to claim adjacent timer channel in softserial mode
 // uart specific
-    MODE_U_DMARX      = 1 << 7, // use USART RX DMA if available
-    MODE_U_DMATX      = 1 << 8, // use USART TX DMA if available
-    MODE_U_REMAP      = 1 << 9, // remap USART to alternate pins
+    MODE_U_DMARX      = 1 << 8, // use USART RX DMA if available
+    MODE_U_DMATX      = 1 << 9, // use USART TX DMA if available
+    MODE_U_REMAP      = 1 << 10,// remap USART to alternate pins
 
 // hints how to setup port if more configuration options are possible (DMA, dualtimer, .. ). Device-specific driver sets neccesary flags
     MODE_DEFAULT_FAST  = MODE_U_DMARX | MODE_U_DMATX, // setup port for high-performance if possible

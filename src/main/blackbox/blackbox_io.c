@@ -62,7 +62,7 @@
 
 #ifdef BLACKBOX
 
-const serialPortMode_t blackboxPortConfig = {
+serialPortMode_t blackboxPortConfig = {
 #ifdef AMINI
     .mode = MODE_TX | MODE_U_DMATX,
 #else
@@ -454,11 +454,23 @@ bool blackboxDeviceOpen(void)
         case BLACKBOX_DEVICE_SERIAL:
             {
                 serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+
                 if (!portConfig) {
                     return false;
                 }
-                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
 
+                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
+                baudRate_e baudRateIndex = portConfig->blackbox_baudrateIndex;
+
+                blackboxPortConfig.baudRate = baudRates[baudRateIndex];
+
+                if (baudRates[baudRateIndex] == 230400) {
+                    /*
+                     * OpenLog's 230400 baud rate is very inaccurate, so it requires a larger inter-character gap in
+                     * order to maintain synchronization.
+                     */
+                    blackboxPortConfig.mode |= MODE_STOPBITS2;
+                }
                 blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, &blackboxPortConfig);
                 return blackboxPort != NULL;
             }

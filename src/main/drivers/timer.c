@@ -814,11 +814,6 @@ uint32_t millis(void)
     return millisCounter;
 }
 
-static int32_t cmp32(uint32_t a, uint32_t b)
-{
-    return a-b;
-}
-
 void delayMicroseconds(uint32_t us)
 {
     uint32_t end = micros() + us;

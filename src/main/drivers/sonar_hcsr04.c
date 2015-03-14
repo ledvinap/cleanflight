@@ -86,11 +86,6 @@ void hcsr04_Init(const sonarHardware_t *initialSonarHardware)
     lastMeasurementAt = 0;      // force 1st measurement in hcsr04_get_distance()
 }
 
-static int32_t cmp32(uint32_t a, uint32_t b)
-{
-    return a - b;
-}
-
 // measurement reading is done asynchronously, using interrupt
 void hcsr04_Poll(void)
 {

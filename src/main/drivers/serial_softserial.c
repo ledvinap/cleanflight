@@ -337,12 +337,6 @@ void softSerialStoreByte(softSerial_t *self, uint16_t shiftRegister) {
     }
 }
 
-static inline int16_t cmp16(uint16_t a, uint16_t b)
-{
-    return a - b;
-}
-
-
 void softSerialRxProcess(softSerial_t *self)
 {
     uint16_t capture0, capture1, symbolStart, symbolEnd;

@@ -24,6 +24,8 @@
 
 #include "common/maths.h"
 
+#include "drivers/pin_debug.h"
+
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 

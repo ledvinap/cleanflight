@@ -13,10 +13,18 @@ struct {
     GPIO_TypeDef *gpio;
     uint16_t pin;
 } const pinDebugPins[] = {
+#ifdef DBG_PIN_1
     _ENTRY(DBG_PIN_1),
+#endif
+#ifdef DBG_PIN_2
     _ENTRY(DBG_PIN_2),
+#endif
+#ifdef DBG_PIN_3
     _ENTRY(DBG_PIN_3),
+#endif
+#ifdef DBG_PIN_4
     _ENTRY(DBG_PIN_4),
+#endif
 };
 #undef _ENTRY
 #undef _ENTRY2

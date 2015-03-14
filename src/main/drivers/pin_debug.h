@@ -7,14 +7,16 @@
 // pindebug is not essential, only guarantie is that it will not break anything in production build
 // usability is preffered to portability/corectness/...
 
-#define DBP_TIMER                            DBG_PIN_1     // in timer interrupt
-#define DBP_CALLBACK                         DBG_PIN_2     // in callback (pendSv) handler
+#define DBP_TIMER                            DBG_NONE     // in timer interrupt
+#define DBP_CALLBACK                         DBG_NONE     // in callback (pendSv) handler
 
-#define DBP_SOFTSERIAL_RXPROCESS             DBG_PIN_3     // in softSerialRxProcess
-#define DBP_SOFTSERIAL_RXWAIT_SYMBOL         DBG_PIN_4     // waiting for whole symbol to arrive
-#define DBP_TIMERINPUT_EDGEDELAY             DBG_PIN_4     // waiting for whole symbol to arrive
+#define DBP_SOFTSERIAL_RXPROCESS             DBG_NONE     // in softSerialRxProcess
+#define DBP_SOFTSERIAL_RXWAIT_SYMBOL         DBG_NONE     // waiting for whole symbol to arrive
+#define DBP_TIMERINPUT_EDGEDELAY             DBG_NONE     // waiting for whole symbol to arrive
 #define DBP_TELEMETRY_SPORT_REPLYWAIT        DBG_NONE      // poll received, waiting before reply
 
+#define DBP_MPU6050_1                        DBG_PIN_1
+#define DBP_MPU6050_2                        DBG_PIN_2
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -30,10 +30,10 @@
 // change used pins to any available. It will be probably problem-dependent
 // check code that uses pin for normal function, use pinDebugIsPinUsed() to skip pin inicialization and use
 
-#define DBG_PIN_1 true, GPIOB, Pin_6             // PWM11
-#define DBG_PIN_2 true, GPIOB, Pin_9             // PWM14
-#define DBG_PIN_3 true, GPIOA, Pin_0             // PWM1 (RC_CH1)
-#define DBG_PIN_4 true, GPIOA, Pin_8             // PWM9 (PWM1)
+#define DBG_PIN_1 true, GPIOB, Pin_8             // MINI5
+#define DBG_PIN_2 true, GPIOB, Pin_9             // MINI6
+//#define DBG_PIN_3 true, GPIOA, Pin_0             //
+//#define DBG_PIN_4 true, GPIOA, Pin_8             //
 
 #define DBG_NONE false, 0, 0
 

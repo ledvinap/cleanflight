@@ -91,17 +91,18 @@ void blackboxWrite(uint8_t value)
 
 static void _putc(void *p, char c)
 {
-    (void)p;
+    UNUSED(p);
     blackboxWrite(c);
 }
 
 //printf() to the blackbox serial port with no blocking shenanigans (so it's caller's responsibility to not write too fast!)
-void blackboxPrintf(char *fmt, ...)
+int blackboxPrintf(char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
-    tfp_format(NULL, _putc, fmt, va);
+    int written = tfp_format(NULL, _putc, fmt, va);
     va_end(va);
+    return written;
 }
 
 // Print the null-terminated string 's' to the serial port and return the number of bytes written
@@ -443,7 +444,7 @@ bool blackboxDeviceOpen(void)
      *
      * 9 / 1250 = 7200 / 1000000
      */
-    blackboxWriteChunkSize = MAX((masterConfig.looptime * 9) / 1250, 4);
+    blackboxWriteChunkSize = MIN(MAX((masterConfig.loopTime * 9) / 1250, 4), 255);
 
     switch (masterConfig.blackbox_device) {
         case BLACKBOX_DEVICE_SERIAL:

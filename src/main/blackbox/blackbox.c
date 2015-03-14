@@ -812,11 +812,7 @@ static bool sendFieldDefinition(const char * const *headerNames, unsigned int he
             return false; //Someone probably called us again after we had already completed transmission
         }
 
-        charsWritten = blackboxPrint("H Field ");
-        charsWritten += blackboxPrint(headerNames[xmitState.headerIndex]);
-        blackboxWrite(':');
-        charsWritten++;
-
+        charsWritten = blackboxPrintf("H Field %s:", headerNames[xmitState.headerIndex]);
         xmitState.u.fieldIndex++;
         needComma = false;
     } else
@@ -839,22 +835,11 @@ static bool sendFieldDefinition(const char * const *headerNames, unsigned int he
 
                 // Do we need to print an index in brackets after the name?
                 if (def->fieldNameIndex != -1) {
-                    blackboxWrite('[');
-                    // Assume the field index is a single digit:
-                    blackboxWrite(def->fieldNameIndex + '0');
-                    blackboxWrite(']');
-                    charsWritten += 3;
+                    charsWritten += blackboxPrintf("[%d]", def->fieldNameIndex);
                 }
             } else {
                 //The other headers are integers
-                if (def->arr[xmitState.headerIndex - 1] >= 10) {
-                    blackboxWrite(def->arr[xmitState.headerIndex - 1] / 10 + '0');
-                    blackboxWrite(def->arr[xmitState.headerIndex - 1] % 10 + '0');
-                    charsWritten += 2;
-                } else {
-                    blackboxWrite(def->arr[xmitState.headerIndex - 1] + '0');
-                    charsWritten++;
-                }
+                charsWritten += blackboxPrintf("%d", def->arr[xmitState.headerIndex - 1]);
             }
         }
     }

@@ -57,7 +57,7 @@ typedef enum {
 
 typedef void serialReceiveCallback(uint16_t data);   // used by serial drivers to return frames to app
 
-typedef struct serialPort {
+typedef struct serialPort_s {
     const struct serialPortVTable *vTable;
 
     uint8_t identifier;

@@ -93,10 +93,27 @@ void blackboxWrite(uint8_t value)
     }
 }
 
-static void _putc(void *p, char c)
+void blackboxWriteBytes(const uint8_t* data, int len)
+{
+    switch (masterConfig.blackbox_device) {
+#ifdef USE_FLASHFS
+        case BLACKBOX_DEVICE_FLASH:
+            flashfsWrite(data, len, false); // Write byte asynchronously
+        break;
+#endif
+        case BLACKBOX_DEVICE_SERIAL:
+        default:
+            while(len--)
+                serialWrite(blackboxPort, *data++);
+        break;
+    }
+}
+
+static int _write(void *p, const char* data, int len)
 {
     UNUSED(p);
-    blackboxWrite(c);
+    blackboxWriteBytes((const uint8_t *)data, len);
+    return len;
 }
 
 //printf() to the blackbox serial port with no blocking shenanigans (so it's caller's responsibility to not write too fast!)
@@ -104,7 +121,7 @@ int blackboxPrintf(char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
-    int written = tfp_format(NULL, _putc, fmt, va);
+    int written = tfp_format(NULL, _write, fmt, va);
     va_end(va);
     return written;
 }

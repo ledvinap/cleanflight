@@ -38,6 +38,8 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 
+#include "filter/biquad.h"
+
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sonar.h"
@@ -680,12 +682,15 @@ void loop(void)
         gyroNextCheckAt = currentTime + GYRO_READ_INTERVAL;
 
         // TODO - apply received data filter here
-
     } while(0);
 
     // wait until enough gyro ticks passed
     if(cmp16(gyroTicks, loopLastGyroTicks) >= masterConfig.loopTicks) {
         loopLastGyroTicks = gyroTicks;
+        static float fstate[3][6];
+        for(int i=0; i<4; i++)
+            for(int j=0; j<3; j++)
+                gyroADClast[i][j] = biquad(gyroADClast[i][j], fstate[j]);
 
         imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 

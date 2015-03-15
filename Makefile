@@ -18,7 +18,7 @@
 TARGET		?= NAZE
 
 # Compile-time options
-OPTIONS		?= ACCGYRO_FIFO NEWACCGYRO # PINDEBUG
+OPTIONS		?= ACCGYRO_FIFO NEWACCGYRO AMINI # PINDEBUG
 
 # compile for OpenPilot BootLoader support
 OPBL ?=no
@@ -235,6 +235,7 @@ COMMON_SRC	 = build_config.c \
 		   flight/imu.c \
 		   flight/mixer.c \
 		   flight/lowpass.c \
+		   filter/biquad_float.c \
 		   drivers/bus_i2c_soft.c \
 		   drivers/callback.c \
 		   drivers/dma.c \

@@ -118,8 +118,7 @@ static void applyGyroZero(int16_t *ADC)
 int gyroAccFetch(void)
 {
     // TODO!
-    return mpu6050GyroAccFetch
-();
+    return mpu6050GyroAccFetch();
 }
 
 void gyroHandleData(int16_t *ADC) {

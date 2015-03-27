@@ -25,14 +25,14 @@
 
 // name return name from structure definition
 #define CDEF_NAME(def) BOOST_PP_TUPLE_ELEM(0, def)
-// return sequence with structure members
+// return sequence with structure members (mdef)
 #define CDEF_MEMBER_OFFSET 1
 #define CDEF_MEMBER_SEQ(def) BOOST_PP_SEQ_REST_N(CDEF_MEMBER_OFFSET, BOOST_PP_TUPLE_TO_SEQ(def))
 // member name
 #define CDEF_MEMBER_NAME(mdef) BOOST_PP_TUPLE_ELEM(0, mdef)
 // member type tag
 #define CDEF_MEMBER_TYPE(mdef) BOOST_PP_TUPLE_ELEM(1, mdef)
-// member properties list
+// member properties sqequence
 #define CDEF_MEMBER_PROPERTIES_OFFSET 2
 #define CDEF_MEMBER_PROPERTIES_SEQ(mdef) BOOST_PP_SEQ_REST_N(CDEF_MEMBER_PROPERTIES_OFFSET, BOOST_PP_TUPLE_TO_SEQ(mdef))
 
@@ -79,21 +79,21 @@
                      type name;)                                        \
     /**/
 
-#define CDEF_METAINFO_MEMBER_VAL(r, def, mdef)  \
+#define CDEF_METAINFO_MEMBER_VAL(r, def, mdef)                          \
     BOOST_PP_CAT(.f_, CDEF_MEMBER_NAME(mdef)) = {                       \
-        .header = { .type = CDEF_TYPE_METATAG(CDEF_MEMBER_TYPE(mdef)),  \
-                    .name = BOOST_PP_STRINGIZE(CDEF_MEMBER_NAME(mdef)), \
-                    .offset = offsetof(struct BOOST_PP_CAT(CDEF_NAME(def), _s), CDEF_MEMBER_NAME(mdef)), \
-                    .flags = 0                                          \
-                    CDEF_METAINFO_MEMBER_V_FLAG(mdef, DEFAULT, DEF_DEFAULT) \
-                    CDEF_METAINFO_MEMBER_V_FLAG(mdef, MIN, DEF_MIN)       \
+        .name = BOOST_PP_STRINGIZE(CDEF_MEMBER_NAME(mdef)),             \
+        .data = { .type = CDEF_TYPE_METATAG(CDEF_MEMBER_TYPE(mdef)),    \
+                  .offset = offsetof(struct BOOST_PP_CAT(CDEF_NAME(def), _s), CDEF_MEMBER_NAME(mdef)), \
+                  .flags = 0                                            \
+                  CDEF_METAINFO_MEMBER_V_FLAG(mdef, DEFAULT, DEF_DEFAULT) \
+                  CDEF_METAINFO_MEMBER_V_FLAG(mdef, MIN, DEF_MIN)       \
         },                                                              \
         CDEF_METAINFO_MEMBER_V_VAL(mdef, DEFAULT, .default)             \
-        CDEF_METAINFO_MEMBER_V_VAL(mdef, MIN, .min)                       \
+        CDEF_METAINFO_MEMBER_V_VAL(mdef, MIN, .min)                     \
     },                                                                  \
     /**/
 
-#define CDEF_METAINFO_MEMBER_V_FLAG(mdef, tag, flag)                      \
+#define CDEF_METAINFO_MEMBER_V_FLAG(mdef, tag, flag)                    \
     BOOST_PP_EXPR_IF(CDEF_PROPERTIES_TAGCOUNT(CDEF_MEMBER_PROPERTIES_SEQ(mdef), tag), \
                      | flag)                                            \
     /**/
@@ -213,12 +213,10 @@
          DOC("Set the minimum throttle command sent to the ESC. This is the minimum value that allows motors to run at a idle speed.") ), \
         (maxthrottle, UINT16, COND(ALIENWII32, DEFAULT(200)), DEFAULT(1850), \
          DOC("Maximum value for the ESCs at full power") ),             \
-        (mincommand,  UINT16, DEFAULT(1000),                             \
-         DOC("Value for the ESCs when they are not armed") )           \
+        (mincommand,  UINT16, DEFAULT(1000),                            \
+         DOC("Value for the ESCs when they are not armed") )            \
         )                                                               \
     /**/
-
-
 
 #define CDEF_COND__ALIENWII32 1
 #define CDEF_COND__TRUE       1
@@ -245,3 +243,50 @@ CDEF_STRUCT_DECLARE(CONFIG_ESC_SERVO)
 
 //CDEF_PROPERTIES_FILTERAPPLY_M(1, DEFAULT, DEFAULT(1150))
 //CDEF_METAINFO_MEMBER(r,d,m)
+
+// start of somethind that we can point to
+// structure/array/functional ref/...
+enum cdef_metainfo_type_e {
+    cdef_struct,
+    cdef_array,
+};
+
+struct cdef_metainfo_header_t {
+    enum cdef_metainfo_type_e type;
+    uint16_t size;
+    union {
+        struct cdef_metainfo_data_struct_t structure;
+        union cdef_metainfo_data_array_t array;
+        struct cdef_metainfo_data_ref_t ref;
+        char bytes[0];
+    } data[0];
+};
+
+struct cdef_metainfo_data_struct_t {
+    const char* member_name;
+    int member_offset;
+    struct cdef_metainfo_header_t member_data[];
+};
+
+union cdef_metainfo_data_array_t {
+    struct {
+        uint16_t flags;
+    } hdr;
+    uint16_t count;
+    uint16_t offset;
+    uint16_t stride;
+    struct cdef_metainfo_header_t member_data[];
+};
+
+struct cdef_metainfo_data_ref_t {
+    struct cdef_metainfo_header_t *data;
+};
+
+struct cdef_metainfo_data_cfg_UINT16_t {
+    uint16_t flags;   // fields that follow
+};
+
+// used for min/max/...
+struct cdef_metainfo_data_cfg_UINT16_val_t {
+    uint16_t value;
+};

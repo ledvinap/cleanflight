@@ -72,7 +72,6 @@ static void usartConfigurePinInversion(uartPort_t *self) {
 
     USART_InvPinCmd(self->USARTx, inversionPins, uartPort->port.mode & MODE_INVERTED ? ENABLE : DISABLE);
 #endif
-
 }
 
 static void usartConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
@@ -223,16 +222,8 @@ static void uartReconfigureState(uartPort_t *self)
 
     USART_InitStructure.USART_BaudRate = self->port.baudRate;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-    if (self->port.mode & MODE_SBUS) {
-        USART_InitStructure.USART_StopBits = USART_StopBits_2;
-        USART_InitStructure.USART_Parity = USART_Parity_Even;
-    } else {
-        if (self->port.mode & MODE_STOPBITS2)
-            USART_InitStructure.USART_StopBits = USART_StopBits_2;
-        else
-            USART_InitStructure.USART_StopBits = USART_StopBits_1;
-        USART_InitStructure.USART_Parity = USART_Parity_No;
-    }
+    USART_InitStructure.USART_StopBits = (self->port.mode & MODE_STOPBITS_2) ? USART_STOPBITS2 : USART_StopBits_1;
+    USART_InitStructure.USART_Parity = (self->port.mode & MODE_PARITY_EVEN) ? USART_Parity_Even : USART_Parity_No;
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_InitStructure.USART_Mode = 0;
     if (self->port.state & STATE_RX)

@@ -63,7 +63,7 @@ void hcsr04_extiHandler(extiCallbackRec_t* cb)
         timing_start = micros();
     } else {
         timing_stop = micros();
-        measurement = timing_stop - timing_start;
+        measurement = cmp32(timing_stop, timing_start);
     }
 }
 
@@ -78,6 +78,7 @@ void hcsr04_Init(const sonarHardware_t *initialSonarHardware)
     // ep - echo pin, configure as input (even if same as trigger)
     IO_ConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
 
+#ifdef STM32F10X
     // setup external interrupt on echo pin
     EXTIHandlerInit(&hcsr04_extiCallbackRec, hcsr04_extiHandler);
     EXTIConfig(sonarHardware->echoIO, &hcsr04_extiCallbackRec, NVIC_PRIO_SONAR_EXTI, EXTI_Trigger_Rising_Falling); // TODO - priority!

@@ -117,7 +117,7 @@ static int _write(void *p, const char* data, int len)
 }
 
 //printf() to the blackbox serial port with no blocking shenanigans (so it's caller's responsibility to not write too fast!)
-int blackboxPrintf(char *fmt, ...)
+int blackboxPrintf(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);

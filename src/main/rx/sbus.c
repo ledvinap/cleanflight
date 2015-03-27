@@ -76,6 +76,8 @@ static uint16_t sbusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 static uint32_t sbusChannelData[SBUS_MAX_CHANNEL];
 
+// TODO SERIAL_STOPBITS_2 | SERIAL_PARITY_EVEN | SERIAL_INVERTED
+
 static const serialPortMode_t sBusPortConfig = {
     .mode = MODE_RX | MODE_SBUS | MODE_INVERTED | (MODE_DEFAULT_FAST & ~MODE_U_DMARX),  // don't enable RX_DMA, we need rxCallback
     .baudRate = 100000,
@@ -172,10 +174,10 @@ static void sbusDataReceive(uint16_t c)
     }
 }
 
-bool sbusFrameComplete(void)
+uint8_t sbusFrameStatus(void)
 {
     if (!sbusFrameDone) {
-        return false;
+        return SERIAL_RX_FRAME_PENDING;
     }
     sbusFrameDone = false;
 
@@ -226,13 +228,13 @@ bool sbusFrameComplete(void)
         debug[0] = sbusStateFlags;
 #endif
         // RX *should* still be sending valid channel data, so use it.
-        return false;
+        return SERIAL_RX_FRAME_COMPLETE | SERIAL_RX_FRAME_FAILSAFE;
     }
 
 #ifdef DEBUG_SBUS_PACKETS
     debug[0] = sbusStateFlags;
 #endif
-    return true;
+    return SERIAL_RX_FRAME_COMPLETE;
 }
 
 static uint16_t sbusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)

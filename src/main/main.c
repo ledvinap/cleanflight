@@ -192,6 +192,8 @@ void init(void)
     delay(100);
 
 
+    serialInit(&masterConfig.serialConfig);
+
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
     memset(&pwm_params, 0, sizeof(pwm_params));
@@ -345,8 +347,6 @@ void init(void)
     timerQueue_Init();
 
     imuInit();
-
-    serialInit(&masterConfig.serialConfig);
 
     mspInit(&masterConfig.serialConfig);
     cliInit(&masterConfig.serialConfig);

@@ -222,7 +222,7 @@ static void uartReconfigureState(uartPort_t *self)
 
     USART_InitStructure.USART_BaudRate = self->port.baudRate;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-    USART_InitStructure.USART_StopBits = (self->port.mode & MODE_STOPBITS_2) ? USART_STOPBITS2 : USART_StopBits_1;
+    USART_InitStructure.USART_StopBits = (self->port.mode & MODE_STOPBITS2) ? USART_StopBits_1 : USART_StopBits_1;
     USART_InitStructure.USART_Parity = (self->port.mode & MODE_PARITY_EVEN) ? USART_Parity_Even : USART_Parity_No;
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_InitStructure.USART_Mode = 0;

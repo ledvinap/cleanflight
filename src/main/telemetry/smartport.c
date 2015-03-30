@@ -230,8 +230,6 @@ void freeSmartPortTelemetryPort(void)
 
 void configureSmartPortTelemetryPort(void)
 {
-    portOptions_t portOptions;
-
     if (!portConfig) {
         return;
     }

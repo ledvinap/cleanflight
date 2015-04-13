@@ -249,7 +249,7 @@ void annexCode(void)
             }
 
             if (feature(FEATURE_CURRENT_METER)) {
-                updateCurrentMeter(vbatCycleTime);
+                updateCurrentMeter(vbatCycleTime, &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
             }
             vbatCycleTime = 0;
         }
@@ -771,7 +771,7 @@ void loop(void)
 
 #ifdef TELEMETRY
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
-        handleTelemetry();
+        handleTelemetry(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
     }
 #endif
 

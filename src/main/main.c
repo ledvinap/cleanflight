@@ -192,7 +192,7 @@ void init(void)
     delay(100);
 
 
-    serialInit(&masterConfig.serialConfig);
+    serialInit(&masterConfig.serialConfig, feature(FEATURE_SOFTSERIAL));
 
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 

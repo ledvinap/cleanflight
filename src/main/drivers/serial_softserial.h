@@ -30,32 +30,6 @@ typedef enum {
     SOFTSERIAL2
 } softSerialPortIndex_e;
 
-typedef struct softSerial_s {
-    serialPort_t     port;
-
-    const timerHardware_t *rxTimerHardware;
-    uint8_t rxBuffer[SOFTSERIAL_BUFFER_SIZE];
-
-    const timerHardware_t *txTimerHardware;
-    uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
-
-    uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point in ticks
-    uint32_t         invBitTime;                          // inverse bit time, 16.16 fixed point in ticks
-    uint16_t         symbolLength;                        // length of whole symbol (start+parity+stop-0.5); in ticks
-
-    timerInputRec_t  rxTimerCh;
-    timerQueueRec_t  rxTimerQ;
-    callbackRec_t    rxCallback;
-
-    timerOutputRec_t txTimerCh;
-    callbackRec_t    txCallback;
-
-    bool             directionRxOnDone;                   // switch to rx mode when all data are transmitted
-
-    uint16_t         transmissionErrors;
-    uint16_t         receiveErrors;
-} softSerial_t;
-
 serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, const serialPortMode_t* config);
 
 // serialPort API

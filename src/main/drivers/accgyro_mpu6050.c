@@ -29,6 +29,8 @@
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 
+#include "nvic.h"
+
 #include "system.h"
 #include "gpio.h"
 #include "bus_i2c.h"
@@ -37,12 +39,16 @@
 #include "accgyro.h"
 #include "accgyro_mpu6050.h"
 
+//#define DEBUG_MPU_DATA_READY_INTERRUPT
+
 // MPU6050, Standard address 0x68
-// MPU_INT on PB13 on rev4 hardware
+// MPU_INT on PB13 on rev4 Naze32 hardware
 #define MPU6050_ADDRESS         0x68
 
 #define DMP_MEM_START_ADDR 0x6E
 #define DMP_MEM_R_W 0x6F
+
+// RA = Register Address
 
 #define MPU_RA_XG_OFFS_TC       0x00    //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
 #define MPU_RA_YG_OFFS_TC       0x01    //[7] PWR_MODE, [6:1] YG_OFFS_TC, [0] OTP_BNK_VLD
@@ -133,22 +139,27 @@
 #define MPU_RA_FIFO_R_W         0x74
 #define MPU_RA_WHO_AM_I         0x75
 
+// RF = Register Flag
 // MPU_RA_FIFO_EN
-#define MPU_RV_TEMP_FIFO_EN     0x80
-#define MPU_RV_XG_FIFO_EN       0x40
-#define MPU_RV_YG_FIFO_EN       0x20
-#define MPU_RV_ZG_FIFO_EN       0x10
-#define MPU_RV_ACCEL_FIFO_EN    0x08
-#define MPU_RV_SLV2_FIFO_EN     0x04
-#define MPU_RV_SLV1_FIFO_EN     0x02
-#define MPU_RV_SLV0_FIFO_EN     0x01
+#define MPU_RF_TEMP_FIFO_EN     0x80
+#define MPU_RF_XG_FIFO_EN       0x40
+#define MPU_RF_YG_FIFO_EN       0x20
+#define MPU_RF_ZG_FIFO_EN       0x10
+#define MPU_RF_ACCEL_FIFO_EN    0x08
+#define MPU_RF_SLV2_FIFO_EN     0x04
+#define MPU_RF_SLV1_FIFO_EN     0x02
+#define MPU_RF_SLV0_FIFO_EN     0x01
 // MPU_RA_USER_CTRL
-#define MPU_RV_FIFO_EN          0x40
-#define MPU_RV_I2C_MST_EN       0x20
-#define MPU_RV_I2C_IF_DIS       0x10
-#define MPU_RV_FIFO_RESET       0x04
-#define MPU_RV_I2C_MST_RESET    0x02
-#define MPU_RV_SIG_COND_RESET   0x01
+#define MPU_RF_FIFO_EN          0x40
+#define MPU_RF_I2C_MST_EN       0x20
+#define MPU_RF_I2C_IF_DIS       0x10
+#define MPU_RF_FIFO_RESET       0x04
+#define MPU_RF_I2C_MST_RESET    0x02
+#define MPU_RF_SIG_COND_RESET   0x01
+// MPU_RA_INT_ENABLE
+#define MPU_RF_DATA_RDY_EN (1 << 0)
+
+#define MPU6050_SMPLRT_DIV      0       // 8000Hz
 
 enum lpf_e {
     INV_FILTER_256HZ_NOLPF2 = 0,
@@ -197,8 +208,76 @@ static mpu6050Resolution_e mpuAccelTrim;
 
 static const mpu6050Config_t *mpu6050Config = NULL;
 
+void MPU_DATA_READY_EXTI_Handler(void)
+{
+    EXTI_ClearITPendingBit(mpu6050Config->exti_line);
+
+#ifdef DEBUG_MPU_DATA_READY_INTERRUPT
+    // Measure the delta in micro seconds between calls to the interrupt handler
+    static uint32_t lastCalledAt = 0;
+    static int32_t callDelta = 0;
+
+    uint32_t now = micros();
+    callDelta = now - lastCalledAt;
+
+    UNUSED(callDelta);
+
+    lastCalledAt = now;
+#endif
+
+}
+
+void configureMPUDataReadyInterruptHandling(void)
+{
+#ifdef USE_MPU_DATA_READY_SIGNAL
+
+#ifdef STM32F10X
+    // enable AFIO for EXTI support
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+#endif
+
+#ifdef STM32F303xC
+    /* Enable SYSCFG clock otherwise the EXTI irq handlers are not called */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+#endif
+
+#ifdef STM32F10X
+    gpioExtiLineConfig(mpu6050Config->exti_port_source, mpu6050Config->exti_pin_source);
+#endif
+
+#ifdef STM32F303xC
+    gpioExtiLineConfig(mpu6050Config->exti_port_source, mpu6050Config->exti_pin_source);
+#endif
+
+    registerExti15_10_CallbackHandler(MPU_DATA_READY_EXTI_Handler);
+
+    EXTI_ClearITPendingBit(mpu6050Config->exti_line);
+
+    EXTI_InitTypeDef EXTIInit;
+    EXTIInit.EXTI_Line = mpu6050Config->exti_line;
+    EXTIInit.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTIInit.EXTI_Trigger = EXTI_Trigger_Rising;
+    EXTIInit.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTIInit);
+
+    NVIC_InitTypeDef NVIC_InitStructure;
+
+    NVIC_InitStructure.NVIC_IRQChannel = mpu6050Config->exti_irqn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_MPU_DATA_READY);
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_MPU_DATA_READY);
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+#endif
+}
+
 void mpu6050GpioInit(void) {
     gpio_config_t gpio;
+
+    static bool mpu6050GpioInitDone = false;
+
+    if (mpu6050GpioInitDone || !mpu6050Config) {
+        return;
+    }
 
 #ifdef STM32F303
         if (mpu6050Config->gpioAHBPeripherals) {
@@ -211,11 +290,14 @@ void mpu6050GpioInit(void) {
         }
 #endif
 
-
     gpio.pin = mpu6050Config->gpioPin;
     gpio.speed = Speed_2MHz;
     gpio.mode = Mode_IN_FLOATING;
     gpioInit(mpu6050Config->gpioPort, &gpio);
+
+    configureMPUDataReadyInterruptHandling();
+
+    mpu6050GpioInitDone = true;
 }
 
 static bool mpu6050Detect(void)
@@ -321,10 +403,7 @@ bool mpu6050GyroDetect(const mpu6050Config_t *configToUse, gyro_t *gyro, uint16_
 
 static void mpu6050AccInit(void)
 {
-    if (mpu6050Config) {
-        mpu6050GpioInit();
-        mpu6050Config = NULL; // avoid re-initialisation of GPIO;
-    }
+    mpu6050GpioInit();
 
     switch (mpuAccelTrim) {
         case MPU_6050_HALF_RESOLUTION:
@@ -351,10 +430,7 @@ static void mpu6050AccRead(int16_t *accData)
 
 static void mpu6050GyroInit(void)
 {
-    if (mpu6050Config) {
-        mpu6050GpioInit();
-        mpu6050Config = NULL; // avoid re-initialisation of GPIO;
-    }
+    mpu6050GpioInit();
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
     delay(100);
@@ -377,6 +453,10 @@ static void mpu6050GyroInit(void)
     // TODO ! fifo enabled here !
 #ifdef ACCGYRO_FIFO
     mpu6050FifoEnable();
+#endif
+
+#ifdef USE_MPU_DATA_READY_SIGNAL
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_INT_ENABLE, MPU_RF_DATA_RDY_EN);
 #endif
 }
 
@@ -402,15 +482,15 @@ int mpu6050GetFifoLen(void)
 
 void mpu6050FifoEnable(void)
 {
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_RESET);   // flush FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_EN);      // enable FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_FIFO_EN, MPU_RV_XG_FIFO_EN | MPU_RV_YG_FIFO_EN | MPU_RV_ZG_FIFO_EN | MPU_RV_ACCEL_FIFO_EN);
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_RESET);   // flush FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_EN);      // enable FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_FIFO_EN, MPU_RF_XG_FIFO_EN | MPU_RF_YG_FIFO_EN | MPU_RF_ZG_FIFO_EN | MPU_RF_ACCEL_FIFO_EN);
 }
 
 void mpu6050FifoFlush(void)
 {
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_RESET);   // flush FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RV_FIFO_EN);      // enable FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_RESET);   // flush FIFO
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_EN);      // enable FIFO
 }
 
 int mpu6050FifoRead(uint8_t *buffer, int maxLen, int modulo) {

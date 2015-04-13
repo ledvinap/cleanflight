@@ -70,7 +70,7 @@ static void usartConfigurePinInversion(uartPort_t *self) {
         inversionPins |= USART_InvPin_Rx;
     }
 
-    USART_InvPinCmd(self->USARTx, inversionPins, uartPort->port.mode & MODE_INVERTED ? ENABLE : DISABLE);
+    USART_InvPinCmd(self->USARTx, inversionPins, (uartPort->port.mode & MODE_INVERTED) ? ENABLE : DISABLE);
 #endif
 }
 

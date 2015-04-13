@@ -21,7 +21,8 @@
 #include <stdbool.h>
 #include "platform.h"
 
-#ifdef STM32F10X
+#if defined(STM32F10X)
+
 typedef enum
 {
     Mode_AIN = 0x0,

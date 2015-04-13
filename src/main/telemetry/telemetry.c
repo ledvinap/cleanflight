@@ -83,9 +83,9 @@ void checkTelemetryState(void)
     checkSPortTelemetryState();
 }
 
-void handleTelemetry(void)
+void handleTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 {
-    handleFrSkyTelemetry();
+    handleFrSkyTelemetry(rxConfig, deadband3d_throttle);
     handleHoTTTelemetry();
     handleMSPTelemetry();
     handleSmartPortTelemetry();

@@ -248,6 +248,7 @@ void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
     telemetryConfig->frsky_coordinate_format = FRSKY_FORMAT_DMS;
     telemetryConfig->frsky_unit = FRSKY_UNIT_METRICS;
     telemetryConfig->frsky_vfas_precision = 0;
+    telemetryConfig->hottAlarmSoundInterval = 5;
 }
 
 void resetBatteryConfig(batteryConfig_t *batteryConfig)
@@ -481,7 +482,7 @@ static void resetConf(void)
     // Failsafe Variables
     currentProfile->failsafeConfig.failsafe_delay = 10;              // 1sec
     currentProfile->failsafeConfig.failsafe_off_delay = 200;         // 20sec
-    currentProfile->failsafeConfig.failsafe_throttle = 1200;         // decent default which should always be below hover throttle for people.
+    currentProfile->failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
     currentProfile->failsafeConfig.failsafe_min_usec = 985;          // any of first 4 channels below this value will trigger failsafe
     currentProfile->failsafeConfig.failsafe_max_usec = 2115;         // any of first 4 channels above this value will trigger failsafe
 
@@ -523,10 +524,11 @@ static void resetConf(void)
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
     featureSet(FEATURE_FAILSAFE);
-    featureClear(FEATURE_VBAT);
 #ifdef ALIENWIIF3
     masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
+    masterConfig.batteryConfig.vbatscale = 20;
 #else
+    featureClear(FEATURE_VBAT);
     masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
 #endif
     masterConfig.rxConfig.serialrx_provider = 1;
@@ -799,6 +801,14 @@ void validateAndFixConfig(void)
         featureClear(FEATURE_SONAR);
     }
 #endif
+
+    /*
+     * The retarded_arm setting is incompatible with pid_at_min_throttle because full roll causes the craft to roll over on the ground.
+     * The pid_at_min_throttle implementation ignores yaw on the ground, but doesn't currently ignore roll when retarded_arm is enabled.
+     */
+    if (masterConfig.retarded_arm && masterConfig.mixerConfig.pid_at_min_throttle) {
+        masterConfig.mixerConfig.pid_at_min_throttle = 0;
+    }
 
     useRxConfig(&masterConfig.rxConfig);
 

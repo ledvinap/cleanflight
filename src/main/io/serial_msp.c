@@ -905,7 +905,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_LOOP_TIME:
         headSerialReply(2);
-        serialize16(masterConfig.looptime);
+        serialize16(masterConfig.loopTime);
         break;
     case MSP_RC_TUNING:
         headSerialReply(10);
@@ -1280,7 +1280,7 @@ static bool processInCommand(void)
         masterConfig.disarm_kill_switch = read8();
         break;
     case MSP_SET_LOOP_TIME:
-        masterConfig.looptime = read16();
+        masterConfig.loopTime = read16();
         break;
     case MSP_SET_PID_CONTROLLER:
         currentProfile->pidProfile.pidController = read8();

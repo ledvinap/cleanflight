@@ -42,7 +42,7 @@ static bool isConversionComplete = false;
 static uint16_t bmp085ConversionOverrun = 0;
 static bool useConversionComplete = false;
 
-extiCallbackRec_t bmp085_extiCallbackRec;
+static extiCallbackRec_t bmp085_extiCallbackRec;
 
 // EXTI14 for BMP085 End of Conversion Interrupt
 void bmp085_extiHandler(extiCallbackRec_t* cb)

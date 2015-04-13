@@ -130,4 +130,4 @@ baudRate_e lookupBaudRateIndex(uint32_t baudRate);
 void evaluateOtherData(serialPort_t *serialPort, uint8_t receivedChar);
 void handleSerial(void);
 
-void serialInit(serialConfig_t *initialSerialConfig);
+void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled);

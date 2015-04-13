@@ -79,23 +79,11 @@ const mpu6050Config_t *selectMPU6050Config(void)
 #ifdef NAZE
     // MPU_INT output on rev4 PB13
     static const mpu6050Config_t nazeRev4MPU6050Config = {
-            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
-            .gpioPort = GPIOB,
-            .gpioPin = Pin_13,
-            .exti_port_source = GPIO_PortSourceGPIOB,
-            .exti_pin_source = GPIO_PinSource13,
-            .exti_line = EXTI_Line13,
-            .exti_irqn = EXTI15_10_IRQn
+        .intIO = IO_B13,
     };
     // MPU_INT output on rev5 hardware PC13
     static const mpu6050Config_t nazeRev5MPU6050Config = {
-            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
-            .gpioPort = GPIOC,
-            .gpioPin = Pin_13,
-            .exti_port_source = GPIO_PortSourceGPIOC,
-            .exti_pin_source = GPIO_PinSource13,
-            .exti_line = EXTI_Line13,
-            .exti_irqn = EXTI15_10_IRQn
+        .intIO = IO_C13,
     };
 
     if (hardwareRevision < NAZE32_REV5) {
@@ -107,13 +95,7 @@ const mpu6050Config_t *selectMPU6050Config(void)
 
 #ifdef SPRACINGF3
     static const mpu6050Config_t spRacingF3MPU6050Config = {
-            .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
-            .gpioPort = GPIOC,
-            .gpioPin = Pin_13,
-            .exti_port_source = EXTI_PortSourceGPIOC,
-            .exti_pin_source = EXTI_PinSource13,
-            .exti_line = EXTI_Line13,
-            .exti_irqn = EXTI15_10_IRQn
+        .intIO = IO_C13,
     };
     return &spRacingF3MPU6050Config;
 #endif

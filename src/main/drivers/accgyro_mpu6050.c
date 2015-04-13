@@ -25,6 +25,7 @@
 #include "common/maths.h"
 
 #include "drivers/pin_debug.h"
+#include "drivers/exti.h"
 
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
@@ -199,19 +200,24 @@ static void mpu6050GyroInit(void);
 static void mpu6050GyroRead(int16_t *gyroData);
 void mpu6050FifoEnable(void);
 
+
 typedef enum {
     MPU_6050_HALF_RESOLUTION,
     MPU_6050_FULL_RESOLUTION
 } mpu6050Resolution_e;
 
+
 static mpu6050Resolution_e mpuAccelTrim;
 
 static const mpu6050Config_t *mpu6050Config = NULL;
 
-void MPU_DATA_READY_EXTI_Handler(void)
-{
-    EXTI_ClearITPendingBit(mpu6050Config->exti_line);
+#ifdef USE_MPU_DATA_READY_SIGNAL
 
+static extiCallbackRec_t mpu6050_extiCallbackRec;
+
+void mpu6050_extiHandler(extiCallbackRec_t* cb)
+{
+    UNUSED(cb);
 #ifdef DEBUG_MPU_DATA_READY_INTERRUPT
     // Measure the delta in micro seconds between calls to the interrupt handler
     static uint32_t lastCalledAt = 0;
@@ -224,78 +230,24 @@ void MPU_DATA_READY_EXTI_Handler(void)
 
     lastCalledAt = now;
 #endif
-
 }
 
-void configureMPUDataReadyInterruptHandling(void)
-{
-#ifdef USE_MPU_DATA_READY_SIGNAL
-
-#ifdef STM32F10X
-    // enable AFIO for EXTI support
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 #endif
-
-#ifdef STM32F303xC
-    /* Enable SYSCFG clock otherwise the EXTI irq handlers are not called */
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-#endif
-
-#ifdef STM32F10X
-    gpioExtiLineConfig(mpu6050Config->exti_port_source, mpu6050Config->exti_pin_source);
-#endif
-
-#ifdef STM32F303xC
-    gpioExtiLineConfig(mpu6050Config->exti_port_source, mpu6050Config->exti_pin_source);
-#endif
-
-    registerExti15_10_CallbackHandler(MPU_DATA_READY_EXTI_Handler);
-
-    EXTI_ClearITPendingBit(mpu6050Config->exti_line);
-
-    EXTI_InitTypeDef EXTIInit;
-    EXTIInit.EXTI_Line = mpu6050Config->exti_line;
-    EXTIInit.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTIInit.EXTI_Trigger = EXTI_Trigger_Rising;
-    EXTIInit.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTIInit);
-
-    NVIC_InitTypeDef NVIC_InitStructure;
-
-    NVIC_InitStructure.NVIC_IRQChannel = mpu6050Config->exti_irqn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_MPU_DATA_READY);
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_MPU_DATA_READY);
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-#endif
-}
 
 void mpu6050GpioInit(void) {
-    gpio_config_t gpio;
-
     static bool mpu6050GpioInitDone = false;
 
     if (mpu6050GpioInitDone || !mpu6050Config) {
         return;
     }
 
-#ifdef STM32F303
-        if (mpu6050Config->gpioAHBPeripherals) {
-            RCC_AHBPeriphClockCmd(mpu6050Config->gpioAHBPeripherals, ENABLE);
-        }
-#endif
-#ifdef STM32F10X
-        if (mpu6050Config->gpioAPB2Peripherals) {
-            RCC_APB2PeriphClockCmd(mpu6050Config->gpioAPB2Peripherals, ENABLE);
-        }
-#endif
 
-    gpio.pin = mpu6050Config->gpioPin;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_IN_FLOATING;
-    gpioInit(mpu6050Config->gpioPort, &gpio);
-
-    configureMPUDataReadyInterruptHandling();
+#ifdef USE_MPU_DATA_READY_SIGNAL
+    IO_ConfigGPIO(mpu6050Config->intIO, Mode_IN_FLOATING);
+    EXTIHandlerInit(&mpu6050_extiCallbackRec, mpu6050_extiHandler);
+    EXTIConfig(mpu6050Config->intIO, &mpu6050_extiCallbackRec, NVIC_PRIO_MPU_INT_EXTI, EXTI_Trigger_Rising);
+    EXTIEnable(mpu6050Config->intIO, true);
+#endif
 
     mpu6050GpioInitDone = true;
 }

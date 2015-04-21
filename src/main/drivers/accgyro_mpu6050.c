@@ -21,6 +21,8 @@
 #include <string.h>
 
 #include "platform.h"
+#include "build_config.h"
+#include "debug.h"
 
 #include "common/maths.h"
 
@@ -226,7 +228,8 @@ void mpu6050_extiHandler(extiCallbackRec_t* cb)
     uint32_t now = micros();
     callDelta = now - lastCalledAt;
 
-    UNUSED(callDelta);
+    //UNUSED(callDelta);
+    debug[0] = callDelta;
 
     lastCalledAt = now;
 #endif

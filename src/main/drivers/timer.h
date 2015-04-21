@@ -54,7 +54,7 @@ typedef struct timerOvrHandlerRec_s {
     struct timerOvrHandlerRec_s* next;
 } timerOvrHandlerRec_t;
 
-typedef struct {
+typedef struct timerHardware_s {
     TIM_TypeDef *tim;
     GPIO_TypeDef *gpio;
     uint32_t pin;

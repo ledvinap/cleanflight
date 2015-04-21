@@ -84,25 +84,25 @@ static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value)
     }
 }
 
-static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, channelType_t type, int hz, uint16_t period, uint16_t value)
+static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timHW, channelType_t type, int hz, uint16_t period, uint16_t value)
 {
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
-    timerChInit(timerHardware, type, RESOURCE_OUTPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER_PWMOUT, period, hz);
-    timerChConfigGPIO(timerHardware, Mode_AF_PP);
+    timerChInit(timHW, type, RESOURCE_OUTPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER_PWMOUT, period, hz);
+    timerChConfigGPIO(timHW, Mode_AF_PP);
 
-    pwmOCConfig(timerHardware->tim, timerHardware->channel, value);
-    if (timerHardware->tim == TIM1
-        || timerHardware->tim == TIM8
-        || timerHardware->tim == TIM15
-        || timerHardware->tim == TIM16
-        || timerHardware->tim == TIM17)
-        TIM_CtrlPWMOutputs(timerHardware->tim, ENABLE);
-    TIM_Cmd(timerHardware->tim, ENABLE);
+    pwmOCConfig(timHW->tim, timHW->channel, value);
+    if (timHW->tim == TIM1
+        || timHW->tim == TIM8
+        || timHW->tim == TIM15
+        || timHW->tim == TIM16
+        || timHW->tim == TIM17)
+        TIM_CtrlPWMOutputs(timHW->tim, ENABLE);
+    TIM_Cmd(timHW->tim, ENABLE);
 
-    p->ccr = timerChCCR(timerHardware);
+    p->ccr = timerChCCR(timHW);
     p->period = period;
-    p->tim = timerHardware->tim;
+    p->tim = timHW->tim;
 
     return p;
 }
@@ -143,29 +143,29 @@ void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
     }
 }
 
-void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+void pwmBrushedMotorConfig(const timerHardware_t *timHW, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
     uint32_t hz = PWM_BRUSHED_TIMER_MHZ * 1000000;
-    motors[motorIndex] = pwmOutConfig(timerHardware, TYPE_PWMOUTPUT_MOTOR, PWM_BRUSHED_TIMER_MHZ, hz / motorPwmRate, idlePulse);
+    motors[motorIndex] = pwmOutConfig(timHW, TYPE_PWMOUTPUT_MOTOR, PWM_BRUSHED_TIMER_MHZ, hz / motorPwmRate, idlePulse);
     motors[motorIndex]->pwmWritePtr = pwmWriteBrushed;
 }
 
-void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+void pwmBrushlessMotorConfig(const timerHardware_t *timHW, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
-    motors[motorIndex] = pwmOutConfig(timerHardware, TYPE_PWMOUTPUT_FAST, PWM_TIMER_HZ, PWM_TIMER_HZ / motorPwmRate, idlePulse);
+    motors[motorIndex] = pwmOutConfig(timHW, TYPE_PWMOUTPUT_FAST, PWM_TIMER_HZ, PWM_TIMER_HZ / motorPwmRate, idlePulse);
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
-void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t idlePulse)
+void pwmOneshotMotorConfig(const timerHardware_t *timHW, uint8_t motorIndex, uint16_t idlePulse)
 {
-    motors[motorIndex] = pwmOutConfig(timerHardware, TYPE_PWMOUTPUT_ONESHOT, ONESHOT125_TIMER_HZ, 0, idlePulse);
+    motors[motorIndex] = pwmOutConfig(timHW, TYPE_PWMOUTPUT_ONESHOT, ONESHOT125_TIMER_HZ, 0, idlePulse);
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
 #ifdef USE_SERVOS
-void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse)
+void pwmServoConfig(const timerHardware_t *timHW, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse)
 {
-    servos[servoIndex] = pwmOutConfig(timerHardware, TYPE_PWMOUTPUT_SERVO, PWM_TIMER_HZ, PWM_TIMER_HZ / servoPwmRate, servoCenterPulse);
+    servos[servoIndex] = pwmOutConfig(timHW, TYPE_PWMOUTPUT_SERVO, PWM_TIMER_HZ, PWM_TIMER_HZ / servoPwmRate, servoCenterPulse);
 }
 
 void pwmWriteServo(uint8_t index, uint16_t value)

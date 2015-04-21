@@ -21,4 +21,3 @@ typedef enum {
 #define USART2_RX_IO_REMAP IO_NONE
 #define USART2_TX_IO_REMAP IO_NONE
 #endif
-

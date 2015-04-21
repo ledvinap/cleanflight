@@ -15,7 +15,7 @@
 #
 
 # The target to build, see VALID_TARGETS below
-TARGET		?= SPARKY
+TARGET		?= NAZE
 
 # Compile-time options
 OPTIONS		?= ACCGYRO_FIFO NEWACCGYRO AMINI # PINDEBUG

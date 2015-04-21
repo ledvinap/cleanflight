@@ -17,7 +17,14 @@
 
 #pragma once
 
+struct timerHardware_s;
+
 void pwmWriteMotor(uint8_t index, uint16_t value);
 void pwmCompleteOneshotMotorUpdate(uint8_t motorCount);
 
 void pwmWriteServo(uint8_t index, uint16_t value);
+
+void pwmBrushedMotorConfig(const struct timerHardware_s *timHW, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
+void pwmBrushlessMotorConfig(const struct timerHardware_s *timHW, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
+void pwmOneshotMotorConfig(const struct timerHardware_s *timHW, uint8_t motorIndex, uint16_t idlePulse);
+void pwmServoConfig(const struct timerHardware_s *timHW, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse);

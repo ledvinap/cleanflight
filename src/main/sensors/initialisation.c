@@ -79,11 +79,11 @@ const mpu6050Config_t *selectMPU6050Config(void)
 #ifdef NAZE
     // MPU_INT output on rev4 PB13
     static const mpu6050Config_t nazeRev4MPU6050Config = {
-        .intIO = IO_B13,
+//        .intIO = IO_B13, TODO
     };
     // MPU_INT output on rev5 hardware PC13
     static const mpu6050Config_t nazeRev5MPU6050Config = {
-        .intIO = IO_C13,
+//        .intIO = IO_C13,  TODO
     };
 
     if (hardwareRevision < NAZE32_REV5) {
@@ -398,8 +398,8 @@ static void detectBaro()
 
 #if defined(BARO_XCLR_IO) && defined(BARO_EOC_IO)
     static const bmp085Config_t defaultBMP085Config = {
-        .xclrIO = BARO_XCLR_IO,
-        .eocIO = BARO_EOC_IO,
+//        .xclrIO = BARO_XCLR_IO, TODO
+//        .eocIO = BARO_EOC_IO,
     };
     bmp085Config = &defaultBMP085Config;
 #endif

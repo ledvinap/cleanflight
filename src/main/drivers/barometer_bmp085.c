@@ -128,8 +128,8 @@ static void bmp085_calculate(int32_t *pressure, int32_t *temperature);
 void bmp085Disable(const bmp085Config_t *config)
 {
     if(config && config->xclrIO) {
-        IO_ConfigGPIO(config->xclrIO, Mode_Out_PP);
-        IO_DigitalWrite(config->xclrIO, false);   // disable baro
+        IOConfigGPIO(config->xclrIO, Mode_Out_PP);
+        IODigitalWrite(config->xclrIO, false);   // disable baro
     }
 }
 
@@ -178,7 +178,7 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
         return true;
     }
 
-    IO_DigitalWrite(config->xclrIO, false);   // disable baro
+    IODigitalWrite(config->xclrIO, false);   // disable baro
 
     return false;
 }

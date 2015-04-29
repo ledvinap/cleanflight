@@ -1,84 +1,75 @@
 
 #include "common/utils.h"
 
+#include "drivers/io.h"
+
 #include "target_io.h"
 #include "target.h"
-#include "timer.h"
 
-
-const timerHardware_t *getIOHw(IOId_t id)
+int IO_GPIOPortIdx(const ioDef_t *io)
 {
-    unsigned idx = id - IO1;
-    if(idx < USABLE_IO_CHANNEL_COUNT) return &timerHardware[idx];  // TODO!!!
-    else return NULL;
+    if(!io)
+        return -1;
+    return (((size_t)io->gpio - GPIOA_BASE) >> 10);     // ports are 0x400 apart
 }
 
-int IO_GPIOPortIdx(IOId_t id)
+int IO_GPIOPortSource(const ioDef_t *io)
 {
-    unsigned idx = id - IO1;
-    if(idx >= USABLE_IO_CHANNEL_COUNT) return -1;
-    return (((size_t)timerHardware[idx].gpio - GPIOA_BASE) >> 10);     // ports are 0x400 apart
+    return IO_GPIOPortIdx(io);
 }
 
-int IO_GPIOPortSource(IOId_t id)
+int IO_GPIOPinIdx(const ioDef_t *io)
 {
-    return IO_GPIOPortIdx(id);
+    if(!io)
+        return -1;
+    return 31 - __builtin_clz(io->pin);  // CLZ is a bit faster than FFS
 }
 
-int IO_GPIOPinIdx(IOId_t id)
+int IO_GPIOPinSource(const ioDef_t *io)
 {
-    unsigned idx = id - IO1;
-    if(idx >= USABLE_IO_CHANNEL_COUNT) return -1;
-    return 31 - __builtin_clz(timerHardware[idx].pin);  // CLZ is a bit faster than FFS
-}
-
-int IO_GPIOPinSource(IOId_t id)
-{
-    return IO_GPIOPinIdx(id);
+    return IO_GPIOPinIdx(io);
 }
 
 // mask on stm32f103, bit index on stm32f303
-int IO_EXTILine(IOId_t id)
+uint32_t IO_EXTILine(const ioDef_t *io)
 {
+    if(!io)
+        return 0;
 #if defined(STM32F10X)
-    return 1 << IO_GPIOPinIdx(id);
+    return 1 << IO_GPIOPinIdx(io);
 #elif defined(STM32F30X)
-    return IO_GPIOPinIdx;
+    return IO_GPIOPinIdx(io);
 #endif
 }
 
-
-bool IO_DigitalRead(IOId_t id)
+bool IODigitalRead(const ioDef_t *io)
 {
-    unsigned idx = id - IO1;
-    if(idx >= USABLE_IO_CHANNEL_COUNT)
+    if(!io)
         return false;
 
-    return digitalIn(timerHardware[idx].gpio, timerHardware[idx].pin);
+    return digitalIn(io->gpio, io->pin);
 }
 
-void IO_DigitalWrite(IOId_t id, bool value)
+void IODigitalWrite(const ioDef_t *io, bool value)
 {
-    unsigned idx = id - IO1;
-    if(idx >= USABLE_IO_CHANNEL_COUNT)
+    if(!io)
         return;
     if(value)
-        digitalHi(timerHardware[idx].gpio, timerHardware[idx].pin);
+        digitalHi(io->gpio, io->pin);
     else
-        digitalLo(timerHardware[idx].gpio, timerHardware[idx].pin);
+        digitalLo(io->gpio, io->pin);
 }
 
 
-void IO_ConfigGPIO(IOId_t id, GPIO_Mode mode)
+void IOConfigGPIO(const ioDef_t *io, GPIO_Mode mode)
 {
-    unsigned idx = id - IO1;
-    if(idx >= USABLE_IO_CHANNEL_COUNT)
+    if(!io)
         return;
 
     gpio_config_t cfg;
 
-    cfg.pin = timerHardware[idx].pin;
+    cfg.pin = io->pin;
     cfg.mode = mode;
     cfg.speed = Speed_2MHz;
-    gpioInit(timerHardware[idx].gpio, &cfg);
+    gpioInit(io->gpio, &cfg);
 }

@@ -20,8 +20,8 @@
 #include "drivers/io.h"
 
 typedef struct bmp085Config_s {
-    uint16_t xclrIO;
-    IOId_t eocIO;
+    const ioDef_t *xclrIO;
+    const ioDef_t *eocIO;
 } bmp085Config_t;
 
 bool bmp085Detect(const bmp085Config_t *config, baro_t *baro);

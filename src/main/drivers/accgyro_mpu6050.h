@@ -20,7 +20,7 @@
 #include "drivers/io.h"
 
 typedef struct mpu6050Config_s {
-    IOId_t intIO;
+    const ioDef_t *intIO;
 } mpu6050Config_t;
 
 bool mpu6050AccDetect(const mpu6050Config_t *config,acc_t *acc);

@@ -61,10 +61,10 @@
 typedef struct softSerial_s {
     serialPort_t     port;
 
-    const timerHardware_t *rxTimerHardware;
+    const timerChDef_t *rxTimChDef;
     uint8_t rxBuffer[SOFTSERIAL_BUFFER_SIZE];
 
-    const timerHardware_t *txTimerHardware;
+    const timerChDef_t *txTimChDef;
     uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
 
     uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point in ticks
@@ -127,14 +127,14 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
     if(mode == 0)   // prevent reconfiguration with empty config
         return;
 
-    self->rxTimerHardware = &(timerHardware[config->rxPin]);
-    self->txTimerHardware = &(timerHardware[config->txPin]);
+    self->rxTimChDef = timerChannelMap[config->rxPin];
+    self->txTimChDef = timerChannelMap[config->txPin];
 
     // fix mode if caller got it wrong
-    if((mode & MODE_RXTX) == MODE_RXTX && self->txTimerHardware == self->rxTimerHardware)
+    if((mode & MODE_RXTX) == MODE_RXTX && self->txTimChDef == self->rxTimChDef)
         mode |= MODE_SINGLEWIRE;
     if(mode & MODE_SINGLEWIRE) {
-        self->rxTimerHardware = self->txTimerHardware;  // use TX pin only in singlewire mode (TX is used for singlewire on USART)
+        self->rxTimChDef = self->txTimChDef;  // use TX pin only in singlewire mode (TX is used for singlewire on USART)
         mode |= MODE_HALFDUPLEX;
     }
     if(mode & MODE_HALFDUPLEX) {
@@ -144,17 +144,17 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
     // collision with self
     if(mode & MODE_S_DUALTIMER
        && !(mode & MODE_HALFDUPLEX)
-       && timerChFindDualChannel(self->rxTimerHardware) == self->txTimerHardware)
+       && timerChRecDual(self->rxTimChDef) == timerChRec(self->txTimChDef))
         mode &= ~MODE_S_DUALTIMER;
 
-    // channel is already allocated
+    // channel is already allocated // TODO!! RESOURCE_TIMER_DUAL
     if(mode & MODE_S_DUALTIMER
-       && timerChGetUsedResources(timerChFindDualChannel(self->rxTimerHardware)) & RESOURCE_TIMER)
+       && timerChGetUsedResources(self->rxTimChDef) & RESOURCE_TIMER_DUAL)
         mode &= ~MODE_S_DUALTIMER;
 
     // halfduplex on channel pair
     if(mode & MODE_HALFDUPLEX
-       && timerChFindDualChannel(self->rxTimerHardware) == self->txTimerHardware)
+       && timerChRecDual(self->rxTimChDef) == timerChRec(self->txTimChDef) )
         mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
 
     // we do not check if direct pins/timer channels are free now..
@@ -181,7 +181,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
     if(mode & MODE_TX) {
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh,
-                        self->txTimerHardware, (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
+                        self->txTimChDef, (mode & MODE_SINGLEWIRE) ? OWNER_SOFTSERIAL_RXTX : OWNER_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
                         &self->txCallback,
                         ((mode & MODE_INVERTED) ? 0 : TIMEROUT_IDLE_HI)
                         | ((mode & MODE_SINGLEWIRE) ? TIMEROUT_RELEASEMODE_INPUT : 0)
@@ -197,7 +197,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerIn_Config(&self->rxTimerCh,
-                       self->rxTimerHardware,  (mode & MODE_SINGLEWIRE) ? TYPE_SOFTSERIAL_RXTX : TYPE_SOFTSERIAL_RX, NVIC_PRIO_TIMER,
+                       self->rxTimChDef,  (mode & MODE_SINGLEWIRE) ? OWNER_SOFTSERIAL_RXTX : OWNER_SOFTSERIAL_RX, NVIC_PRIO_TIMER,
                        &self->rxCallback, &self->rxTimerQ,
                        ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0)
                        | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE)
@@ -236,8 +236,10 @@ void softSerialGetConfig(serialPort_t *serial, serialPortMode_t* config)
     config->baudRate = (1000000 << 8) / self->bitTime;
     config->mode = self->port.mode;
     config->rxCallback = self->port.rxCallback;
-    config->rxPin = self->rxTimerHardware - timerHardware;
-    config->txPin = self->txTimerHardware - timerHardware;
+#if 0 // TODO implement this
+    config->rxPin = self->rxTimChDef - timerHardware;
+    config->txPin = self->txTimChDef - timerHardware;
+#endif
 }
 
 

@@ -76,6 +76,7 @@
 #include "flight/autotune.h"
 #include "flight/navigation.h"
 
+#include "debug.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"

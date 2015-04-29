@@ -7,53 +7,69 @@
 // this also allows using macro parameters in differenct context. This mechanism may be improved if boost preprocessor (BOOST PP) is 
 // used in future.
 
-// PORTx to GPIOx mapping
-#define DEFIO_GPIO__PORTA GPIOA
-#define DEFIO_GPIO__PORTB GPIOB
-#define DEFIO_GPIO__PORTC GPIOC
+// GPIOx
+#define DEFIO_GPIO_ID__GPIOA 1
+#define DEFIO_GPIO_ID__GPIOB 2
+#define DEFIO_GPIO_ID__GPIOC 3
 
-// PINx to Pin_x
-#define DEFIO_Pin__PIN0 Pin_0
-#define DEFIO_Pin__PIN1 Pin_1
-#define DEFIO_Pin__PIN2 Pin_2
-#define DEFIO_Pin__PIN3 Pin_3
-#define DEFIO_Pin__PIN4 Pin_4
-#define DEFIO_Pin__PIN5 Pin_5
-#define DEFIO_Pin__PIN6 Pin_6
-#define DEFIO_Pin__PIN7 Pin_7
-#define DEFIO_Pin__PIN8 Pin_8
-#define DEFIO_Pin__PIN9 Pin_9
-#define DEFIO_Pin__PIN10 Pin_10
-#define DEFIO_Pin__PIN11 Pin_11
-#define DEFIO_Pin__PIN12 Pin_12
-#define DEFIO_Pin__PIN13 Pin_13
-#define DEFIO_Pin__PIN14 Pin_14
-#define DEFIO_Pin__PIN15 Pin_15
+#define DEFIO_GPIO_LETTER__1 A
+#define DEFIO_GPIO_LETTER__2 B
+#define DEFIO_GPIO_LETTER__3 C
 
-// TIMx to TIMx mapping (identity now)
-#define DEFIO_TIM__NA NULL
-#define DEFIO_TIM__TIM1 TIM1
-#define DEFIO_TIM__TIM2 TIM2
-#define DEFIO_TIM__TIM3 TIM3
-#define DEFIO_TIM__TIM4 TIM4
+#define DEFIO_GPIO_LETTER(gpio) CONCAT(DEFIO_GPIO_LETTER__, gpio)
 
-// TIMx to TIMER_INDEX(x)
-#define DEFIO_TIMER_INDEX__NA 0xff
-#define DEFIO_TIMER_INDEX__TIM1 TIMER_INDEX(1)
-#define DEFIO_TIMER_INDEX__TIM2 TIMER_INDEX(2)
-#define DEFIO_TIMER_INDEX__TIM3 TIMER_INDEX(3)
-#define DEFIO_TIMER_INDEX__TIM4 TIMER_INDEX(4)
+// PINx
+#define DEFIO_PIN_ID__PIN0 0
+#define DEFIO_PIN_ID__PIN1 1
+#define DEFIO_PIN_ID__PIN2 2
+#define DEFIO_PIN_ID__PIN3 3
+#define DEFIO_PIN_ID__PIN4 4
+#define DEFIO_PIN_ID__PIN5 5
+#define DEFIO_PIN_ID__PIN6 6
+#define DEFIO_PIN_ID__PIN7 7
+#define DEFIO_PIN_ID__PIN8 8
+#define DEFIO_PIN_ID__PIN9 9
+#define DEFIO_PIN_ID__PIN10 10
+#define DEFIO_PIN_ID__PIN11 11
+#define DEFIO_PIN_ID__PIN12 12
+#define DEFIO_PIN_ID__PIN13 13
+#define DEFIO_PIN_ID__PIN14 14
+#define DEFIO_PIN_ID__PIN15 15
+
+// TIMx
+#define DEFIO_TIM_ID__TIM1 1
+#define DEFIO_TIM_ID__TIM2 2
+#define DEFIO_TIM_ID__TIM3 3
+#define DEFIO_TIM_ID__TIM4 4
 
 // TIMCH to TIM_Channel_x mapping
-#define DEFIO_TIM_Channel__NA 0
-#define DEFIO_TIM_Channel__TIMCH1 TIM_Channel_1
-#define DEFIO_TIM_Channel__TIMCH2 TIM_Channel_2
-#define DEFIO_TIM_Channel__TIMCH3 TIM_Channel_3
-#define DEFIO_TIM_Channel__TIMCH4 TIM_Channel_4
+#define DEFIO_TIMCH_ID__NA 0
+#define DEFIO_TIMCH_ID__TIMCH1 1
+#define DEFIO_TIMCH_ID__TIMCH2 2
+#define DEFIO_TIMCH_ID__TIMCH3 3
+#define DEFIO_TIMCH_ID__TIMCH4 4
 
-// the ## operator must be used directly here - the parameter should not be expanded first
+#define DEFIO_TIMERCH_REC(tim, ch) (DEFIO_TIMER_REC(tim).channel[(ch)-1])
+#define DEFIO_TIMER_REC(tim) (timerRecs[TIMER_INDEX(tim)])
+#define DEFIO_TIMER_DEF(tim) (timerDefs[TIMER_INDEX(tim)])
+#define DEFIO_IO_DEF(gpio, pin) (/* CONCAT(ioDef_, CONCAT(DEFIO_GPIO_LETTER(gpio), pin)) */ 0)
+#define DEFIO_TIM(tim) CONCAT(TIM, tim)
+#define DEFIO_GPIO(gpio) CONCAT(GPIO, DEFIO_GPIO_LETTER(gpio))
+#define DEFIO_PIN(pin) CONCAT(Pin_, pin)
+#define DEFIO_TIM_CHANNEL(ch) CONCAT(TIM_Channel_, ch)
+
+// the ## operator must be used directly here - the parameter should not be expanded
 // some magic may be used if expansion is desirable (#define DEFIO_GPIO__EXPAND(x) CONCAT(GPIO, x) )
-#define DEF_IO(port, pin, tim, tim_ch) { DEFIO_TIM__ ## tim, DEFIO_GPIO__ ## port, DEFIO_Pin__ ## pin, DEFIO_TIM_Channel__ ## tim_ch, DEFIO_TIMER_INDEX__ ## tim }
+#define DEF_TIMCH(gpio_, pin_, tim_, tim_ch_) {                             \
+        .rec = &DEFIO_TIMERCH_REC(DEFIO_TIM_ID__  ## tim_, DEFIO_TIMCH_ID__ ## tim_ch_), \
+            .timerDef = &DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_),     \
+            .ioDef = DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_), \
+            .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                \
+            .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),                \
+            .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                    \
+            .channel = DEFIO_TIM_CHANNEL(DEFIO_TIMCH_ID__ ## tim_ch_)   \
+}                                                                       \
+/**/
 
 // macros neccessary to define IO structure. Maybe use #include in target_io.c instead
 

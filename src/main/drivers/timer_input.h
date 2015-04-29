@@ -2,6 +2,7 @@
 
 #include "callback.h"
 #include "timer.h"
+#include "resource.h"
 
 // queue must be long enough to hold longest softserial symbol (~ 12 edges) and some reserve
 #define TIMERIN_QUEUE_LEN 32
@@ -23,7 +24,7 @@ typedef struct timerInputRec_s {
     unsigned qhead;                         // don't use shorter type until gcc is fixed. 4.8.4 extends to 32bit before each operation
     unsigned qtail;                         // this value must be even in dualtimer mode
     uint32_t flags;
-    const timerHardware_t* timHw;
+    const timerChDef_t *timChDef;
     TIM_TypeDef *tim;
     callbackRec_t *callback;
     volatile timCCR_t *CCR;                 // lower CCR addres in dualtimer mode
@@ -33,7 +34,7 @@ typedef struct timerInputRec_s {
     uint16_t timeout;                       // timeout after edge capture, triggered by TIMERIN_TIMEOUT_ON_EDGE
 } timerInputRec_t;
 
-void timerIn_Config(timerInputRec_t *self, const timerHardware_t *timHw, channelType_t owner, int priority, callbackRec_t *callback, struct timerQueueRec_s *timer, uint16_t flags);
+void timerIn_Config(timerInputRec_t *self, const timerChDef_t* timChDef, resourceOwner_t owner, int priority, callbackRec_t *callback, struct timerQueueRec_s *timer, uint16_t flags);
 void timerIn_Release(timerInputRec_t *self);
 void timerIn_Restart(timerInputRec_t *self);
 void timerIn_Polarity(timerInputRec_t *self , uint16_t tim_ICPolarity);

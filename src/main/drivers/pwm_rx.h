@@ -17,15 +17,17 @@
 
 #pragma once
 
+#include "drivers/timer.h"
+
 typedef enum {
     INPUT_FILTERING_DISABLED = 0,
     INPUT_FILTERING_ENABLED
 } inputFilteringMode_e;
 
-void ppmInConfig(const timerHardware_t *timerHardwarePtr);
-void ppmAvoidPWMTimerClash(const timerHardware_t *timerHardwarePtr, TIM_TypeDef *sharedPwmTimer);
+void ppmInConfig(const timerChDef_t *timCh);
+void ppmAvoidPWMTimerClash(const timerChDef_t *timCh, TIM_TypeDef *sharedPwmTimer);
 
-void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel);
+void pwmInConfig(const timerChDef_t *timCh, uint8_t channel);
 uint16_t pwmRead(uint8_t channel);
 
 bool isPPMDataBeingReceived(void);

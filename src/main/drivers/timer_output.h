@@ -19,14 +19,14 @@ typedef struct timerOutputRec_s {
     unsigned qtail;
     unsigned qtailWake;                         // queue index used to wake caller (compared after fetch in irq)
     uint16_t flags;
-    const timerHardware_t* timHw;
+    const timerChDef_t* timChDef;
     TIM_TypeDef *tim;
     volatile timCCR_t* timCCR;
     callbackRec_t *callback;
     timerCCHandlerRec_t compareCb;
 } timerOutputRec_t;
 
-void timerOut_Config(timerOutputRec_t *self, const timerHardware_t *timHw, channelType_t owner, int priority, callbackRec_t *callback, uint16_t tim_OCPolarity);
+void timerOut_Config(timerOutputRec_t *self, const timerChDef_t* timChDef, resourceOwner_t owner, int priority, callbackRec_t *callback, uint16_t tim_OCPolarity);
 void timerOut_Release(timerOutputRec_t *self);
 void timerOut_Restart(timerOutputRec_t *self);
 bool timerOut_IsIdle(timerOutputRec_t *self);

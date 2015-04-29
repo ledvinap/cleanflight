@@ -764,12 +764,12 @@ void validateAndFixConfig(void)
     if (feature(FEATURE_SOFTSERIAL) && (
             0
 #ifdef USE_SOFTSERIAL1
-            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][0]].tim)
-            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][1]].tim)
+            || (LED_STRIP_TIMER == timerChannelMap[masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][0]]->tim)
+            || (LED_STRIP_TIMER == timerChannelMap[masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][1]]->tim)
 #endif
 #ifdef USE_SOFTSERIAL2
-            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0]].tim)
-            || (LED_STRIP_TIMER == timerHardware[masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1]].tim)
+            || (LED_STRIP_TIMER == timerChannelMap[masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0]]->tim)
+            || (LED_STRIP_TIMER == timerChannelMap[masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1]]->tim)
 #endif
     )) {
         // led strip needs the same timer as softserial

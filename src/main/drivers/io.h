@@ -2,17 +2,26 @@
 
 #include <stdbool.h>
 
-#include "target_io.h"
-#include "timer.h"
+#include "drivers/gpio.h"
+#include "drivers/resource.h"
 
-const timerHardware_t* getIOHw(IOId_t id);
+typedef struct ioDef_s {
+    GPIO_TypeDef *gpio;
+    uint32_t pin;
+    struct ioRec_s *rec;
+} ioDef_t;
 
-int IO_GPIOPortIdx(IOId_t id);
-int IO_GPIOPortSource(IOId_t id);
-int IO_GPIOPinIdx(IOId_t id);
-int IO_GPIOPinSource(IOId_t id);
-uint32_t IO_EXTILine(IOId_t id);
+typedef struct ioRec_s {
+    resourceOwner_t owner;
+    resourceType_t resourcesUsed; // TODO!
+} ioRec_t;
 
-bool IO_DigitalRead(IOId_t id);
-void IO_DigitalWrite(IOId_t id, bool value);
-void IO_ConfigGPIO(IOId_t id, GPIO_Mode mode);
+int IO_GPIOPortIdx(const ioDef_t *io);
+int IO_GPIOPortSource(const ioDef_t *io);
+int IO_GPIOPinIdx(const ioDef_t *io);
+int IO_GPIOPinSource(const ioDef_t *io);
+uint32_t IO_EXTILine(const ioDef_t *io);
+
+bool IODigitalRead(const ioDef_t *  io);
+void IODigitalWrite(const ioDef_t *  io, bool value);
+void IOConfigGPIO(const ioDef_t *  io, GPIO_Mode mode);

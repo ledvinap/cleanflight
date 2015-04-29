@@ -13,9 +13,9 @@
 
 typedef struct {
     extiCallbackRec_t* handler;
-} extiChannelConfig_t;
+} extiChannelRec_t;
 
-extiChannelConfig_t extiChannelConfig[16]; // TODO exti channels
+extiChannelRec_t extiChannelRecs[16];
 
 #ifdef STM32F10X
 static uint8_t extiIRQn[] = {
@@ -27,28 +27,30 @@ static uint8_t extiIRQn[] = {
 
 void EXTIInit(void)
 {
+    // TODO - stm32F303
     // enable AFIO for EXTI support
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
-    memset(extiChannelConfig, 0, sizeof(extiChannelConfig));
+    memset(extiChannelRecs, 0, sizeof(extiChannelRecs));
 }
 
 void EXTIHandlerInit(extiCallbackRec_t *self, extiHandlerCallback *fn)
 {
-    self->cb = fn;
+    self->fn = fn;
 }
 
-void EXTIConfig(IOId_t pin, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger)
+void EXTIConfig(const ioDef_t* ioDef, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger)
 {
     int chIdx;
-    chIdx = IO_GPIOPinIdx(pin);
+    chIdx = IO_GPIOPinIdx(ioDef);
     if(chIdx < 0)
         return;
-    extiChannelConfig[chIdx].handler = cb;
+    extiChannelRec_t *rec = &extiChannelRecs[chIdx];
+    rec->handler = cb;
 
-    gpioExtiLineConfig(IO_GPIOPortSource(pin), IO_GPIOPinSource(pin));
+    gpioExtiLineConfig(IO_GPIOPortSource(ioDef), IO_GPIOPinSource(ioDef));
 
-    uint32_t extiLine = IO_EXTILine(pin);
+    uint32_t extiLine = IO_EXTILine(ioDef);
 
     EXTI_ClearITPendingBit(extiLine);
 
@@ -67,10 +69,10 @@ void EXTIConfig(IOId_t pin, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_
     NVIC_Init(&NVIC_InitStructure);
 }
 
-void EXTIEnable(IOId_t pin, bool enable)
+void EXTIEnable(const ioDef_t* ioDef, bool enable)
 {
 #if defined(STM32F10X)
-    uint32_t extiLine = IO_EXTILine(pin);
+    uint32_t extiLine = IO_EXTILine(ioDef);
     if(!extiLine)
         return;
     if(enable)
@@ -78,7 +80,7 @@ void EXTIEnable(IOId_t pin, bool enable)
     else
         EXTI->IMR &= ~extiLine;
 #elif defined(STM32F30X)
-    int extiLine = IO_EXTILine(pin);
+    int extiLine = IO_EXTILine(ioDef);
     if(extiLine < 0)
         return;
     // assume extiLine < 32 (walid for all EXTI pins)
@@ -98,7 +100,7 @@ void EXTI_IRQHandler(void)
     while(exti_active) {
         unsigned idx = 31 - __builtin_clz(exti_active);
         uint32_t mask = 1 << idx;
-        extiChannelConfig[idx].handler->cb(extiChannelConfig[idx].handler);
+        extiChannelRecs[idx].handler->fn(extiChannelRecs[idx].handler);
         EXTI->PR = mask;  // clear pending mask (by writing 1)
         exti_active &= ~mask;
     }

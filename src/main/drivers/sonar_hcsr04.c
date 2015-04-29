@@ -59,7 +59,7 @@ void hcsr04_extiHandler(extiCallbackRec_t* cb)
 
     UNUSED(cb);
 
-    if (IO_DigitalRead(sonarHardware->echoIO) != 0) {
+    if (IODigitalRead(sonarHardware->echoIO) != 0) {
         timing_start = micros();
     } else {
         timing_stop = micros();
@@ -73,10 +73,10 @@ void hcsr04_Init(const sonarHardware_t *initialSonarHardware)
 
     if(sonarHardware->triggerIO != sonarHardware->echoIO) {
         // separate trigger pin, configure it as output
-        IO_ConfigGPIO(sonarHardware->triggerIO, Mode_Out_PP);
+        IOConfigGPIO(sonarHardware->triggerIO, Mode_Out_PP);
     }
     // ep - echo pin, configure as input (even if same as trigger)
-    IO_ConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
+    IOConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
 
     // setup external interrupt on echo pin
     EXTIHandlerInit(&hcsr04_extiCallbackRec, hcsr04_extiHandler);
@@ -100,17 +100,17 @@ void hcsr04_Poll(void)
     lastMeasurementAt = now;
     // TODO - this needs some analysis to avoid race conditions
     if(sonarHardware->triggerIO != sonarHardware->echoIO) {
-        IO_DigitalWrite(sonarHardware->triggerIO, true);
+        IODigitalWrite(sonarHardware->triggerIO, true);
         //  The width of trig signal must be greater than 10us
         delayMicroseconds(10);
-        IO_DigitalWrite(sonarHardware->triggerIO, false);
+        IODigitalWrite(sonarHardware->triggerIO, false);
     } else {
         EXTIEnable(sonarHardware->echoIO, false);
-        IO_ConfigGPIO(sonarHardware->echoIO, Mode_Out_PP);
-        IO_DigitalWrite(sonarHardware->echoIO, true);
+        IOConfigGPIO(sonarHardware->echoIO, Mode_Out_PP);
+        IODigitalWrite(sonarHardware->echoIO, true);
         delayMicroseconds(10);
-        IO_DigitalWrite(sonarHardware->echoIO, false);
-        IO_ConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
+        IODigitalWrite(sonarHardware->echoIO, false);
+        IOConfigGPIO(sonarHardware->echoIO, Mode_IN_FLOATING);
         // TODO - there may be race if we don't enable EXTI soon enough
     }
     EXTIEnable(sonarHardware->echoIO, true);

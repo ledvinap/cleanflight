@@ -174,7 +174,7 @@
 #define USABLE_IO_CHANNEL_COUNT (16+2)
 
 #define TIME_USE_TIMER    // base timming on some timer instead of systick
-#define TIME_TIMER TIM2
+#define TIME_TIMER (timerDefs + TIMER_INDEX(2))
 
 // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
 #ifdef ALIENWII32

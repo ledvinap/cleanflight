@@ -29,23 +29,23 @@ struct timerQueueRec_s;
 # error "TIMERIN_QUEUE_LEN must be power of 2"
 #endif
 
-void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channelType_t owner, int priority, callbackRec_t *callback, struct timerQueueRec_s* timer, uint16_t flags)
+void timerIn_Config(timerInputRec_t* self, const timerChDef_t* timChDef, resourceOwner_t owner, int priority, callbackRec_t *callback, struct timerQueueRec_s* timer, uint16_t flags)
 {
-    self->timHw = timHw;
-    self->tim = timHw->tim;
+    self->timChDef = timChDef;
+    self->tim = timChDef->tim;
     self->flags = flags;
     self->callback = callback;
     self->timer = timer;
     self->timeout = 0;
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
-        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority, 0, 1000000);
-        self->CCR = timerChCCRLo(timHw);
-        timerChCCHandlerInit(&self->edgeLoCb, timerIn_dualCaptureEventStart);
-        timerChCCHandlerInit(&self->edgeHiCb, timerIn_dualCaptureEventStore);
+        timerChInit(timChDef, owner, RESOURCE_INPUT | RESOURCE_TIMER | RESOURCE_TIMER_DUAL, priority, 0, 1000000);
+        self->CCR = timerChCCRLo(timChDef);
+        timerCCHandlerInit(&self->edgeLoCb, timerIn_dualCaptureEventStart);
+        timerCCHandlerInit(&self->edgeHiCb, timerIn_dualCaptureEventStore);
     } else {
-        timerChInit(timHw, owner, RESOURCE_INPUT | RESOURCE_TIMER, priority, 0, 1000000);
-        self->CCR = timerChCCR(timHw);
-        timerChCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);
+        timerChInit(timChDef, owner, RESOURCE_INPUT | RESOURCE_TIMER, priority, 0, 1000000);
+        self->CCR = timerChCCR(timChDef);
+        timerCCHandlerInit(&self->edgeLoCb, timerIn_timerCaptureEvent);
     }
     timerIn_Restart(self);
 }
@@ -53,27 +53,27 @@ void timerIn_Config(timerInputRec_t* self, const timerHardware_t* timHw, channel
 void timerIn_Release(timerInputRec_t* self)
 {
     if(self->flags & TIMERIN_QUEUE_DUALTIMER)
-        timerChConfigCallbacksDual(self->timHw, NULL, NULL, NULL);
+        timerChConfigCallbacksDual(self->timChDef, NULL, NULL, NULL);
     else
-        timerChConfigCallbacks(self->timHw, NULL, NULL);
+        timerChConfigCallbacks(self->timChDef, NULL, NULL);
 }
 
 void timerIn_Restart(timerInputRec_t* self)
 {
-    const timerHardware_t* timHw = self->timHw;
+    const timerChDef_t* timChDef = self->timChDef;
 
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
-        timerChConfigICDual(timHw, self->flags & TIMERIN_RISING, 42*72);  // halfbit interval for 115200. Safe for PWM/PPM input. This should be probably configurable in future
-        timerChConfigGPIO(timHw, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
-        timerChConfigCallbacksDual(timHw, &self->edgeLoCb, &self->edgeHiCb, NULL);
+        timerChConfigICDual(timChDef, self->flags & TIMERIN_RISING, 42*72);  // halfbit interval for 115200. Safe for PWM/PPM input. This should be probably configurable in future
+        timerChConfigGPIO(timChDef, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
+        timerChConfigCallbacksDual(timChDef, &self->edgeLoCb, &self->edgeHiCb, NULL);
     } else {
         if(self->flags & TIMERIN_RISING)
             ATOMIC_AND(&self->flags, ~TIMERIN_FLAG_HIGH);
         else
             ATOMIC_OR(&self->flags, TIMERIN_FLAG_HIGH);
-        timerChConfigIC(timHw, self->flags & TIMERIN_RISING, 42*72);
-        timerChConfigGPIO(timHw, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
-        timerChConfigCallbacks(timHw, &self->edgeLoCb, NULL);
+        timerChConfigIC(timChDef, self->flags & TIMERIN_RISING, 42*72);
+        timerChConfigGPIO(timChDef, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
+        timerChConfigCallbacks(timChDef, &self->edgeLoCb, NULL);
     }
 }
 
@@ -91,7 +91,7 @@ void timerIn_timerCaptureEvent(timerCCHandlerRec_t *self_, uint16_t capture) {
     // toggle polarity if requested
     if(self->flags & TIMERIN_POLARITY_TOGGLE) {
         self->flags ^= TIMERIN_FLAG_HIGH;
-        timerChICPolarity(self->timHw, !(self->flags & TIMERIN_FLAG_HIGH));
+        timerChICPolarity(self->timChDef, !(self->flags & TIMERIN_FLAG_HIGH));
     }
     // store received value into buffer
     self->queue[self->qhead] = capture;
@@ -116,7 +116,7 @@ void timerIn_dualCaptureEventStart(timerCCHandlerRec_t *self_, uint16_t capture)
         self->flags &= ~TIMERIN_TIMEOUT_ON_EDGE;
         pinDbgHi(DBP_TIMERINPUT_EDGEDELAY);
         timerQueue_Start(self->timer, (capture - self->tim->CNT) + self->timeout);
-        timerChITConfigDualLo(self->timHw, DISABLE);  // timer started, nothind else to do
+        timerChITConfigDualLo(self->timChDef, DISABLE);  // timer started, nothind else to do
     }
 }
 
@@ -153,7 +153,7 @@ bool timerIn_ArmEdgeTimeout(timerInputRec_t* self)
         if(self->qhead == self->qtail) { // wait only if queue is empty
             self->flags |= TIMERIN_TIMEOUT_ON_EDGE;
             if(self->flags & TIMERIN_QUEUE_DUALTIMER)
-                timerChITConfigDualLo(self->timHw, ENABLE);
+                timerChITConfigDualLo(self->timChDef, ENABLE);
             // IT flag must be set if first edge was already captured in dualtimer mode
             // it is cleared by reading corresponding CCR on store
             // keep this in mind when modifying this code
@@ -171,7 +171,7 @@ void timerIn_Reset(timerInputRec_t* self)
                 self->flags &= ~TIMERIN_FLAG_HIGH;
             else
                 self->flags |= TIMERIN_FLAG_HIGH;
-            timerChICPolarity(self->timHw, !(self->flags & TIMERIN_FLAG_HIGH));
+            timerChICPolarity(self->timChDef, !(self->flags & TIMERIN_FLAG_HIGH));
         }
         self->qhead = self->qtail = 0;
         // we assume that caller knows that qtail will jump.

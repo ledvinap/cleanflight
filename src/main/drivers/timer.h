@@ -20,6 +20,7 @@
 #include "gpio.h"
 
 #include "callback.h"
+#include "resource.h"
 
 #define TIM_N(i) (1 << (i))
 
@@ -54,78 +55,59 @@ typedef struct timerOvrHandlerRec_s {
     struct timerOvrHandlerRec_s* next;
 } timerOvrHandlerRec_t;
 
-typedef struct timerHardware_s {
-    TIM_TypeDef *tim;
-    GPIO_TypeDef *gpio;
-    uint32_t pin;
+struct timerRec_s;
+struct timerDef_s;
+struct ioDef_s;
+typedef struct timerChDef_s {
+    struct timerChRec_s *rec;
+    const struct timerDef_s *timerDef;    // timer definition
+    const struct ioDef_s *ioDef;          // io pin definition
+    TIM_TypeDef *tim;                     // cache
+    GPIO_TypeDef *gpio;                   // cache
+    uint32_t pin;                         // cache
     uint8_t channel;
-    uint8_t tim_idx;                   // index of timer (only used timers considered)
-#ifdef STM32F303
-    uint8_t gpioPinSource;             // TODO - this can be removed and pinSource calculated from pin
-    uint8_t alternateFunction;
+#ifdef STM32F303xC
+    uint8_t pinAF;                        // pin Alternate Function multiplexer for this timer
 #endif
-} timerHardware_t;
+} timerChDef_t;
 
-extern const timerHardware_t timerHardware[];
+typedef struct timerDef_s {
+    struct timerRec_s* rec;
+    TIM_TypeDef *tim;
+    uint8_t irqCC, irqUP;
+    uint8_t channels;        // number of channels allocated for this timer
+    bool outputsNeedEnable;  // advanced timers
+} timerDef_t;
 
-typedef enum {
-    TYPE_FREE,
-    TYPE_PWMINPUT,
-    TYPE_PPMINPUT,
-    TYPE_PWMOUTPUT_MOTOR,
-    TYPE_PWMOUTPUT_FAST,
-    TYPE_PWMOUTPUT_ONESHOT,
-    TYPE_PWMOUTPUT_SERVO,
-    TYPE_SOFTSERIAL_RX,
-    TYPE_SOFTSERIAL_TX,
-    TYPE_SOFTSERIAL_RXTX,        // bidirectional pin for softserial
-    TYPE_SOFTSERIAL_AUXTIMER,    // timer channel is used for softserial. No IO function on pin
-    TYPE_ADC,
-    TYPE_SERIAL_RX,
-    TYPE_SERIAL_TX,
-    TYPE_SERIAL_RXTX,
-    TYPE_PINDEBUG,
-    TYPE_TIMER
-} channelType_t;
+// TODO
+extern const timerChDef_t* const timerChannelMap[USABLE_IO_CHANNEL_COUNT];
 
-// Currently TIMER should be shared resource (softserial dualtimer and timerqueue needs to allocate timer channel, but pin can be used for other function)
-// with mode switching (shared serial ports, ...) this will need some improvement
-typedef enum {
-    RESOURCE_INPUT = 1 << 0,
-    RESOURCE_OUTPUT = 1<< 1,
-    RESOURCE_IO = RESOURCE_INPUT | RESOURCE_OUTPUT,
-    RESOURCE_TIMER = 1 << 2,
-    RESOURCE_TIMER_DUAL = 1 << 3, // channel used in dual-capture, other channel will be allocated too
-    RESOURCE_USART = 1 << 4,
-    RESOURCE_ADC = 1 << 5
-} channelResources_t;
+void timerChConfigIC(const timerChDef_t *timCh, bool polarityRising, unsigned inputFilterSamples);
+void timerChConfigICDual(const timerChDef_t *timCh, bool polarityRising, unsigned inputFilterSamples);
+void timerChICPolarity(const timerChDef_t *timCh, bool polarityRising);
+volatile timCCR_t* timerChCCR(const timerChDef_t *timCh);
+volatile timCCR_t* timerChCCRLo(const timerChDef_t *timCh);
+volatile timCCR_t* timerChCCRHi(const timerChDef_t *timCh);
+volatile timCNT_t* timerChCNT(const timerChDef_t *timCh);
+void timerChConfigOC(const timerChDef_t *timCh, bool outEnable, bool stateHigh);
+void timerChConfigGPIO(const timerChDef_t *timCh, GPIO_Mode mode);
 
-void timerConfigure(TIM_TypeDef *tim, uint8_t irqPriority, uint16_t period, int frequency);
+void timerCCHandlerInit(timerCCHandlerRec_t *self, timerCCHandlerCallback *fn);
+void timerOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *fn);
+void timerChConfigCallbacks(const timerChDef_t *timCh, timerCCHandlerRec_t *edgeCallback, timerOvrHandlerRec_t *overflowCallback);
+void timerChConfigCallbacksDual(const timerChDef_t *timCh, timerCCHandlerRec_t *edgeCallbackLo, timerCCHandlerRec_t *edgeCallbackHi, timerOvrHandlerRec_t *overflowCallback);
+void timerChITConfigDualLo(const timerChDef_t *timCh, FunctionalState newState);
+void timerChITConfig(const timerChDef_t *timCh, FunctionalState newState);
+void timerChClearCCFlag(const timerChDef_t *timCh);
 
-void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);
-void timerChConfigICDual(const timerHardware_t* timHw, bool polarityRising, unsigned inputFilterSamples);
-void timerChICPolarity(const timerHardware_t *timHw, bool polarityRising);
-volatile timCCR_t* timerChCCR(const timerHardware_t* timHw);
-volatile timCCR_t* timerChCCRLo(const timerHardware_t* timHw);
-volatile timCCR_t* timerChCCRHi(const timerHardware_t* timHw);
-volatile timCNT_t* timerChCNT(const timerHardware_t* timHw);
-void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool stateHigh);
-void timerChConfigGPIO(const timerHardware_t* timHw, GPIO_Mode mode);
+void timerChInit(const timerChDef_t *timCh, resourceOwner_t owner, resourceType_t resources, int irqPriority, uint16_t period, int timerFrequency);
 
-void timerChCCHandlerInit(timerCCHandlerRec_t *self, timerCCHandlerCallback *fn);
-void timerChOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *fn);
-void timerChConfigCallbacks(const timerHardware_t *channel, timerCCHandlerRec_t *edgeCallback, timerOvrHandlerRec_t *overflowCallback);
-void timerChConfigCallbacksDual(const timerHardware_t *channel, timerCCHandlerRec_t *edgeCallbackLo, timerCCHandlerRec_t *edgeCallbackHi, timerOvrHandlerRec_t *overflowCallback);
-void timerChITConfigDualLo(const timerHardware_t* timHw, FunctionalState newState);
-void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
-void timerChClearCCFlag(const timerHardware_t* timHw);
-
-void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, uint16_t period, int timerFrequency);
-
-const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw);
-channelResources_t timerChGetUsedResources(const timerHardware_t *timHw);
+//TODO:
+resourceType_t timerChGetUsedResources(const timerChDef_t *timCh);
+struct timerChRec_s* timerChRec(const timerChDef_t *timCh);
+struct timerChRec_s* timerChRecDual(const timerChDef_t *timCh);
 
 void timerInit(void);
 void timerStart(void);
-void timerForceOverflow(TIM_TypeDef *tim);
+void timerForceOverflow(const struct timerDef_s *timDef);
 

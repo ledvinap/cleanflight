@@ -75,7 +75,7 @@ static void usartConfigurePinInversion(uartPort_t *self) {
 }
 
 static void usartConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
-    IOId_t tx,rx,rxi,txi;
+    const ioDef_t *tx, *rx, *rxi, *txi;
     if(config->mode & MODE_U_REMAP) {
         rx = self->hwDef->rxChRemap;
         tx = self->hwDef->txChRemap;
@@ -93,16 +93,16 @@ static void usartConfigurePins(uartPort_t *self, const serialPortMode_t *config)
     }
 
     if(self->port.mode & MODE_SINGLEWIRE) {
-        timerChConfigGPIO(&timerHardware[tx], Mode_AF_OD);
+        IOConfigGPIO(tx, Mode_AF_OD);
     } else {
-        if (self->port.mode & MODE_TX && tx != IO_NONE)
-            timerChConfigGPIO(getIOHw(tx), Mode_AF_PP);   // TODO!
-        if (self->port.mode & MODE_RX && rx != IO_NONE)
-            timerChConfigGPIO(getIOHw(rx), Mode_IPU);
-        if (txi != IO_NONE)
-             timerChConfigGPIO(getIOHw(rxi), Mode_IPU);
-        if (rxi != IO_NONE)
-             timerChConfigGPIO(getIOHw(txi), Mode_IPU);
+        if (self->port.mode & MODE_TX && tx)
+            IOConfigGPIO(tx, Mode_AF_PP);   // TODO!
+        if (self->port.mode & MODE_RX && rx)
+            IOConfigGPIO(rx, Mode_IPU);
+        if (txi)
+             IOConfigGPIO(rxi, Mode_IPU);
+        if (rxi)
+             IOConfigGPIO(txi, Mode_IPU);
     }
 }
 

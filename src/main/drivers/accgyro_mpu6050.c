@@ -246,7 +246,7 @@ void mpu6050GpioInit(void) {
 
 
 #ifdef USE_MPU_DATA_READY_SIGNAL
-    IO_ConfigGPIO(mpu6050Config->intIO, Mode_IN_FLOATING);
+    IOConfigGPIO(mpu6050Config->intIO, Mode_IN_FLOATING);  // TODO - EXTIConfigGPIO()
     EXTIHandlerInit(&mpu6050_extiCallbackRec, mpu6050_extiHandler);
     EXTIConfig(mpu6050Config->intIO, &mpu6050_extiCallbackRec, NVIC_PRIO_MPU_INT_EXTI, EXTI_Trigger_Rising);
     EXTIEnable(mpu6050Config->intIO, true);

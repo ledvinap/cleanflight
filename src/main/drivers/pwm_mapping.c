@@ -399,7 +399,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         uint8_t timerIndex = setup[i] & 0x00FF;
         uint8_t type = (setup[i] & 0xFF00) >> 8;
 
-        const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
+        const timerChDef_t *timChDef = timerChannelMap[timerIndex];
 
 #ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
         // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
@@ -423,8 +423,8 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 
 #ifdef USE_SOFTSERIAL2
         if (init->useSoftSerial
-            && (  masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0] == timerIndex
-                 ||  masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1] == timerIndex
+            && (masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0] == timerIndex
+                ||  masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1] == timerIndex
                 ) )
             continue;
 #endif
@@ -432,10 +432,10 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #ifdef LED_STRIP_TIMER
         // skip LED Strip output
         if (init->useLEDStrip) {
-            if (timerHardwarePtr->tim == LED_STRIP_TIMER)
+            if (timChDef->tim == LED_STRIP_TIMER)
                 continue;
-#if defined(STM32F303xC) && defined(WS2811_GPIO) && defined(WS2811_PIN_SOURCE)
-            if (timerHardwarePtr->gpio == WS2811_GPIO && timerHardwarePtr->gpioPinSource == WS2811_PIN_SOURCE)
+#if defined(STM32F303xC) && defined(WS2811_GPIO) && defined(WS2811_PIN)
+            if (timChDef->gpio == WS2811_GPIO && timChDef->pin == WS2811_PIN)
                 continue;
 #endif
         }
@@ -443,24 +443,24 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
 
 #ifdef VBAT_ADC_GPIO
-        if (init->useVbat && timerHardwarePtr->gpio == VBAT_ADC_GPIO && timerHardwarePtr->pin == VBAT_ADC_GPIO_PIN) {
+        if (init->useVbat && timChDef->gpio == VBAT_ADC_GPIO && timChDef->pin == VBAT_ADC_GPIO_PIN) {
             continue;
         }
 #endif
 
 #ifdef RSSI_ADC_GPIO
-        if (init->useRSSIADC && timerHardwarePtr->gpio == RSSI_ADC_GPIO && timerHardwarePtr->pin == RSSI_ADC_GPIO_PIN) {
+        if (init->useRSSIADC && timChDef->gpio == RSSI_ADC_GPIO && timChDef->pin == RSSI_ADC_GPIO_PIN) {
             continue;
         }
 #endif
 
 #ifdef CURRENT_METER_ADC_GPIO
-        if (init->useCurrentMeterADC && timerHardwarePtr->gpio == CURRENT_METER_ADC_GPIO && timerHardwarePtr->pin == CURRENT_METER_ADC_GPIO_PIN) {
+        if (init->useCurrentMeterADC && timChDef->gpio == CURRENT_METER_ADC_GPIO && timChDef->pin == CURRENT_METER_ADC_GPIO_PIN) {
             continue;
         }
 #endif
 
-        if(timerChGetUsedResources(timerHardwarePtr) & (RESOURCE_IO | RESOURCE_TIMER))
+        if(timerChGetUsedResources(timChDef) & (RESOURCE_IO | RESOURCE_TIMER))
             continue;
 
         // hacks to allow current functionality
@@ -474,19 +474,19 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         if (init->useServos && !init->airplane) {
 #if defined(NAZE)
             // remap PWM9+10 as servos
-            if ((timerIndex == PWM9 || timerIndex == PWM10) && timerHardwarePtr->tim == TIM1)
+            if ((timerIndex == PWM9 || timerIndex == PWM10) && timChDef->tim == TIM1)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
 #if defined(SPARKY)
             // remap PWM1+2 as servos
-            if ((timerIndex == PWM1 || timerIndex == PWM2) && timerHardwarePtr->tim == TIM15)
+            if ((timerIndex == PWM1 || timerIndex == PWM2) && timChDef->tim == TIM15)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
 #if defined(SPRACINGF3)
             // remap PWM15+16 as servos
-            if ((timerIndex == PWM15 || timerIndex == PWM16) && timerHardwarePtr->tim == TIM15)
+            if ((timerIndex == PWM15 || timerIndex == PWM16) && timChDef->tim == TIM15)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
@@ -520,10 +520,10 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #ifdef CC3D
         if (init->useParallelPWM) {
             // Skip PWM inputs that conflict with timers used outputs.
-            if ((type == MAP_TO_SERVO_OUTPUT || type == MAP_TO_MOTOR_OUTPUT) && (timerHardwarePtr->tim == TIM2 || timerHardwarePtr->tim == TIM3)) {
+            if ((type == MAP_TO_SERVO_OUTPUT || type == MAP_TO_MOTOR_OUTPUT) && (timChDef->tim == TIM2 || timChDef->tim == TIM3)) {
                 continue;
             }
-            if (type == MAP_TO_PWM_INPUT && timerHardwarePtr->tim == TIM4) {
+            if (type == MAP_TO_PWM_INPUT && timChDef->tim == TIM4) {
                 continue;
             }
 
@@ -533,30 +533,30 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         if (type == MAP_TO_PPM_INPUT) {
 #ifdef CC3D
             if (init->useOneshot) {
-                ppmAvoidPWMTimerClash(timerHardwarePtr, TIM4);
+                ppmAvoidPWMTimerClash(timChDef, TIM4);
             }
 #endif
 #ifdef SPARKY
             if (init->useOneshot) {
-                ppmAvoidPWMTimerClash(timerHardwarePtr, TIM2);
+                ppmAvoidPWMTimerClash(timChDef, TIM2);
             }
 #endif
-            ppmInConfig(timerHardwarePtr);
+            ppmInConfig(timChDef);
         } else if (type == MAP_TO_PWM_INPUT) {
-            pwmInConfig(timerHardwarePtr, channelIndex);
+            pwmInConfig(timChDef, channelIndex);
             channelIndex++;
         } else if (type == MAP_TO_MOTOR_OUTPUT) {
             if (init->useOneshot) {
-                pwmOneshotMotorConfig(timerHardwarePtr, pwmOutputConfiguration.motorCount, init->idlePulse);
+                pwmOneshotMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->idlePulse);
             } else if (init->motorPwmRate > 500) {
-                pwmBrushedMotorConfig(timerHardwarePtr, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
+                pwmBrushedMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
             } else {
-                pwmBrushlessMotorConfig(timerHardwarePtr, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
+                pwmBrushlessMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
             }
             pwmOutputConfiguration.motorCount++;
         } else if (type == MAP_TO_SERVO_OUTPUT) {
 #ifdef USE_SERVOS
-            pwmServoConfig(timerHardwarePtr, pwmOutputConfiguration.servoCount, init->servoPwmRate, init->servoCenterPulse);
+            pwmServoConfig(timChDef, pwmOutputConfiguration.servoCount, init->servoPwmRate, init->servoCenterPulse);
             pwmOutputConfiguration.servoCount++;
 #endif
         }

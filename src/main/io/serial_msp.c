@@ -132,7 +132,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   8 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   9 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -229,6 +229,8 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_LOOP_TIME                   73 //out message         Returns FC cycle time i.e looptime parameter
 #define MSP_SET_LOOP_TIME               74 //in message          Sets FC cycle time i.e looptime parameter
 
+#define MSP_FAILSAFE_CONFIG             75 //out message         Returns FC Fail-Safe settings
+#define MSP_SET_FAILSAFE_CONFIG         76 //in message          Sets FC Fail-Safe settings
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -1005,7 +1007,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.escAndServoConfig.maxthrottle);
         serialize16(masterConfig.escAndServoConfig.mincommand);
 
-        serialize16(currentProfile->failsafeConfig.failsafe_throttle);
+        serialize16(masterConfig.failsafeConfig.failsafe_throttle);
 
 #ifdef GPS
         serialize8(masterConfig.gpsConfig.provider); // gps_type
@@ -1142,6 +1144,15 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.rxConfig.midrc);
         serialize16(masterConfig.rxConfig.mincheck);
         serialize8(masterConfig.rxConfig.spektrum_sat_bind);
+        serialize16(masterConfig.rxConfig.rx_min_usec);
+        serialize16(masterConfig.rxConfig.rx_max_usec);
+        break;
+
+    case MSP_FAILSAFE_CONFIG:
+        headSerialReply(8);
+        serialize8(masterConfig.failsafeConfig.failsafe_delay);
+        serialize8(masterConfig.failsafeConfig.failsafe_off_delay);
+        serialize16(masterConfig.failsafeConfig.failsafe_throttle);
         break;
 
     case MSP_RSSI_CONFIG:
@@ -1380,7 +1391,7 @@ static bool processInCommand(void)
         masterConfig.escAndServoConfig.maxthrottle = read16();
         masterConfig.escAndServoConfig.mincommand = read16();
 
-        currentProfile->failsafeConfig.failsafe_throttle = read16();
+        masterConfig.failsafeConfig.failsafe_throttle = read16();
 
 #ifdef GPS
         masterConfig.gpsConfig.provider = read8(); // gps_type
@@ -1535,6 +1546,16 @@ static bool processInCommand(void)
         masterConfig.rxConfig.midrc = read16();
         masterConfig.rxConfig.mincheck = read16();
         masterConfig.rxConfig.spektrum_sat_bind = read8();
+        if (currentPort->dataSize > 8) {
+            masterConfig.rxConfig.rx_min_usec = read16();
+            masterConfig.rxConfig.rx_max_usec = read16();
+        }
+        break;
+
+    case MSP_SET_FAILSAFE_CONFIG:
+        masterConfig.failsafeConfig.failsafe_delay = read8();
+        masterConfig.failsafeConfig.failsafe_off_delay = read8();
+        masterConfig.failsafeConfig.failsafe_throttle = read16();
         break;
 
     case MSP_SET_RSSI_CONFIG:

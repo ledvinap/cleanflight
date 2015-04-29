@@ -351,8 +351,6 @@ void init(void)
 
     failsafeInit(&masterConfig.rxConfig);
 
-    beepcodeInit();
-
     rxInit(&masterConfig.rxConfig);
 
 #ifdef GPS

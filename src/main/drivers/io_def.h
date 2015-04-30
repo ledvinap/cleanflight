@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/utils.h"
+
 // define macros for easy specification of IO pins.
 
 // Structure defining available IO pins is defined using DEF_IO macro. Parameters to this macro are intended to be easily readable.
@@ -11,10 +13,13 @@
 #define DEFIO_GPIO_ID__GPIOA 1
 #define DEFIO_GPIO_ID__GPIOB 2
 #define DEFIO_GPIO_ID__GPIOC 3
+#define DEFIO_GPIO_ID__GPIOF 4
 
 #define DEFIO_GPIO_LETTER__1 A
 #define DEFIO_GPIO_LETTER__2 B
 #define DEFIO_GPIO_LETTER__3 C
+#define DEFIO_GPIO_LETTER__4 F
+
 
 #define DEFIO_GPIO_LETTER(gpio) CONCAT(DEFIO_GPIO_LETTER__, gpio)
 
@@ -41,6 +46,10 @@
 #define DEFIO_TIM_ID__TIM2 2
 #define DEFIO_TIM_ID__TIM3 3
 #define DEFIO_TIM_ID__TIM4 4
+#define DEFIO_TIM_ID__TIM8 8
+#define DEFIO_TIM_ID__TIM15 15
+#define DEFIO_TIM_ID__TIM16 16
+#define DEFIO_TIM_ID__TIM17 17
 
 // TIMCH to TIM_Channel_x mapping
 #define DEFIO_TIMCH_ID__NA 0
@@ -52,7 +61,8 @@
 #define DEFIO_TIMERCH_REC(tim, ch) (DEFIO_TIMER_REC(tim).channel[(ch)-1])
 #define DEFIO_TIMER_REC(tim) (timerRecs[TIMER_INDEX(tim)])
 #define DEFIO_TIMER_DEF(tim) (timerDefs[TIMER_INDEX(tim)])
-#define DEFIO_IO_DEF(gpio, pin) (/* CONCAT(ioDef_, CONCAT(DEFIO_GPIO_LETTER(gpio), pin)) */ 0)
+#define DEFIO_IO_DEF(gpio, pin) CONCAT(IO_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
+#define DEFIO_IO_REC(gpio, pin) CONCAT(ioRec_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
 #define DEFIO_TIM(tim) CONCAT(TIM, tim)
 #define DEFIO_GPIO(gpio) CONCAT(GPIO, DEFIO_GPIO_LETTER(gpio))
 #define DEFIO_PIN(pin) CONCAT(Pin_, pin)
@@ -62,15 +72,32 @@
 // some magic may be used if expansion is desirable (#define DEFIO_GPIO__EXPAND(x) CONCAT(GPIO, x) )
 #define DEF_TIMCH(gpio_, pin_, tim_, tim_ch_) {                             \
         .rec = &DEFIO_TIMERCH_REC(DEFIO_TIM_ID__  ## tim_, DEFIO_TIMCH_ID__ ## tim_ch_), \
-            .timerDef = &DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_),     \
-            .ioDef = DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_), \
-            .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                \
-            .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),                \
-            .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                    \
+            .timerDef = &DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_),       \
+            .ioDef = &DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_), \
+            .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                   \
+            .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),               \
+            .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                   \
             .channel = DEFIO_TIM_CHANNEL(DEFIO_TIMCH_ID__ ## tim_ch_)   \
 }                                                                       \
 /**/
 
-// macros neccessary to define IO structure. Maybe use #include in target_io.c instead
+#if defined(IO_DEF_DEFINE)
 
-#include "drivers/timer_impl.h"
+
+// we are included in C file, emit actual IO definitions
+#define DEF_IO(gpio_, pin_)                                             \
+    struct ioRec_s DEFIO_IO_REC(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_); \
+    const struct ioDef_s DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
+        __attribute__ ((section (".text.gpio." STR(DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_)) ))) \
+        = {                                                             \
+        .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),                   \
+        .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                       \
+        .rec = &DEFIO_IO_REC(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
+    }                                                                   \
+    /**/
+#else
+struct ioDef_s;
+#define DEF_IO(gpio_, pin_) \
+    extern struct ioDef_s DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_)   \
+    /**/
+#endif

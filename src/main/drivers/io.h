@@ -5,6 +5,15 @@
 #include "drivers/gpio.h"
 #include "drivers/resource.h"
 
+#ifdef STM32F10X
+# include "drivers/io_stm32f10x.h"
+#endif
+
+#ifdef STM32F303xC
+# include "drivers/io_stm32f30x.h"
+#endif
+
+
 typedef struct ioDef_s {
     GPIO_TypeDef *gpio;
     uint32_t pin;
@@ -25,3 +34,4 @@ uint32_t IO_EXTILine(const ioDef_t *io);
 bool IODigitalRead(const ioDef_t *  io);
 void IODigitalWrite(const ioDef_t *  io, bool value);
 void IOConfigGPIO(const ioDef_t *  io, GPIO_Mode mode);
+void IOConfigGPIOAF(const ioDef_t *  io, GPIO_Mode mode, uint8_t af);

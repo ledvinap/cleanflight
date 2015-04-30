@@ -6,9 +6,10 @@
 #include "drivers/timer.h"
 #include "drivers/timer_impl.h"
 #include "drivers/io_def.h"
+#include "drivers/io.h"
 
 
-const timerChDef_t timerChDefs[] = {      //                                afromini
+const timerChDef_t timerChDefs[] = {       //                                afromini
     DEF_TIMCH(GPIOA, PIN0,  TIM2, TIMCH1), // IO1   PPM    PWM1  PPM   PWM1    ;3 ADC12_IN0              ; 1
     DEF_TIMCH(GPIOA, PIN1,  TIM2, TIMCH2), // IO2          PWM2        PWM2    ;3 ADC12_IN1
     DEF_TIMCH(GPIOA, PIN2,  TIM2, TIMCH3), // IO3          PWM3        PWM3    ;3 ADC12_IN2 USART2_TX

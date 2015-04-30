@@ -38,10 +38,15 @@
 timerRec_t timerRecs[USED_TIMER_COUNT];
 
 const timerDef_t timerDefs[USED_TIMER_COUNT] = {
-#define _DEF(i, iCC, iUP) {.rec = &timerRecs[i], .tim = TIM##i, .irqCC = iCC, .irqUP = iUP, .channels = CC_CHANNELS_PER_TIMER}
+#define _DEF(i, iCC, iUP) {.rec = &timerRecs[TIMER_INDEX(i)], .tim = TIM##i, .irqCC = iCC, .irqUP = iUP, .channels = CC_CHANNELS_PER_TIMER}
 
 #if USED_TIMERS & TIM_N(1)
+# if defined(STM32F10X)
     _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn),
+# endif
+# if defined(STM32F303xC)
+    _DEF(1, TIM1_CC_IRQn, TIM1_UP_TIM16_IRQn),
+# endif
 #endif
 #if USED_TIMERS & TIM_N(2)
     _DEF(2, TIM2_IRQn, TIM2_IRQn),
@@ -62,8 +67,8 @@ const timerDef_t timerDefs[USED_TIMER_COUNT] = {
 #if USED_TIMERS & TIM_N(15)
     _DEF(15, TIM1_BRK_TIM15_IRQn, TIM1_BRK_TIM15_IRQn),
 #endif
-#if USED_TIMERS & TIM_N(16)
-    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn),
+#if (USED_TIMERS & TIM_N(16))
+    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn),   // 303 only
 #endif
 #if USED_TIMERS & TIM_N(17)
     _DEF(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn),
@@ -327,10 +332,10 @@ void timerChConfigGPIO(const timerChDef_t *timChDef, GPIO_Mode mode)
 {
     if(timChDef->ioDef) {
 #ifdef STM32F303xC
-        IOConfigPinAF(timChDef->ioDef, timChDef->pinAF);
-#endif
-
+        IOConfigGPIOAF(timChDef->ioDef, mode, timChDef->pinAF);
+#else
         IOConfigGPIO(timChDef->ioDef, mode);
+#endif
     }
 }
 
@@ -600,7 +605,7 @@ _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
 # if defined(STM32F10X)
 _TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);       // timer can't be shared
 # endif
-# ifdef STM32F303xC
+# if defined(STM32F303xC)
 #  if USED_TIMERS & TIM_N(16)
 _TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
 #  else

@@ -42,6 +42,9 @@ typedef struct timerRec_s {
 extern timerRec_t timerRecs[USED_TIMER_COUNT];
 extern const timerDef_t timerDefs[USED_TIMER_COUNT];
 
+// declared here, defined in target
+extern const timerChDef_t timerQueueChannelDef;
+
 // return index of timer in timer table. Lowest timer has index 0
 #define TIMER_INDEX(i) BITCOUNT((TIM_N(i) - 1) & USED_TIMERS)
 

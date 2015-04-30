@@ -37,8 +37,10 @@ uint32_t IO_EXTILine(const ioDef_t *io)
         return 0;
 #if defined(STM32F10X)
     return 1 << IO_GPIOPinIdx(io);
-#elif defined(STM32F30X)
+#elif defined(STM32F303xC)
     return IO_GPIOPinIdx(io);
+#else
+# error "Unknown target type"
 #endif
 }
 
@@ -73,3 +75,22 @@ void IOConfigGPIO(const ioDef_t *io, GPIO_Mode mode)
     cfg.speed = Speed_2MHz;
     gpioInit(io->gpio, &cfg);
 }
+
+#ifdef STM32F303xC
+
+void IOConfigGPIOAF(const ioDef_t *io, GPIO_Mode mode, uint8_t af)
+{
+    if(!io)
+        return;
+
+    GPIO_PinAFConfig(io->gpio, IO_GPIOPinSource(io), af);
+
+    gpio_config_t cfg;
+
+    cfg.pin = io->pin;
+    cfg.mode = mode;
+    cfg.speed = Speed_2MHz;
+    gpioInit(io->gpio, &cfg);
+}
+
+#endif

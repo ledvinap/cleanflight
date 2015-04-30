@@ -62,13 +62,13 @@ void timerQueue_Init(void)
     timerQueue.heapLen = 0;
     timerQueue.isrHead = timerQueue.isrTail = 0;
 #if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
-    const timerHardware_t * timHw = &timerHardware[TIMER_QUEUE_CHANNEL];
-    timerQueue.timCCR = timerChCCR(timHw);
-    timerQueue.timCNT = timerChCNT(timHw);
-    timerChInit(timHw, TYPE_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER, TIMERQUEUE_TIMER_FREQ);
-    timerChConfigOC(timHw, false, false);
-    timerChCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
-    timerChConfigCallbacks(timHw, &timerQueue.compareCb, NULL);
+    const timerChDef_t * timChDef = &timerQueueChannelDef;
+    timerQueue.timCCR = timerChCCR(timChDef);
+    timerQueue.timCNT = timerChCNT(timChDef);
+    timerChInit(timChDef, OWNER_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER, (uint16_t)0x10000, TIMERQUEUE_TIMER_FREQ);
+    timerChConfigOC(timChDef, false, false);
+    timerCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
+    timerChConfigCallbacks(timChDef, &timerQueue.compareCb, NULL);
 #elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
     timerQueue.timCNT = &TIME_TIMER->tim->CNT;
     NVIC_SetPriority (SysTick_IRQn, NVIC_PRIO_SYSTICK >> (8 - __NVIC_PRIO_BITS));  /* set Priority for Systick Interrupt */
@@ -250,15 +250,15 @@ check_again:
     // replan timer
 #if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
     if(timerQueue.heapLen) {
-        timerChClearCCFlag(&timerHardware[TIMER_QUEUE_CHANNEL]);   // honour compare match flag from here if interrupt is enabled later
+        timerChClearCCFlag(&timerQueueChannelDef);   // honour compare match flag from here if interrupt is enabled later
         *timerQueue.timCCR = timerQueue.heap[0]->time;
         if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT) < 0) {
             // it is possible that we filled CCR too late. Run callbacks again immediately
             goto check_again;
         }
-        timerChITConfig(&timerHardware[TIMER_QUEUE_CHANNEL], ENABLE);
+        timerChITConfig(&timerQueueChannelDef, ENABLE);
     } else {
-        timerChITConfig(&timerHardware[TIMER_QUEUE_CHANNEL], DISABLE);
+        timerChITConfig(&timerQueueChannelDef, DISABLE);
     }
 #elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
     if(timerQueue.heapLen) {

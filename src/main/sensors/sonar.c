@@ -63,10 +63,8 @@ void sonarInit(void)
     }
 #else
     static const sonarHardware_t const sonarHardware = {
-#if TODO
-        .triggerIO = IO12,
-        .echoIO = IO11,
-#endif
+        .triggerIO = &IO_PB7,
+        .echoIO = &IO_PB6,
     };
     hcsr04_Init(&sonarHardware);
 #endif

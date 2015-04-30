@@ -260,7 +260,9 @@ COMMON_SRC	 = build_config.c \
 		   drivers/bus_i2c_soft.c \
 		   drivers/callback.c \
 		   drivers/dma.c \
+		   drivers/exti.c \
 		   drivers/io.c \
+		   drivers/io_def.c \
 		   drivers/pin_debug.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \

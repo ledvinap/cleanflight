@@ -33,8 +33,8 @@
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
-#define BARO_XCLR_IO   IO_BARO_XCLR
-#define BARO_EOC_IO    IO_BARO_EOC
+#define BARO_XCLR_IO   &IO_PC13
+#define BARO_EOC_IO    &IO_PC14
 
 #define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_GPIO GPIOB
@@ -161,7 +161,7 @@
 #define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
-#define AUTOTUNE
+//#define AUTOTUNE
 #define USE_SERVOS
 
 #define CurrentMeter_TIMER 7 // OUT6

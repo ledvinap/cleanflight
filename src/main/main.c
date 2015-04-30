@@ -55,6 +55,7 @@
 #include "drivers/exti.h"
 
 #include "rx/rx.h"
+#include "rx/spektrum.h"
 
 #include "io/serial.h"
 #include "io/serial_msp.h"
@@ -169,7 +170,9 @@ void init(void)
 
     DMAInit();
 
+#ifdef USE_EXTI
     EXTIInit();
+#endif
 
     ledInit();
 

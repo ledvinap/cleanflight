@@ -42,17 +42,11 @@ extern const struct serialPortVTable usbVcpVTable;
 
 void usbVcpUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
-    UNUSED(instance);
-    UNUSED(baudRate);
-
     // TODO implement
 }
 
 void usbVcpConfigure(serialPort_t *serial, const serialPortMode_t *config)
 {
-    UNUSED(instance);
-    UNUSED(mode);
-
     // TODO implement
 }
 

@@ -42,11 +42,13 @@
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
 
+// TODO - define defaults for 103 USART mapping
+
 #ifdef USE_USART1
 static uartPort_t uartPort1;
 static uint8_t uartPort1RxBuffer[UART1_RX_BUFFER_SIZE];
 static uint8_t uartPort1TxBuffer[UART1_TX_BUFFER_SIZE];
-static const uartHwDef_t uartPort1Hw = {
+static const uartHwDef_t uartPort1Def = {
     .uartPort = &uartPort1,
     .rxBuffer = uartPort1RxBuffer,
     .rxBufferSize = sizeof(uartPort1RxBuffer),
@@ -76,7 +78,7 @@ static const uartHwDef_t uartPort1Hw = {
 static uartPort_t uartPort2;
 static uint8_t uartPort2RxBuffer[UART2_RX_BUFFER_SIZE];
 static uint8_t uartPort2TxBuffer[UART2_TX_BUFFER_SIZE];
-static const uartHwDef_t uartPort2Hw = {
+static const uartHwDef_t uartPort2Def = {
     .uartPort = &uartPort2,
     .rxBuffer = uartPort2RxBuffer,
     .rxBufferSize = sizeof(uartPort2RxBuffer),
@@ -102,7 +104,7 @@ static const uartHwDef_t uartPort2Hw = {
 static uartPort_t uartPort3;
 static uint8_t uartPort3RxBuffer[UART3_RX_BUFFER_SIZE];
 static uint8_t uartPort3TxBuffer[UART3_TX_BUFFER_SIZE];
-static const uartHwDef_t uartPort3Hw = {
+static const uartHwDef_t uartPort3Def = {
     .uartPort = &uartPort3,
     .rxBuffer = uartPort3RxBuffer,
     .rxBufferSize = sizeof(uartPort3RxBuffer),
@@ -138,16 +140,49 @@ void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
     RCC_APB2PeriphClockCmd(def->APB2Periph, ENABLE);
 }
 
+void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
+    const ioDef_t *tx, *rx, *rxi, *txi;
+    if(config->mode & MODE_U_REMAP) {
+        rx = self->hwDef->rxChRemap;
+        tx = self->hwDef->txChRemap;
+        rxi = self->hwDef->rxCh;
+        txi = self->hwDef->txCh;
+        GPIO_PinRemapConfig(self->hwDef->remap, ENABLE);
+        self->port.mode |= MODE_U_REMAP;
+    } else {
+        rx = self->hwDef->rxCh;
+        tx = self->hwDef->txCh;
+        rxi = self->hwDef->rxChRemap;
+        txi = self->hwDef->txChRemap;
+        GPIO_PinRemapConfig(self->hwDef->remap, DISABLE);
+        self->port.mode &= ~MODE_U_REMAP;
+    }
+
+    if(self->port.mode & MODE_SINGLEWIRE) {
+        IOConfigGPIO(tx, Mode_AF_OD);
+    } else {
+        if (self->port.mode & MODE_TX && tx)
+            IOConfigGPIO(tx, Mode_AF_PP);   // TODO!
+        if (self->port.mode & MODE_RX && rx)
+            IOConfigGPIO(rx, Mode_IPU);
+        if (txi)
+             IOConfigGPIO(rxi, Mode_IPU);
+        if (rxi)
+             IOConfigGPIO(txi, Mode_IPU);
+    }
+}
+
+
 const uartHwDef_t* serialUSARTFindDef(USART_TypeDef *USARTx) {
     if(0) ;
 #ifdef USE_USART1
-    else if (USARTx == USART1) return &uartPort1Hw;
+    else if (USARTx == USART1) return &uartPort1Def;
 #endif
 #ifdef USE_USART2
-    else if (USARTx == USART2) return &uartPort2Hw;
+    else if (USARTx == USART2) return &uartPort2Def;
 #endif
 #ifdef USE_USART3
-    else if (USARTx == USART3) return &uartPort3Hw;
+    else if (USARTx == USART3) return &uartPort3Def;
 #endif
     else return NULL;
 }

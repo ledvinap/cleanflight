@@ -70,41 +70,10 @@ static void usartConfigurePinInversion(uartPort_t *self) {
         inversionPins |= USART_InvPin_Rx;
     }
 
-    USART_InvPinCmd(self->USARTx, inversionPins, (uartPort->port.mode & MODE_INVERTED) ? ENABLE : DISABLE);
+    USART_InvPinCmd(self->USARTx, inversionPins, (self->port.mode & MODE_INVERTED) ? ENABLE : DISABLE);
 #endif
 }
 
-static void usartConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
-    const ioDef_t *tx, *rx, *rxi, *txi;
-    if(config->mode & MODE_U_REMAP) {
-        rx = self->hwDef->rxChRemap;
-        tx = self->hwDef->txChRemap;
-        rxi = self->hwDef->rxCh;
-        txi = self->hwDef->txCh;
-        GPIO_PinRemapConfig(self->hwDef->remap, ENABLE);
-        self->port.mode |= MODE_U_REMAP;
-    } else {
-        rx = self->hwDef->rxCh;
-        tx = self->hwDef->txCh;
-        rxi = self->hwDef->rxChRemap;
-        txi = self->hwDef->txChRemap;
-        GPIO_PinRemapConfig(self->hwDef->remap, DISABLE);
-        self->port.mode &= ~MODE_U_REMAP;
-    }
-
-    if(self->port.mode & MODE_SINGLEWIRE) {
-        IOConfigGPIO(tx, Mode_AF_OD);
-    } else {
-        if (self->port.mode & MODE_TX && tx)
-            IOConfigGPIO(tx, Mode_AF_PP);   // TODO!
-        if (self->port.mode & MODE_RX && rx)
-            IOConfigGPIO(rx, Mode_IPU);
-        if (txi)
-             IOConfigGPIO(rxi, Mode_IPU);
-        if (rxi)
-             IOConfigGPIO(txi, Mode_IPU);
-    }
-}
 
 static void usartConfigureDMAorIRQ(uartPort_t *self, const serialPortMode_t *config)
 {
@@ -208,7 +177,7 @@ static void uartReconfigure(uartPort_t *self, const serialPortMode_t *config)
     self->port.mode |= config->mode & MODE_SINGLEWIRE;
     self->port.baudRate = config->baudRate;
 
-    usartConfigurePins(self, config);
+    usartHwConfigurePins(self, config);
     usartConfigureDMAorIRQ(self, config);
 
     uartReconfigureState(self);

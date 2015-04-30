@@ -31,14 +31,16 @@ typedef struct uartHwDef_s {
     uint8_t IRQPrio;
     DMAChannelID rxDMAChannelId, txDMAChannelId;
     uint8_t IRQPrio_rxDMA, IRQPrio_txDMA;
-    uint32_t APB1Periph, APB2Periph;
+    uint32_t APB1Periph, APB2Periph, AHBPeriph;
     const ioDef_t *rxCh, *txCh, *rxChRemap, *txChRemap;
+    uint8_t afConfig, afConfigRemap;
     uint32_t remap;
 } uartHwDef_t;
 
 void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config);
 const uartHwDef_t* serialUSARTFindDef(USART_TypeDef *USARTx);
 
+void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config);
 void uartIrqHandler(uartPort_t *self);
 void uartStartTxDMA(uartPort_t *self);
 void uartTxDMAHandler(uartPort_t *self);

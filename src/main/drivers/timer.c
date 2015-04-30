@@ -38,40 +38,40 @@
 timerRec_t timerRecs[USED_TIMER_COUNT];
 
 const timerDef_t timerDefs[USED_TIMER_COUNT] = {
-#define _DEF(i, iCC, iUP) {.rec = &timerRecs[TIMER_INDEX(i)], .tim = TIM##i, .irqCC = iCC, .irqUP = iUP, .channels = CC_CHANNELS_PER_TIMER}
+#define _DEF(i, iCC, iUP, outEna) {.rec = &timerRecs[TIMER_INDEX(i)], .tim = TIM##i, .irqCC = iCC, .irqUP = iUP, .channels = CC_CHANNELS_PER_TIMER, .outputsNeedEnable=outEna}
 
 #if USED_TIMERS & TIM_N(1)
 # if defined(STM32F10X)
-    _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn),
+    _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn, true),
 # endif
 # if defined(STM32F303xC)
-    _DEF(1, TIM1_CC_IRQn, TIM1_UP_TIM16_IRQn),
+    _DEF(1, TIM1_CC_IRQn, TIM1_UP_TIM16_IRQn, true),
 # endif
 #endif
 #if USED_TIMERS & TIM_N(2)
-    _DEF(2, TIM2_IRQn, TIM2_IRQn),
+    _DEF(2, TIM2_IRQn, TIM2_IRQn, false),
 #endif
 #if USED_TIMERS & TIM_N(3)
-    _DEF(3, TIM3_IRQn, TIM3_IRQn),
+    _DEF(3, TIM3_IRQn, TIM3_IRQn, false),
 #endif
 #if USED_TIMERS & TIM_N(4)
-    _DEF(4, TIM4_IRQn, TIM4_IRQn),
+    _DEF(4, TIM4_IRQn, TIM4_IRQn, false),
 #endif
 #if USED_TIMERS & TIM_N(8)
 # if defined(STM32F10X_XL)
-    _DEF(8, TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn),
+    _DEF(8, TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn, true),
 # else // f10x_hd, f30x
-    _DEF(8, TIM8_CC_IRQn, TIM8_UP_IRQn),
+    _DEF(8, TIM8_CC_IRQn, TIM8_UP_IRQn, true),
 # endif
 #endif
 #if USED_TIMERS & TIM_N(15)
-    _DEF(15, TIM1_BRK_TIM15_IRQn, TIM1_BRK_TIM15_IRQn),
+    _DEF(15, TIM1_BRK_TIM15_IRQn, TIM1_BRK_TIM15_IRQn, true),
 #endif
 #if (USED_TIMERS & TIM_N(16))
-    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn),   // 303 only
+    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn, true),  
 #endif
 #if USED_TIMERS & TIM_N(17)
-    _DEF(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn),
+    _DEF(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn, true),
 #endif
 #undef _DEF
 };
@@ -401,11 +401,10 @@ void timerChConfigICDual(const timerChDef_t *timChDef, bool polarityRising, unsi
 // change input capture polarity (without dsiabling timer)
 void timerChICPolarity(const timerChDef_t *timChDef, bool polarityRising)
 {
-    timCCER_t tmpccer = timChDef->tim->CCER;
     if(polarityRising) {
-        tmpccer &= ~TIM_CCER_CCxP(timChDef->channel);
+        timChDef->tim->CCER &= ~TIM_CCER_CCxP(timChDef->channel);
     } else {
-        tmpccer |= TIM_CCER_CCxP(timChDef->channel);
+        timChDef->tim->CCER |= TIM_CCER_CCxP(timChDef->channel);
     }
 }
 

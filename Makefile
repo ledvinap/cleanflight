@@ -316,7 +316,6 @@ VCP_SRC	 = \
 		   vcp/hw_config.c \
 		   vcp/stm32_it.c \
 		   vcp/usb_desc.c \
-		   vcp/usb_endp.c \
 		   vcp/usb_istr.c \
 		   vcp/usb_prop.c \
 		   vcp/usb_pwr.c \
@@ -426,7 +425,6 @@ CRAZYFLIE_SRC	=	startup_stm32f10x_md_gcc.S \
 		   vcp/hw_config.c \
 		   vcp/stm32_it.c \
 		   vcp/usb_desc.c \
-		   vcp/usb_endp.c \
 		   vcp/usb_istr.c \
 		   vcp/usb_prop.c \
 		   vcp/usb_pwr.c \

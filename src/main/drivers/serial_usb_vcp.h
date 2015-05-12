@@ -19,8 +19,13 @@
 
 #include "serial.h"
 
+#define VCP_BUFFER_SIZE 256
+
 typedef struct {
     serialPort_t port;
+    uint8_t rxBuffer[VCP_BUFFER_SIZE];
+    uint8_t txBuffer[VCP_BUFFER_SIZE];
+    bool txPending;
 } usbVcpPort_t;
 
 serialPort_t *usbVcpOpen(void);

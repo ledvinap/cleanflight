@@ -27,98 +27,196 @@
 #include "usb_core.h"
 #include "usb_init.h"
 #include "vcp/hw_config.h"
+#include "usb_regs.h"
+#include "usb_mem.h"
+
+#include "common/utils.h"
+#include "common/atomic.h"
+#include "common/maths.h"
 
 #include "drivers/system.h"
-#include "common/utils.h"
+#include "drivers/nvic.h"
 
 #include "serial.h"
 #include "serial_usb_vcp.h"
 
 
 #define USB_TIMEOUT  50
+#define VCP_BUFFER_SIZE 256
 
 static usbVcpPort_t vcpPort;
 extern const struct serialPortVTable usbVcpVTable;
 
-void usbVcpUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
+static void vcpTryTx(usbVcpPort_t* self);
+static void vcpRx(usbVcpPort_t* self);
+
+void usbVcpUpdateState(serialPort_t *instance, portState_t andMask, portState_t orMask)
 {
-    // TODO implement
+    UNUSED(instance); UNUSED(andMask); UNUSED(orMask);
 }
 
-void usbVcpConfigure(serialPort_t *serial, const serialPortMode_t *config)
+
+void usbVcpConfigure(serialPort_t *instance, const serialPortMode_t *config)
 {
-    // TODO implement
+    usbVcpPort_t *self = container_of(instance, usbVcpPort_t, port);
+    self->port.rxCallback = config->rxCallback;
 }
 
-void usbVcpRelease(serialPort_t *serial)
+void usbVcpRelease(serialPort_t *instance)
 {
-    // TODO implement
+    UNUSED(instance);
 }
 
-void usbVcpGetConfig(serialPort_t *serial, serialPortMode_t* config)
+void usbVcpGetConfig(serialPort_t *instance, serialPortMode_t* config)
 {
-    usbVcpPort_t *self = container_of(serial, usbVcpPort_t, port);
-
-    config->baudRate = self->port.baudRate;  // TODO - use actual baudrate
-    config->mode = self->port.mode;
+    usbVcpPort_t *self = container_of(instance, usbVcpPort_t, port);
     config->rxCallback = self->port.rxCallback;
 }
 
-bool isUsbVcpTransmitBufferEmpty(serialPort_t *serial)
+bool isUsbVcpTransmitBufferEmpty(serialPort_t *instance)
 {
-    UNUSED(serial);
-    return true;
+    return instance->txBufferHead == instance->txBufferTail;
 }
 
-void usbVcpWrite(serialPort_t *serial, uint8_t c)
+void usbVcpWrite(serialPort_t *instance, uint8_t ch)
 {
-    UNUSED(serial);
-    uint32_t txed;
-    uint32_t start = millis();
-
     if (!(usbIsConnected() && usbIsConfigured())) {
         return;
     }
 
-    do {
-        txed = CDC_Send_DATA((uint8_t*)&c, 1);
-    } while (txed < 1 && (millis() - start < USB_TIMEOUT));
+    usbVcpPort_t *self = container_of(instance, usbVcpPort_t, port);
+
+    uint16_t nxt = (self->port.txBufferHead + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferHead + 1;
+    if(nxt == self->port.txBufferTail) {
+        // buffer full. Discard byte now
+    } else {
+        self->port.txBuffer[self->port.txBufferHead] = ch;
+        self->port.txBufferHead = nxt;
+        ATOMIC_BLOCK_NB(NVIC_PRIO_USB) {
+            ATOMIC_BARRIER(*self);
+            vcpTryTx(self);
+        }
+    }
 }
 
-int usbVcpTotalBytesWaiting(serialPort_t *serial)
+int usbVcpTotalBytesWaiting(serialPort_t *instance)
 {
-    UNUSED(serial);
-    return receiveLength;
+    int ret = instance->rxBufferHead - instance->rxBufferTail;
+    if(ret < 0)
+        ret += instance->rxBufferSize;
+    return ret;
 }
 
-int usbVcpRead(serialPort_t *serial)
+int usbVcpRead(serialPort_t *instance)
 {
-    UNUSED(serial);
-    uint8_t buf[1];
-
-    uint32_t rxed = 0;
-
-    while (rxed < 1) {
-        rxed += CDC_Receive_DATA((uint8_t*)buf + rxed, 1 - rxed);
+    usbVcpPort_t *self = container_of(instance, usbVcpPort_t, port);
+    if (self->port.rxBufferHead == self->port.rxBufferTail) {
+        return -1;
     }
 
-    return buf[0];
+    uint8_t ch = self->port.rxBuffer[self->port.rxBufferTail];
+    self->port.rxBufferTail = (self->port.rxBufferTail + 1 >= self->port.rxBufferSize) ? 0 : self->port.rxBufferTail + 1;
+    return ch;
 }
 
 serialPort_t *usbVcpOpen(void)
 {
-    usbVcpPort_t *s;
+    usbVcpPort_t *self = &vcpPort;
+
+    self->port.vTable = &usbVcpVTable;
+
+    self->port.rxBuffer = self->rxBuffer;
+    self->port.rxBufferSize = VCP_BUFFER_SIZE;
+    self->port.rxBufferTail = 0;
+    self->port.rxBufferHead = 0;
+
+    self->port.txBuffer = self->txBuffer;
+    self->port.txBufferSize = VCP_BUFFER_SIZE;
+    self->port.txBufferTail = 0;
+    self->port.txBufferHead = 0;
+
+    self->txPending = false;
 
     Set_System();
     Set_USBClock();
     USB_Interrupts_Config();
     USB_Init();
 
-    s = &vcpPort;
-    s->port.vTable = &usbVcpVTable;
-
-    return &s->port;
+    return &self->port;
 }
+
+// this function must be called on USB basepri
+// it is not reentrant
+static void vcpTryTx(usbVcpPort_t* self) {
+    if(!self->txPending) {
+        // transmit endpoint is empty, send new data
+        int txLen;
+        if (self->port.txBufferHead >= self->port.txBufferTail) {
+            txLen = self->port.txBufferHead - self->port.txBufferTail;
+        } else {
+            txLen = self->port.txBufferSize - self->port.txBufferTail;
+        }
+        if(txLen == 0)
+            return;  // nothing to send now
+        // We can only put 64 bytes in the buffer ( /2 is copied from pervious code, check it?)
+        txLen = MIN(txLen, 64 / 2);
+
+        self->txPending = true;
+        UserToPMABufferCopy(self->port.txBuffer + self->port.txBufferTail, ENDP1_TXADDR, txLen);
+        SetEPTxCount(ENDP1, txLen);
+        SetEPTxValid(ENDP1);
+
+        unsigned nxt = self->port.txBufferTail + txLen;
+        if(nxt >= self->port.txBufferSize)
+            nxt = 0;
+        self->port.txBufferTail = nxt;
+    }
+}
+
+// this function must be called on USB basepri
+static void vcpRx(usbVcpPort_t* self)
+{
+    int rxLen = GetEPRxCount(ENDP3);
+    int rxOfs = ENDP3_RXADDR;
+
+    while(rxLen > 0) {
+        int rxChunk;
+        if (self->port.rxBufferHead >= self->port.rxBufferTail) {
+            // space up to end of buffer
+            rxChunk = self->port.rxBufferSize - self->port.rxBufferHead;
+        } else {
+            // space to tail - 1
+            rxChunk = self->port.rxBufferTail - 1 - self->port.rxBufferHead;
+        }
+        if(!rxChunk) {
+            // receive bufer if full
+            break;
+        }
+        rxChunk = MIN(rxChunk, rxLen);
+        PMAToUserBufferCopy(self->port.rxBuffer + self->port.rxBufferHead, rxOfs, rxChunk);
+        rxLen -= rxChunk; rxOfs += rxChunk;
+        unsigned nxt = self->port.rxBufferHead + rxChunk;
+        if(nxt >= self->port.rxBufferSize)
+            nxt = 0;
+        self->port.rxBufferHead = nxt;
+    }
+    SetEPRxCount(ENDP3, 64);
+    SetEPRxStatus(ENDP3, EP_RX_VALID);
+}
+
+// EP1 in callback - transmission finished
+void EP1_IN_Callback(void)
+{
+    vcpPort.txPending = false;
+    vcpTryTx(&vcpPort);
+}
+
+// EP3 out callback - data received
+void EP3_OUT_Callback(void)
+{
+    vcpRx(&vcpPort);
+}
+
 
 const struct serialPortVTable usbVcpVTable = {
     .isTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,

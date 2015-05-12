@@ -5,6 +5,8 @@
 
 #include "io.h"
 #include "io_def.h"
+#include "drivers/timer.h"
+#include "drivers/timer_impl.h"
 
 #undef IO_DEF_DEFINE
 #define IO_DEF_DEFINE 2

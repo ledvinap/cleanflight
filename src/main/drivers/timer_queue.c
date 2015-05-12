@@ -15,6 +15,7 @@
 #include "timer.h"
 #include "timer_queue.h"
 #include "drivers/timer_impl.h"  // TODO!
+#include "timer_impl.h"
 
 #define TIMERQUEUE_QUEUE_LEN 8
 #define TIMERQUEUE_ISRQUEUE_LEN 8
@@ -70,7 +71,7 @@ void timerQueue_Init(void)
     timerCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
     timerChConfigCallbacks(timChDef, &timerQueue.compareCb, NULL);
 #elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
-    timerQueue.timCNT = &TIME_TIMER->tim->CNT;
+    timerQueue.timCNT = &(TIME_TIMER)->tim->CNT;
     NVIC_SetPriority (SysTick_IRQn, NVIC_PRIO_SYSTICK >> (8 - __NVIC_PRIO_BITS));  /* set Priority for Systick Interrupt */
     SysTick->LOAD  = 0xffffff;
     SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;                    /* Enable SysTick IRQ and SysTick Timer */

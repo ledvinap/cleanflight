@@ -18,8 +18,8 @@
 #pragma once
 
 #include "common/utils.h"
+#include "io.h"
 
-#define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
 #define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4
 
 typedef struct timerChRec_s {
@@ -38,16 +38,7 @@ typedef struct timerRec_s {
     struct timerChRec_s channel[CC_CHANNELS_PER_TIMER];
 } timerRec_t;
 
-
-extern timerRec_t timerRecs[USED_TIMER_COUNT];
-extern const timerDef_t timerDefs[USED_TIMER_COUNT];
-
 // declared here, defined in target
 extern const timerChDef_t timerQueueChannelDef;
-
-// return index of timer in timer table. Lowest timer has index 0
-#define TIMER_INDEX(i) BITCOUNT((TIM_N(i) - 1) & USED_TIMERS)
-
-
 
 void timerInitTarget(void);

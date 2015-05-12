@@ -35,47 +35,6 @@
 #include "timer.h"
 #include "timer_impl.h"
 
-timerRec_t timerRecs[USED_TIMER_COUNT];
-
-const timerDef_t timerDefs[USED_TIMER_COUNT] = {
-#define _DEF(i, iCC, iUP, outEna) {.rec = &timerRecs[TIMER_INDEX(i)], .tim = TIM##i, .irqCC = iCC, .irqUP = iUP, .channels = CC_CHANNELS_PER_TIMER, .outputsNeedEnable=outEna}
-
-#if USED_TIMERS & TIM_N(1)
-# if defined(STM32F10X)
-    _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn, true),
-# endif
-# if defined(STM32F303xC)
-    _DEF(1, TIM1_CC_IRQn, TIM1_UP_TIM16_IRQn, true),
-# endif
-#endif
-#if USED_TIMERS & TIM_N(2)
-    _DEF(2, TIM2_IRQn, TIM2_IRQn, false),
-#endif
-#if USED_TIMERS & TIM_N(3)
-    _DEF(3, TIM3_IRQn, TIM3_IRQn, false),
-#endif
-#if USED_TIMERS & TIM_N(4)
-    _DEF(4, TIM4_IRQn, TIM4_IRQn, false),
-#endif
-#if USED_TIMERS & TIM_N(8)
-# if defined(STM32F10X_XL)
-    _DEF(8, TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn, true),
-# else // f10x_hd, f30x
-    _DEF(8, TIM8_CC_IRQn, TIM8_UP_IRQn, true),
-# endif
-#endif
-#if USED_TIMERS & TIM_N(15)
-    _DEF(15, TIM1_BRK_TIM15_IRQn, TIM1_BRK_TIM15_IRQn, true),
-#endif
-#if (USED_TIMERS & TIM_N(16))
-    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn, true),  
-#endif
-#if USED_TIMERS & TIM_N(17)
-    _DEF(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn, true),
-#endif
-#undef _DEF
-};
-
 // index for given channel
 static inline uint8_t getChannelIndex(const uint16_t channel)
 {
@@ -93,6 +52,9 @@ static void timerUpdateOverflowHandlers(const timerDef_t *timDef);
 void timerConfigureIRQ(const timerDef_t *timDef, uint8_t irqPriority)
 {
     // enable timer if this if first call
+    if(timDef->rec->priority == 0x00)   // TODO - hack to avoid initialization
+        timDef->rec->priority = 0xff;
+
     if(timDef->rec->priority == 0xff)
         TIM_Cmd(timDef->tim,  ENABLE);
 
@@ -573,8 +535,8 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     void name(void)                                                     \
     {                                                                   \
         pinDbgHi(DBP_TIMER);                                            \
-        timIRQHandler(TIM ## i, &timerRecs[TIMER_INDEX(i)]);            \
-        timIRQHandler(TIM ## j, &timerRecs[TIMER_INDEX(j)]);            \
+        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## i), &DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## i)); \
+        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## j), &DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## j)); \
         pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 
@@ -582,7 +544,7 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     void name(void)                                                     \
     {                                                                   \
         pinDbgHi(DBP_TIMER);                                            \
-        timIRQHandler(TIM ## i, &timerRecs[TIMER_INDEX(i)]);          \
+        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## i), &DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## i)); \
         pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 #else
@@ -599,55 +561,60 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     } struct dummy
 #endif
 
+
 #if USED_TIMERS & TIM_N(1)
-_TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
+_TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, TIM1);
 # if defined(STM32F10X)
-_TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);       // timer can't be shared
+_TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, TIM1);       // timer can't be shared
 # endif
 # if defined(STM32F303xC)
 #  if USED_TIMERS & TIM_N(16)
-_TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
+_TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, TIM1, TIM16);  // both timers are in use
 #  else
-_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 1);       // timer16 is not used
+_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, TIM1);       // timer16 is not used
 #  endif
 # endif
 #endif
 #if USED_TIMERS & TIM_N(2)
-_TIM_IRQ_HANDLER(TIM2_IRQHandler, 2);
+_TIM_IRQ_HANDLER(TIM2_IRQHandler, TIM2);
 #endif
 #if USED_TIMERS & TIM_N(3)
-_TIM_IRQ_HANDLER(TIM3_IRQHandler, 3);
+_TIM_IRQ_HANDLER(TIM3_IRQHandler, TIM3);
 #endif
 #if USED_TIMERS & TIM_N(4)
-_TIM_IRQ_HANDLER(TIM4_IRQHandler, 4);
+_TIM_IRQ_HANDLER(TIM4_IRQHandler, TIM4);
 #endif
 #if USED_TIMERS & TIM_N(8)
-_TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
+_TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, TIM8);
 # if defined(STM32F10X_XL)
-_TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);
+_TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, TIM8);
 # else  // f10x_hd, f30x
-_TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, 8);
+_TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, TIM8);
 # endif
 #endif
 #if USED_TIMERS & TIM_N(15)
-_TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
+_TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, TIM15);
 #endif
 #if defined(STM32F303xC) && ((USED_TIMERS & (TIM_N(1)|TIM_N(16))) == (TIM_N(16)))
-_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16);    // only timer16 is used, not timer1
+_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, TIM16);    // only timer16 is used, not timer1
 #endif
 #if USED_TIMERS & TIM_N(17)
-_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17);
+_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 1TIM7);
 #endif
 
 void timerInit(void)
 {
+// TODO TIM
+#if TODO
     memset(timerRecs, 0, sizeof (timerRecs));
     // call target-specific initialization routine (enable peripheral clocks, etc)
+#endif
     timerInitTarget();
-
+#if TODO
     for(int i = 0; i < USED_TIMER_COUNT; i++) {
         timerRecs[i].priority = ~0;
     }
+#endif
 #if defined(PINDEBUG) && 0
 // allocate debug pins here TODO - move to IO
     for(int i=0; i < USABLE_IO_CHANNEL_COUNT; i++) {

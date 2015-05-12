@@ -24,8 +24,6 @@
 
 #define TIM_N(i) (1 << (i))
 
-#include "target_timer.h"
-
 #if defined(STM32F303)
 typedef uint32_t timCCR_t;
 typedef uint32_t timCCER_t;

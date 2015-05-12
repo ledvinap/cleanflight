@@ -59,8 +59,8 @@
 #define DEFIO_TIMCH_ID__TIMCH4 4
 
 #define DEFIO_TIMERCH_REC(tim, ch) (DEFIO_TIMER_REC(tim).channel[(ch)-1])
-#define DEFIO_TIMER_REC(tim) (timerRecs[TIMER_INDEX(tim)])
-#define DEFIO_TIMER_DEF(tim) (timerDefs[TIMER_INDEX(tim)])
+#define DEFIO_TIMER_REC(tim) CONCAT(timerRec_TIM, tim)
+#define DEFIO_TIMER_DEF(tim) CONCAT(TIMER_TIM, tim)
 #define DEFIO_IO_DEF(gpio, pin) CONCAT(IO_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
 #define DEFIO_IO_REC(gpio, pin) CONCAT(ioRec_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
 #define DEFIO_TIM(tim) CONCAT(TIM, tim)
@@ -98,6 +98,30 @@
 #else
 struct ioDef_s;
 #define DEF_IO(gpio_, pin_) \
-    extern struct ioDef_s DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_)   \
+    extern const struct ioDef_s DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
+    /**/
+#endif
+
+#if defined(IO_DEF_DEFINE)
+// we are included in C file, emit actual TIMER definitions
+#define DEF_TIMER(tim_, iCC, iUP, outEna)                                             \
+    struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_);          \
+    const struct timerDef_s DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_)     \
+        __attribute__ ((section (".text.timer." STR(DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_)) ))) \
+        = {                                                             \
+        .rec = &DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_),                \
+        .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                       \
+        .irqCC = iCC,                                                   \
+        .irqUP = iUP,                                                   \
+        .channels = CC_CHANNELS_PER_TIMER,                              \
+        .outputsNeedEnable = outEna                                     \
+    }                                                                   \
+    /**/
+#else
+struct ioDef_s;
+struct timerRec_s;
+#define DEF_TIMER(tim_, iCC, iUP, outEna)                               \
+    extern const struct timerDef_s DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_); \
+    extern struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_)   \
     /**/
 #endif

@@ -16,6 +16,7 @@
  */
 
 #include "rx/rx.h"
+//#define ENABLE_DEBUG_OLED_PAGE
 
 typedef enum {
     PAGE_WELCOME,
@@ -24,7 +25,9 @@ typedef enum {
     PAGE_SENSORS,
     PAGE_RX,
     PAGE_PROFILE,
+#ifdef GPS
     PAGE_GPS,
+#endif
 #ifdef ENABLE_DEBUG_OLED_PAGE
     PAGE_DEBUG,
 #endif

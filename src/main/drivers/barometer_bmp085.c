@@ -40,7 +40,6 @@
 // BMP085, Standard address 0x77
 static bool isConversionComplete = false;
 static uint16_t bmp085ConversionOverrun = 0;
-static bool useConversionComplete = false;
 
 static extiCallbackRec_t bmp085_extiCallbackRec;
 
@@ -136,50 +135,51 @@ void bmp085Disable(const bmp085Config_t *config)
 bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
 {
     uint8_t data;
+    bool ack;
 
     if (bmp085InitDone)
         return true;
-#if defined(BARO_EOC_GPIO)
-    if (config && config->xclrIO && config->eocIO) {
+    if (config && config->xclrIO) {
         IO_ConfigGPIO(config->xclrIO, Mode_Out_PP);
         IO_DigitalWrite(config->xclrIO, true);   // enable baro
-
+    }
+    if (config && config->eocIO) {
         // EXTI interrupt for barometer EOC
         IO_ConfigGPIO(config->eocIO, Mode_IN_FLOATING);
         EXTIHandlerInit(&bmp085_extiCallbackRec, bmp085_extiHandler);
         EXTIConfig(config->eocIO, &bmp085_extiCallbackRec, NVIC_PRIO_BARO_EXTI, EXTI_Trigger_Rising);
         EXTIEnable(config->eocIO, true);
-
-        useConversionComplete = true;
     }
-#else
-    UNUSED(config);
-#endif
 
     delay(20); // datasheet says 10ms, we'll be careful and do 20.
 
-    i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */
-    bmp085.chip_id = BMP085_GET_BITSLICE(data, BMP085_CHIP_ID);
-    bmp085.oversampling_setting = 3;
+    ack = i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */ 
+    if (ack) {
+        bmp085.chip_id = BMP085_GET_BITSLICE(data, BMP085_CHIP_ID);
+        bmp085.oversampling_setting = 3;
 
-    if (bmp085.chip_id == BMP085_CHIP_ID) { /* get bitslice */
-        i2cRead(BMP085_I2C_ADDR, BMP085_VERSION_REG, 1, &data); /* read Version reg */
-        bmp085.ml_version = BMP085_GET_BITSLICE(data, BMP085_ML_VERSION); /* get ML Version */
-        bmp085.al_version = BMP085_GET_BITSLICE(data, BMP085_AL_VERSION); /* get AL Version */
-        bmp085_get_cal_param(); /* readout bmp085 calibparam structure */
-        bmp085InitDone = true;
-        baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T conversion time)
-        baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P conversion time with OSS=3)
-        baro->start_ut = bmp085_start_ut;
-        baro->get_ut = bmp085_get_ut;
-        baro->start_up = bmp085_start_up;
-        baro->get_up = bmp085_get_up;
-        baro->calculate = bmp085_calculate;
-        return true;
+        if (bmp085.chip_id == BMP085_CHIP_ID) { /* get bitslice */
+            i2cRead(BMP085_I2C_ADDR, BMP085_VERSION_REG, 1, &data); /* read Version reg */
+            bmp085.ml_version = BMP085_GET_BITSLICE(data, BMP085_ML_VERSION); /* get ML Version */
+            bmp085.al_version = BMP085_GET_BITSLICE(data, BMP085_AL_VERSION); /* get AL Version */
+            bmp085_get_cal_param(); /* readout bmp085 calibparam structure */
+            bmp085InitDone = true;
+            baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T conversion time)
+            baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P conversion time with OSS=3)
+            baro->start_ut = bmp085_start_ut;
+            baro->get_ut = bmp085_get_ut;
+            baro->start_up = bmp085_start_up;
+            baro->get_up = bmp085_get_up;
+            baro->calculate = bmp085_calculate;
+            return true;
+        }
     }
-
-    IODigitalWrite(config->xclrIO, false);   // disable baro
-
+    if (config && config->eocIO) {
+        EXTIRelease(config->eocIO);
+    }
+    if (config && config->xclrIO) {
+        IODigitalWrite(config->xclrIO, false);   // disable baro
+    }
     return false;
 }
 
@@ -238,7 +238,7 @@ static int32_t bmp085_get_pressure(uint32_t up)
 
 static void bmp085_start_ut(void)
 {
-#if defined(BARO_EOC_GPIO)
+#if defined(BARO_EOC_GPIO)   // TODO!
     isConversionComplete = false;
 #endif
     i2cWrite(BMP085_I2C_ADDR, BMP085_CTRL_MEAS_REG, BMP085_T_MEASURE);
@@ -248,8 +248,8 @@ static void bmp085_get_ut(void)
 {
     uint8_t data[2];
 
-#if defined(BARO_EOC_GPIO)
-    if (useConversionComplete && !isConversionComplete) {
+#if defined(BARO_EOC_GPIO)   // TODO!
+    if (!isConversionComplete) {
         bmp085ConversionOverrun++;
         return; // keep old value
     }
@@ -282,7 +282,7 @@ static void bmp085_get_up(void)
 
 #if  defined(BARO_EOC_GPIO)
     // wait in case of cockup
-    if (useConversionComplete && !isConversionComplete) {
+    if (!isConversionComplete) {  // TODO
         bmp085ConversionOverrun++;
         return; // keep old value
     }

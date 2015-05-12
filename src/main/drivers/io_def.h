@@ -46,6 +46,8 @@
 #define DEFIO_TIM_ID__TIM2 2
 #define DEFIO_TIM_ID__TIM3 3
 #define DEFIO_TIM_ID__TIM4 4
+#define DEFIO_TIM_ID__TIM6 6
+#define DEFIO_TIM_ID__TIM7 7
 #define DEFIO_TIM_ID__TIM8 8
 #define DEFIO_TIM_ID__TIM15 15
 #define DEFIO_TIM_ID__TIM16 16

@@ -413,13 +413,13 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             continue;
 #endif
 
-#if defined(STM32F303xC) && defined(USE_USART3)
+#if defined(STM32F303xC) && defined(USE_USART3) && 0 // TODO!
         // skip UART3 ports (PB10/PB11)
         if (init->useUART3 && timerHardwarePtr->gpio == UART3_GPIO && (timerHardwarePtr->pin == UART3_TX_PIN || timerHardwarePtr->pin == UART3_RX_PIN))
             continue;
 #endif
 
-#ifdef SONAR && 0 // TODO
+#if defined(SONAR) && 0 // TODO
         // skip Sonar pins
         // FIXME - Hack - See sonar.c sonarInit() and sonarHardware_t
         if (init->useSona  && timChDef->io == ) {

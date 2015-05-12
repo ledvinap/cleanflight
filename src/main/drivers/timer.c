@@ -561,6 +561,9 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     } struct dummy
 #endif
 
+#ifndef USED_TIMERS
+# error "USED_TIMERS must be defined"
+#endif
 
 #if USED_TIMERS & TIM_N(1)
 _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, TIM1);
@@ -599,7 +602,7 @@ _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, TIM15);
 _TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, TIM16);    // only timer16 is used, not timer1
 #endif
 #if USED_TIMERS & TIM_N(17)
-_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 1TIM7);
+_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, TIM17);
 #endif
 
 void timerInit(void)

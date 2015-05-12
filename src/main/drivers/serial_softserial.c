@@ -93,8 +93,6 @@ void softSerialRxCallback(callbackRec_t *cb);
 void softSerialTryTx(softSerial_t* self);
 void softSerialRxTimeoutEvent(timerQueueRec_t *tq_ref);
 
-
-
 static void resetBuffers(softSerial_t *self)
 {
     self->port.rxBuffer = self->rxBuffer;
@@ -476,15 +474,13 @@ int softSerialTotalBytesWaiting(serialPort_t *instance)
 
 int softSerialRead(serialPort_t *instance)
 {
-    uint8_t ch;
-
-    softSerial_t *s = container_of(instance, softSerial_t, port);
-    if (s->port.rxBufferHead == s->port.rxBufferTail) {
+    softSerial_t *self = container_of(instance, softSerial_t, port);
+    if (self->port.rxBufferHead == self->port.rxBufferTail) {
         return -1;
     }
 
-    ch = instance->rxBuffer[instance->rxBufferTail];
-    instance->rxBufferTail = (instance->rxBufferTail + 1 >= instance->rxBufferSize) ? 0 : instance->rxBufferTail + 1;
+    uint8_t ch = self->port.rxBuffer[self->port.rxBufferTail];
+    self->port.rxBufferTail = (self->port.rxBufferTail + 1 >= self->port.rxBufferSize) ? 0 : self->port.rxBufferTail + 1;
     return ch;
 }
 

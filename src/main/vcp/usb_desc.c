@@ -29,6 +29,62 @@
 #include "usb_lib.h"
 #include "usb_desc.h"
 
+#ifdef EMU_FTDI
+/* USB Standard Device Descriptor */
+const uint8_t Virtual_Com_Port_DeviceDescriptor[] = { 0x12, /* bLength */
+USB_DEVICE_DESCRIPTOR_TYPE, /* bDescriptorType */
+0x00, 0x02, /* bcdUSB = 2.00 */
+0x00, /* bDeviceClass:  */
+0x00, /* bDeviceSubClass */
+0x00, /* bDeviceProtocol */
+0x40, /* bMaxPacketSize0 */
+0x03, 0x04, /* idVendor = 0x0403 */
+0x01, 0x60, /* idProduct = 0x0160 FT232 */
+0x00, 0x06, /* bcdDevice  */
+1, /* Index of string descriptor describing manufacturer */
+2, /* Index of string descriptor describing product */
+3, /* Index of string descriptor describing the device's serial number */
+1  /* bNumConfigurations */
+};
+
+const uint8_t Virtual_Com_Port_ConfigDescriptor[] = {
+/*Configuration Descriptor*/
+0x09, /* bLength: Configuration Descriptor size */
+USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
+VIRTUAL_COM_PORT_SIZ_CONFIG_DESC, 0, /* wTotalLength:no of returned bytes */
+0x01, /* bNumInterfaces: 1 interface */
+0x01, /* bConfigurationValue: Configuration value */
+0x00, /* iConfiguration: Index of string descriptor describing the configuration */
+0x80, /* bmAttributes:  */
+250, /* MaxPower 500 mA */
+/*Interface Descriptor*/
+0x09, /* bLength: Interface Descriptor size */
+USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+/* Interface descriptor type */
+0x00, /* bInterfaceNumber: Number of Interface */
+0x00, /* bAlternateSetting: Alternate setting */
+0x02, /* bNumEndpoints: Two endpoints used */
+0xff, /* bInterfaceClass: Vendor specific */
+0xff, /* bInterfaceSubClass:  */
+0xff, /* bInterfaceProtocol:  */
+0x02, /* iInterface: */
+/*Endpoint 1 Descriptor*/
+0x07, /* bLength: Endpoint Descriptor size */
+USB_ENDPOINT_DESCRIPTOR_TYPE, /* bDescriptorType: Endpoint */
+0x81, /* bEndpointAddress: (IN1) */
+0x02, /* bmAttributes: Bulk */
+VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
+0x00, /* bInterval: ignore for Bulk transfer */
+/*Endpoint 2 Descriptor*/
+0x07, /* bLength: Endpoint Descriptor size */
+USB_ENDPOINT_DESCRIPTOR_TYPE, /* bDescriptorType: Endpoint */
+0x02, /* bEndpointAddress: (OUT2) */
+0x02, /* bmAttributes: Bulk */
+VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
+0x00, /* bInterval: ignore for Bulk transfer */
+};
+
+#else
 /* USB Standard Device Descriptor */
 const uint8_t Virtual_Com_Port_DeviceDescriptor[] = { 0x12, /* bLength */
 USB_DEVICE_DESCRIPTOR_TYPE, /* bDescriptorType */
@@ -122,6 +178,8 @@ USB_ENDPOINT_DESCRIPTOR_TYPE, /* bDescriptorType: Endpoint */
 VIRTUAL_COM_PORT_DATA_SIZE, /* wMaxPacketSize: */
 0x00, 0x00 /* bInterval */
 };
+
+#endif
 
 /* USB String Descriptors */
 const uint8_t Virtual_Com_Port_StringLangID[VIRTUAL_COM_PORT_SIZ_STRING_LANGID] = {

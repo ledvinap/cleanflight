@@ -40,9 +40,11 @@
 /* EP_NUM */
 /* defines how many endpoints are used by the device */
 /*-------------------------------------------------------------*/
-
+#ifdef EMU_FTDI
+#define EP_NUM                          (3)
+#else
 #define EP_NUM                          (4)
-
+#endif
 /*-------------------------------------------------------------*/
 /* --------------   Buffer Description Table  -----------------*/
 /*-------------------------------------------------------------*/
@@ -57,9 +59,14 @@
 
 /* EP1  */
 /* tx buffer base address */
+#ifdef EMU_FTDI
+#define ENDP1_TXADDR        (0xC0)
+#define ENDP2_RXADDR        (0x100)
+#else
 #define ENDP1_TXADDR        (0xC0)
 #define ENDP2_TXADDR        (0x100)
 #define ENDP3_RXADDR        (0x110)
+#endif
 
 /*-------------------------------------------------------------*/
 /* -------------------   ISTR events  -------------------------*/
@@ -81,7 +88,7 @@
 /*#define ESOF_CALLBACK*/
 /* CTR service routines */
 /* associated to defined endpoints */
-/*#define  EP1_IN_Callback   NOP_Process*/
+//#define  EP1_IN_Callback   NOP_Process
 #define  EP2_IN_Callback   NOP_Process
 #define  EP3_IN_Callback   NOP_Process
 #define  EP4_IN_Callback   NOP_Process
@@ -90,8 +97,13 @@
 #define  EP7_IN_Callback   NOP_Process
 
 #define  EP1_OUT_Callback   NOP_Process
-#define  EP2_OUT_Callback   NOP_Process
-/*#define  EP3_OUT_Callback   NOP_Process*/
+#ifdef EMU_FTDI
+// # define  EP2_OUT_Callback   NOP_Process
+#define  EP3_OUT_Callback   NOP_Process
+#else
+# define  EP2_OUT_Callback   NOP_Process
+// # define  EP3_OUT_Callback   NOP_Process
+#endif
 #define  EP4_OUT_Callback   NOP_Process
 #define  EP5_OUT_Callback   NOP_Process
 #define  EP6_OUT_Callback   NOP_Process

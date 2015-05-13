@@ -159,11 +159,19 @@ static void vcpTryTx(usbVcpPort_t* self) {
         if(txLen == 0)
             return;  // nothing to send now
         // We can only put 64 bytes in the buffer ( /2 is copied from pervious code, check it?)
-        txLen = MIN(txLen, 64 / 2);
 
         self->txPending = true;
+#if EMU_FTDI
+        txLen = MIN(txLen, 64 - 2  / 2);
+        uint8_t status[2] = {0x01, 0x60};
+        UserToPMABufferCopy(status, ENDP1_TXADDR, 2);
+        UserToPMABufferCopy(self->port.txBuffer + self->port.txBufferTail, ENDP1_TXADDR+2, txLen);
+        SetEPTxCount(ENDP1, txLen + 2);
+#else
+        txLen = MIN(txLen, 64 / 2);
         UserToPMABufferCopy(self->port.txBuffer + self->port.txBufferTail, ENDP1_TXADDR, txLen);
         SetEPTxCount(ENDP1, txLen);
+#endif
         SetEPTxValid(ENDP1);
 
         unsigned nxt = self->port.txBufferTail + txLen;
@@ -176,9 +184,13 @@ static void vcpTryTx(usbVcpPort_t* self) {
 // this function must be called on USB basepri
 static void vcpRx(usbVcpPort_t* self)
 {
+#ifdef EMU_FTDI
+    int rxLen = GetEPRxCount(ENDP2);
+    int rxOfs = ENDP2_RXADDR;
+#else
     int rxLen = GetEPRxCount(ENDP3);
     int rxOfs = ENDP3_RXADDR;
-
+#endif
     while(rxLen > 0) {
         int rxChunk;
         if (self->port.rxBufferHead >= self->port.rxBufferTail) {
@@ -200,8 +212,13 @@ static void vcpRx(usbVcpPort_t* self)
             nxt = 0;
         self->port.rxBufferHead = nxt;
     }
+#ifdef EMU_FTDI
+    SetEPRxCount(ENDP2, 64);
+    SetEPRxStatus(ENDP2, EP_RX_VALID);
+#else
     SetEPRxCount(ENDP3, 64);
     SetEPRxStatus(ENDP3, EP_RX_VALID);
+#endif
 }
 
 // EP1 in callback - transmission finished
@@ -211,12 +228,19 @@ void EP1_IN_Callback(void)
     vcpTryTx(&vcpPort);
 }
 
+#ifdef EMU_FTDI
+// EP2 out callback - data received
+void EP2_OUT_Callback(void)
+{
+    vcpRx(&vcpPort);
+}
+#else
 // EP3 out callback - data received
 void EP3_OUT_Callback(void)
 {
     vcpRx(&vcpPort);
 }
-
+#endif
 
 const struct serialPortVTable usbVcpVTable = {
     .isTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,

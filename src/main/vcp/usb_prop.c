@@ -138,6 +138,14 @@ void Virtual_Com_Port_Reset(void)
     SetEPTxStatus(ENDP1, EP_TX_NAK);
     SetEPRxStatus(ENDP1, EP_RX_DIS);
 
+#ifdef EMU_FTDI
+    /* Initialize Endpoint 2 */
+    SetEPType(ENDP2, EP_BULK);
+    SetEPRxAddr(ENDP2, ENDP2_RXADDR);
+    SetEPRxCount(ENDP2, VIRTUAL_COM_PORT_DATA_SIZE);
+    SetEPRxStatus(ENDP2, EP_RX_VALID);
+    SetEPTxStatus(ENDP2, EP_TX_DIS);
+#else
     /* Initialize Endpoint 2 */
     SetEPType(ENDP2, EP_INTERRUPT);
     SetEPTxAddr(ENDP2, ENDP2_TXADDR);
@@ -150,7 +158,7 @@ void Virtual_Com_Port_Reset(void)
     SetEPRxCount(ENDP3, VIRTUAL_COM_PORT_DATA_SIZE);
     SetEPRxStatus(ENDP3, EP_RX_VALID);
     SetEPTxStatus(ENDP3, EP_TX_DIS);
-
+#endif
     /* Set this device to response on default address */
     SetDeviceAddress(0);
 
@@ -211,6 +219,28 @@ void Virtual_Com_Port_Status_Out(void)
 {
 }
 
+#if EMU_FTDI
+RESULT Virtual_Com_Port_Data_Setup(uint8_t RequestNo)
+{
+    uint8_t *(*CopyRoutine)( uint16_t);
+
+    CopyRoutine = NULL;
+
+    if (Type_Recipient == (VENDOR_REQUEST | DEVICE_RECIPIENT) ) {
+        switch(RequestNo) {
+        }
+        Virtual_Com_Port_Status_Out();
+    }
+    if (CopyRoutine == NULL) {
+        return USB_UNSUPPORT;
+    }
+
+    pInformation->Ctrl_Info.CopyData = CopyRoutine;
+    pInformation->Ctrl_Info.Usb_wOffset = 0;
+    (*CopyRoutine)(0);
+    return USB_SUCCESS;
+}
+#else
 /*******************************************************************************
  * Function Name  : Virtual_Com_Port_Data_Setup
  * Description    : handle the data class specific requests
@@ -244,7 +274,9 @@ RESULT Virtual_Com_Port_Data_Setup(uint8_t RequestNo)
     (*CopyRoutine)(0);
     return USB_SUCCESS;
 }
+#endif
 
+#if EMU_FTDI
 /*******************************************************************************
  * Function Name  : Virtual_Com_Port_NoData_Setup.
  * Description    : handle the no data class specific requests.
@@ -254,7 +286,29 @@ RESULT Virtual_Com_Port_Data_Setup(uint8_t RequestNo)
  *******************************************************************************/
 RESULT Virtual_Com_Port_NoData_Setup(uint8_t RequestNo)
 {
-
+    if (Type_Recipient == (VENDOR_REQUEST | DEVICE_RECIPIENT) ) {
+        switch(RequestNo) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:            
+        case 4:
+        case 9:
+            return USB_SUCCESS;
+        }
+    }
+    return USB_UNSUPPORT;
+}
+#else
+/*******************************************************************************
+ * Function Name  : Virtual_Com_Port_NoData_Setup.
+ * Description    : handle the no data class specific requests.
+ * Input          : Request Nb.
+ * Output         : None.
+ * Return         : USB_UNSUPPORT or USB_SUCCESS.
+ *******************************************************************************/
+RESULT Virtual_Com_Port_NoData_Setup(uint8_t RequestNo)
+{
     if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) {
         if (RequestNo == SET_COMM_FEATURE) {
             return USB_SUCCESS;
@@ -262,10 +316,9 @@ RESULT Virtual_Com_Port_NoData_Setup(uint8_t RequestNo)
             return USB_SUCCESS;
         }
     }
-
     return USB_UNSUPPORT;
 }
-
+#endif
 /*******************************************************************************
  * Function Name  : Virtual_Com_Port_GetDeviceDescriptor.
  * Description    : Gets the device descriptor.

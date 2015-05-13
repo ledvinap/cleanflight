@@ -18,7 +18,7 @@
 TARGET		?= NAZE
 
 # Compile-time options
-OPTIONS		?= ACCGYRO_FIFO NEWACCGYRO AMINI # PINDEBUG
+OPTIONS		?= ACCGYRO_FIFO NEWACCGYRO AMINI EMU_FTDI # PINDEBUG
 
 # compile for OpenPilot BootLoader support
 OPBL ?=no

@@ -52,8 +52,19 @@ LINE_CODING linecoding = { 115200, /* baud rate*/
 DEVICE Device_Table = {
 EP_NUM, 1 };
 
-DEVICE_PROP Device_Property = { Virtual_Com_Port_init, Virtual_Com_Port_Reset, Virtual_Com_Port_Status_In, Virtual_Com_Port_Status_Out, Virtual_Com_Port_Data_Setup, Virtual_Com_Port_NoData_Setup, Virtual_Com_Port_Get_Interface_Setting, Virtual_Com_Port_GetDeviceDescriptor,
-        Virtual_Com_Port_GetConfigDescriptor, Virtual_Com_Port_GetStringDescriptor, 0, 0x40 /*MAX PACKET SIZE*/
+DEVICE_PROP Device_Property = {
+    .Init = Virtual_Com_Port_init,
+    .Reset = Virtual_Com_Port_Reset,
+    .Process_Status_IN = Virtual_Com_Port_Status_In,
+    .Process_Status_OUT = Virtual_Com_Port_Status_Out,
+    .Class_Data_Setup = Virtual_Com_Port_Data_Setup,
+    .Class_NoData_Setup = Virtual_Com_Port_NoData_Setup,
+    .Class_Get_Interface_Setting = Virtual_Com_Port_Get_Interface_Setting,
+    .GetDeviceDescriptor = Virtual_Com_Port_GetDeviceDescriptor,
+    .GetConfigDescriptor = Virtual_Com_Port_GetConfigDescriptor,
+    .GetStringDescriptor = Virtual_Com_Port_GetStringDescriptor,
+    .RxEP_buffer = 0,
+    .MaxPacketSize = 0x40
 };
 
 USER_STANDARD_REQUESTS User_Standard_Requests = {

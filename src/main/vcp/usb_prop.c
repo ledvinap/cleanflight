@@ -232,6 +232,54 @@ void Virtual_Com_Port_Status_Out(void)
 }
 
 #if EMU_FTDI
+
+/* Definitions for flow control */
+#define SIO_RESET          0 /* Reset the port */
+#define SIO_MODEM_CTRL     1 /* Set the modem control register */
+#define SIO_SET_FLOW_CTRL  2 /* Set flow control register */
+#define SIO_SET_BAUD_RATE  3 /* Set baud rate */
+#define SIO_SET_DATA       4 /* Set the data characteristics of the port */
+
+/* Requests */
+#define SIO_RESET_REQUEST             SIO_RESET
+#define SIO_SET_BAUDRATE_REQUEST      SIO_SET_BAUD_RATE
+#define SIO_SET_DATA_REQUEST          SIO_SET_DATA
+#define SIO_SET_FLOW_CTRL_REQUEST     SIO_SET_FLOW_CTRL
+#define SIO_SET_MODEM_CTRL_REQUEST    SIO_MODEM_CTRL
+#define SIO_POLL_MODEM_STATUS_REQUEST 0x05
+#define SIO_SET_EVENT_CHAR_REQUEST    0x06
+#define SIO_SET_ERROR_CHAR_REQUEST    0x07
+#define SIO_SET_LATENCY_TIMER_REQUEST 0x09
+#define SIO_GET_LATENCY_TIMER_REQUEST 0x0A
+#define SIO_SET_BITMODE_REQUEST       0x0B
+#define SIO_READ_PINS_REQUEST         0x0C
+#define SIO_READ_EEPROM_REQUEST       0x90
+#define SIO_WRITE_EEPROM_REQUEST      0x91
+#define SIO_ERASE_EEPROM_REQUEST      0x92
+
+uint8_t ftdi_eeprom[128] = "\xff\xff test string";
+
+static int eeAddr = 0;
+uint8_t *FTDI_GetEEPROM(uint16_t Length)
+{
+    if (Length == 0) {
+        pInformation->Ctrl_Info.Usb_wLength = sizeof(ftdi_eeprom);
+        return NULL;
+    }
+    return ftdi_eeprom + eeAddr * 2;
+}
+
+uint16_t ftdi_modemStatus = 0x6001;
+uint8_t *FTDI_GetModemStatus(uint16_t Length)
+{
+    if (Length == 0) {
+        pInformation->Ctrl_Info.Usb_wLength = sizeof(ftdi_modemStatus);
+        return NULL;
+    }
+    return (uint8_t*)&ftdi_modemStatus;
+}
+
+
 RESULT Virtual_Com_Port_Data_Setup(uint8_t RequestNo)
 {
     uint8_t *(*CopyRoutine)( uint16_t);
@@ -240,8 +288,14 @@ RESULT Virtual_Com_Port_Data_Setup(uint8_t RequestNo)
 
     if (Type_Recipient == (VENDOR_REQUEST | DEVICE_RECIPIENT) ) {
         switch(RequestNo) {
+        case SIO_POLL_MODEM_STATUS_REQUEST:
+            CopyRoutine = FTDI_GetModemStatus;
+            break;
+        case SIO_READ_EEPROM_REQUEST:
+            eeAddr = pInformation->USBwIndexs.bw.bb1;
+            CopyRoutine = FTDI_GetEEPROM;
+            break;
         }
-        Virtual_Com_Port_Status_Out();
     }
     if (CopyRoutine == NULL) {
         return USB_UNSUPPORT;
@@ -300,10 +354,13 @@ RESULT Virtual_Com_Port_NoData_Setup(uint8_t RequestNo)
 {
     if (Type_Recipient == (VENDOR_REQUEST | DEVICE_RECIPIENT) ) {
         switch(RequestNo) {
-        case 0:
+        case SIO_RESET_REQUEST:
+            usbcdc_SendStatus = true;
+            USBCDC_TryTx();
+            return USB_SUCCESS;
         case 1:
         case 2:
-        case 3:            
+        case 3:
         case 4:
         case 9:
             return USB_SUCCESS;

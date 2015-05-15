@@ -24,17 +24,12 @@
 
 #include "build_config.h"
 
-#include "usb_core.h"
-#include "usb_init.h"
-#include "vcp/hw_config.h"
-#include "usb_regs.h"
-#include "usb_mem.h"
+#include "vcp/usb_cdc.h"
 
 #include "common/utils.h"
 #include "common/atomic.h"
 #include "common/maths.h"
 
-#include "drivers/system.h"
 #include "drivers/nvic.h"
 
 #include "serial.h"
@@ -42,13 +37,18 @@
 
 
 #define USB_TIMEOUT  50
+
 #define VCP_BUFFER_SIZE 256
 
-static usbVcpPort_t vcpPort;
-extern const struct serialPortVTable usbVcpVTable;
+typedef struct usbVcpPort_s {
+    serialPort_t port;
+    uint8_t rxBuffer[VCP_BUFFER_SIZE];
+    uint8_t txBuffer[VCP_BUFFER_SIZE];
+} usbVcpPort_t;
 
-static void vcpTryTx(usbVcpPort_t* self);
-static void vcpRx(usbVcpPort_t* self);
+
+usbVcpPort_t vcpPort;
+extern const struct serialPortVTable usbVcpVTable;  // forward declaration, defined at end of file
 
 void usbVcpUpdateState(serialPort_t *instance, portState_t andMask, portState_t orMask)
 {
@@ -80,11 +80,10 @@ bool isUsbVcpTransmitBufferEmpty(serialPort_t *instance)
 
 void usbVcpWrite(serialPort_t *instance, uint8_t ch)
 {
-    if (!(usbIsConnected() && usbIsConfigured())) {
-        return;
-    }
-
     usbVcpPort_t *self = container_of(instance, usbVcpPort_t, port);
+
+    if (!USBCDC_IsConnected())
+        return;
 
     uint16_t nxt = (self->port.txBufferHead + 1 >= self->port.txBufferSize) ? 0 : self->port.txBufferHead + 1;
     if(nxt == self->port.txBufferTail) {
@@ -94,7 +93,7 @@ void usbVcpWrite(serialPort_t *instance, uint8_t ch)
         self->port.txBufferHead = nxt;
         ATOMIC_BLOCK_NB(NVIC_PRIO_USB) {
             ATOMIC_BARRIER(*self);
-            vcpTryTx(self);
+            USBCDC_TryTx();
         }
     }
 }
@@ -135,112 +134,65 @@ serialPort_t *usbVcpOpen(void)
     self->port.txBufferTail = 0;
     self->port.txBufferHead = 0;
 
-    self->txPending = false;
-
-    Set_System();
-    Set_USBClock();
-    USB_Interrupts_Config();
-    USB_Init();
+    USBCDC_Init();
 
     return &self->port;
 }
 
-// this function must be called on USB basepri
-// it is not reentrant
-static void vcpTryTx(usbVcpPort_t* self) {
-    if(!self->txPending) {
-        // transmit endpoint is empty, send new data
-        int txLen;
-        if (self->port.txBufferHead >= self->port.txBufferTail) {
-            txLen = self->port.txBufferHead - self->port.txBufferTail;
-        } else {
-            txLen = self->port.txBufferSize - self->port.txBufferTail;
-        }
-        if(txLen == 0)
-            return;  // nothing to send now
-        // We can only put 64 bytes in the buffer ( /2 is copied from pervious code, check it?)
 
-        self->txPending = true;
-#if EMU_FTDI
-        txLen = MIN(txLen, 64 - 2  / 2);
-        uint8_t status[2] = {0x01, 0x60};
-        UserToPMABufferCopy(status, ENDP1_TXADDR, 2);
-        UserToPMABufferCopy(self->port.txBuffer + self->port.txBufferTail, ENDP1_TXADDR+2, txLen);
-        SetEPTxCount(ENDP1, txLen + 2);
-#else
-        txLen = MIN(txLen, 64 / 2);
-        UserToPMABufferCopy(self->port.txBuffer + self->port.txBufferTail, ENDP1_TXADDR, txLen);
-        SetEPTxCount(ENDP1, txLen);
-#endif
-        SetEPTxValid(ENDP1);
-
-        unsigned nxt = self->port.txBufferTail + txLen;
-        if(nxt >= self->port.txBufferSize)
-            nxt = 0;
-        self->port.txBufferTail = nxt;
+// callback to get data to be transmitted to host
+// return positive length if data available
+// actual length used will be passed using Ack function
+// called when last data was transmitted or in calling of USBCDC_TryTx
+// this routine is called on USB BASEPRI
+int vcpGetTxData(usbVcpPort_t *self, uint8_t* *dataPtr)
+{
+    *dataPtr = self->port.txBuffer + self->port.txBufferTail;
+    if (self->port.txBufferHead >= self->port.txBufferTail) {
+        return self->port.txBufferHead - self->port.txBufferTail;
+    } else {
+        return self->port.txBufferSize - self->port.txBufferTail;
     }
 }
 
-// this function must be called on USB basepri
-static void vcpRx(usbVcpPort_t* self)
+// acknowledge data actually transmitted
+// called after data has been copied from buffer
+// this routine is called on USB BASEPRI
+// do not assume that this is called immediatelly after vcpGetTxData
+// this routine is called on USB BASEPRI
+void vcpAckTxData(usbVcpPort_t *self, int txLen)
 {
-#ifdef EMU_FTDI
-    int rxLen = GetEPRxCount(ENDP2);
-    int rxOfs = ENDP2_RXADDR;
-#else
-    int rxLen = GetEPRxCount(ENDP3);
-    int rxOfs = ENDP3_RXADDR;
-#endif
-    while(rxLen > 0) {
-        int rxChunk;
-        if (self->port.rxBufferHead >= self->port.rxBufferTail) {
-            // space up to end of buffer
-            rxChunk = self->port.rxBufferSize - self->port.rxBufferHead;
-        } else {
-            // space to tail - 1
-            rxChunk = self->port.rxBufferTail - 1 - self->port.rxBufferHead;
-        }
-        if(!rxChunk) {
-            // receive bufer if full
-            break;
-        }
-        rxChunk = MIN(rxChunk, rxLen);
-        PMAToUserBufferCopy(self->port.rxBuffer + self->port.rxBufferHead, rxOfs, rxChunk);
-        rxLen -= rxChunk; rxOfs += rxChunk;
-        unsigned nxt = self->port.rxBufferHead + rxChunk;
-        if(nxt >= self->port.rxBufferSize)
-            nxt = 0;
-        self->port.rxBufferHead = nxt;
+    unsigned nxt = self->port.txBufferTail + txLen;
+    if(nxt >= self->port.txBufferSize)
+        nxt = 0;
+    self->port.txBufferTail = nxt;
+}
+
+// return buffer where to store received data and its length
+// return 0 if there is no space in buffer (called will discard data)
+// vcpAckRxData will be called after data are stored in bufer
+// this routine is called on USB BASEPRI
+int vcpGetRxDataBuffer(usbVcpPort_t *self, uint8_t* *dataPtr)
+{
+    *dataPtr = self->port.rxBuffer + self->port.rxBufferHead;
+    if (self->port.rxBufferHead >= self->port.rxBufferTail) {
+        // space up to end of buffer
+        return self->port.rxBufferSize - self->port.rxBufferHead;
+    } else {
+        // space to tail - 1
+        return self->port.rxBufferTail - 1 - self->port.rxBufferHead;
     }
-#ifdef EMU_FTDI
-    SetEPRxCount(ENDP2, 64);
-    SetEPRxStatus(ENDP2, EP_RX_VALID);
-#else
-    SetEPRxCount(ENDP3, 64);
-    SetEPRxStatus(ENDP3, EP_RX_VALID);
-#endif
 }
 
-// EP1 in callback - transmission finished
-void EP1_IN_Callback(void)
+// len of data was stored in receive buffer by USB driver
+// this routine is called on USB BASEPRI
+void vcpAckRxData(usbVcpPort_t *self, int len)
 {
-    vcpPort.txPending = false;
-    vcpTryTx(&vcpPort);
+    unsigned nxt = self->port.rxBufferHead + len;
+    if(nxt >= self->port.rxBufferSize)
+        nxt = 0;
+    self->port.rxBufferHead = nxt;
 }
-
-#ifdef EMU_FTDI
-// EP2 out callback - data received
-void EP2_OUT_Callback(void)
-{
-    vcpRx(&vcpPort);
-}
-#else
-// EP3 out callback - data received
-void EP3_OUT_Callback(void)
-{
-    vcpRx(&vcpPort);
-}
-#endif
 
 const struct serialPortVTable usbVcpVTable = {
     .isTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,

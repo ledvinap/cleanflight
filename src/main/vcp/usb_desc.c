@@ -196,12 +196,12 @@ USB_STRING_DESCRIPTOR_TYPE, /* bDescriptorType*/
 const uint8_t Virtual_Com_Port_StringProduct[VIRTUAL_COM_PORT_SIZ_STRING_PRODUCT] = {
 VIRTUAL_COM_PORT_SIZ_STRING_PRODUCT, /* bLength */
 USB_STRING_DESCRIPTOR_TYPE, /* bDescriptorType */
-/* Product name: "STM32 Virtual COM Port" */
-'S', 0, 'T', 0, 'M', 0, '3', 0, '2', 0, ' ', 0, 'V', 0, 'i', 0, 'r', 0, 't', 0, 'u', 0, 'a', 0, 'l', 0, ' ', 0, 'C', 0, 'O', 0, 'M', 0, ' ', 0, 'P', 0, 'o', 0, 'r', 0, 't', 0, ' ', 0, ' ', 0 };
+/* Product name: "" */
+'C', 0, 'l', 0, 'e', 0, 'a', 0, 'n', 0, 'f', 0, 'l', 0, 'i', 0, 'g', 0, 'h', 0, 't', 0, ' ', 0, 's', 0, 'e', 0, 'r', 0, 'i', 0, 'a', 0, 'l', 0, ' ', 0, 'p', 0, 'o', 0, 'r', 0, 't', 0, ' ', 0 };
 
 uint8_t Virtual_Com_Port_StringSerial[VIRTUAL_COM_PORT_SIZ_STRING_SERIAL] = {
 VIRTUAL_COM_PORT_SIZ_STRING_SERIAL, /* bLength */
 USB_STRING_DESCRIPTOR_TYPE, /* bDescriptorType */
-'S', 0, 'T', 0, 'M', 0, '3', 0, '2', 0 };
+'C', 0, 'F', 0, 'S', 0, 'P', 0, 'A', 0, 'R', 0, 'K', 0, 'Y', 0 };   // 8 characters, only first two left normally, rest is overwriten with CPU id
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -239,11 +239,10 @@ void Get_SerialNum(void)
     Device_Serial1 = *(uint32_t*)ID2;
     Device_Serial2 = *(uint32_t*)ID3;
 
-    Device_Serial0 += Device_Serial2;
+    Device_Serial0 += Device_Serial1 + Device_Serial2;
 
     if (Device_Serial0 != 0) {
-        IntToUnicode(Device_Serial0, &Virtual_Com_Port_StringSerial[2], 8);
-        IntToUnicode(Device_Serial1, &Virtual_Com_Port_StringSerial[18], 4);
+        IntToUnicode(Device_Serial0, &Virtual_Com_Port_StringSerial[6], 6);  // keet two bytes as prefix
     }
 }
 

@@ -102,43 +102,42 @@ void IODigitalWrite(const ioDef_t *io, bool value)
         digitalLo(io->gpio, io->pin);
 }
 
+#ifdef STM32F303xC
 
-void IOConfigGPIO(const ioDef_t *io, GPIO_Mode mode)
+void IOConfigGPIO(const ioDef_t *io, ioConfig_t cfg)
 {
     if(!io)
         return;
-    // TODO!
     rccPeriphTag_t rcc = ioPortDefs[IO_GPIOPortIdx(io)].rcc;
     RCC_ClockCmd(rcc, ENABLE);
 
-    gpio_config_t cfg;
-
-    cfg.pin = io->pin;
-    cfg.mode = mode;
-    cfg.speed = Speed_2MHz;
-    gpioInit(io->gpio, &cfg);
+    GPIO_InitTypeDef init = {
+        .GPIO_Pin = io->pin,
+        .GPIO_Mode =  (cfg >> 0) & 0x03,
+        .GPIO_Speed = (cfg >> 2) & 0x03,
+        .GPIO_OType = (cfg >> 4) & 0x01,
+        .GPIO_PuPd = (cfg >> 5) & 0x03,
+    };
+    GPIO_Init(io->gpio, &init);
 }
 
-#ifdef STM32F303xC
-
-void IOConfigGPIOAF(const ioDef_t *io, GPIO_Mode mode, uint8_t af)
+void IOConfigGPIOAF(const ioDef_t *io, ioConfig_t cfg, uint8_t af)
 {
     if(!io)
        return;
 
-    // TODO!
-
     rccPeriphTag_t rcc = ioPortDefs[IO_GPIOPortIdx(io)].rcc;
     RCC_ClockCmd(rcc, ENABLE);
-
     GPIO_PinAFConfig(io->gpio, IO_GPIOPinSource(io), af);
 
-    gpio_config_t cfg;
-
-    cfg.pin = io->pin;
-    cfg.mode = mode;
-    cfg.speed = Speed_2MHz;
-    gpioInit(io->gpio, &cfg);
+    GPIO_InitTypeDef init = {
+        .GPIO_Pin = io->pin,
+        .GPIO_Mode =  (cfg >> 0) & 0x03,
+        .GPIO_Speed = (cfg >> 2) & 0x03,
+        .GPIO_OType = (cfg >> 4) & 0x01,
+        .GPIO_PuPd = (cfg >> 5) & 0x03,
+    };
+    GPIO_Init(io->gpio, &init);
 }
 
 #endif

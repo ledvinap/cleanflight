@@ -187,25 +187,27 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
         self->port.mode &= ~MODE_U_REMAP;
     }
 
-    // TODO PuPd = (options & SERIAL_INVERTED) ? GPIO_PuPd_DOWN : GPIO_PuPd_UP;
-#if 0
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = (options & MODE_INVERTED) ? GPIO_PuPd_DOWN : GPIO_PuPd_UP;
-#endif
     if(self->port.mode & MODE_SINGLEWIRE) {
-        IOConfigGPIOAF(tx, (self->port.mode & MODE_INVERTED) ? GPIO_OType_PP : GPIO_OType_OD, af);
+        IOConfigGPIOAF(tx, ((self->port.mode & MODE_INVERTED)
+                            ? IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz,  GPIO_OType_PP, GPIO_PuPd_DOWN)
+                            : IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz,  GPIO_OType_OD, GPIO_PuPd_UP)),
+                       af);
         if(!(self->port.mode & MODE_INVERTED))
             IODigitalWrite(tx, true);   // OpenDrain output should be inactive
+        // TODO - maybe allow remap
     } else {
         if ((self->port.mode & MODE_TX) && tx)
-            IOConfigGPIOAF(tx, GPIO_OType_PP, af);
+            IOConfigGPIOAF(tx, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), af);
         if ((self->port.mode & MODE_RX) && rx)
-            IOConfigGPIOAF(rx, GPIO_OType_PP, af);
+            IOConfigGPIOAF(rx, ((self->port.mode & MODE_INVERTED)
+                                ? IO_CONFIG(GPIO_Mode_AF, 0, 0, GPIO_PuPd_DOWN)
+                                : IO_CONFIG(GPIO_Mode_AF, 0, 0, GPIO_PuPd_UP)),
+                           af);
+        // TODO - remaped IO may have different inversion
         if (txi)
-             IOConfigGPIO(rxi, Mode_IPU);
+            IOConfigGPIO(rxi, IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP));
         if (rxi)
-             IOConfigGPIO(txi, Mode_IPU);
+            IOConfigGPIO(txi, IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP));
     }
 }
 

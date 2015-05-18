@@ -90,7 +90,7 @@ static pwmOutputPort_t *pwmOutConfig(const timerChDef_t *timChDef, resourceOwner
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
     timerChInit(timChDef, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER_PWMOUT, period, hz);
-    timerChConfigGPIO(timChDef, Mode_AF_PP);
+    timerChConfigGPIO(timChDef, IOCFG_AF_PP);
 
     pwmOCConfig(timChDef->tim, timChDef->channel, value);
     if (timChDef->timerDef->outputsNeedEnable)

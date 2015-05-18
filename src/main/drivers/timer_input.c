@@ -64,7 +64,7 @@ void timerIn_Restart(timerInputRec_t* self)
 
     if(self->flags & TIMERIN_QUEUE_DUALTIMER) {
         timerChConfigICDual(timChDef, self->flags & TIMERIN_RISING, 42*72);  // halfbit interval for 115200. Safe for PWM/PPM input. This should be probably configurable in future
-        timerChConfigGPIO(timChDef, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
+        timerChConfigGPIO(timChDef, (self->flags & TIMERIN_PIN_IPU) ? IOCFG_IPU : IOCFG_IPD);
         timerChConfigCallbacksDual(timChDef, &self->edgeLoCb, &self->edgeHiCb, NULL);
     } else {
         if(self->flags & TIMERIN_RISING)
@@ -72,7 +72,7 @@ void timerIn_Restart(timerInputRec_t* self)
         else
             ATOMIC_OR(&self->flags, TIMERIN_FLAG_HIGH);
         timerChConfigIC(timChDef, self->flags & TIMERIN_RISING, 42*72);
-        timerChConfigGPIO(timChDef, (self->flags & TIMERIN_PIN_IPU) ? Mode_IPU : Mode_IPD);
+        timerChConfigGPIO(timChDef, (self->flags & TIMERIN_PIN_IPU) ? IOCFG_IPU : IOCFG_IPD);
         timerChConfigCallbacks(timChDef, &self->edgeLoCb, NULL);
     }
 }

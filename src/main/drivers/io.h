@@ -13,7 +13,6 @@
 # include "drivers/io_stm32f30x.h"
 #endif
 
-
 typedef struct ioDef_s {
     GPIO_TypeDef *gpio;
     uint32_t pin;
@@ -25,6 +24,18 @@ typedef struct ioRec_s {
     resourceType_t resourcesUsed; // TODO!
 } ioRec_t;
 
+typedef uint8_t ioConfig_t;
+
+#define GPIO_Speed_10MHz GPIO_Speed_Level_1  // Fast Speed:10MHz
+#define GPIO_Speed_2MHz  GPIO_Speed_Level_2  // Medium Speed:2MHz (same as zero)
+#define GPIO_Speed_50MHz GPIO_Speed_Level_3  // High Speed:50MHz
+
+#define IO_CONFIG(mode, speed, otype, pupd) ((mode) | ((speed) << 2) | ((otype) << 4) | ((pupd) << 5))
+
+#define IOCFG_AF_PP IO_CONFIG(GPIO_Mode_AF, 0, GPIO_OType_PP, GPIO_PuPd_NOPULL)
+#define IOCFG_IPD IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_DOWN)
+#define IOCFG_IPU IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP)
+
 int IO_GPIOPortIdx(const ioDef_t *io);
 int IO_GPIOPortSource(const ioDef_t *io);
 int IO_GPIOPinIdx(const ioDef_t *io);
@@ -33,5 +44,5 @@ uint32_t IO_EXTILine(const ioDef_t *io);
 
 bool IODigitalRead(const ioDef_t *  io);
 void IODigitalWrite(const ioDef_t *  io, bool value);
-void IOConfigGPIO(const ioDef_t *  io, GPIO_Mode mode);
-void IOConfigGPIOAF(const ioDef_t *  io, GPIO_Mode mode, uint8_t af);
+void IOConfigGPIO(const ioDef_t *  io, ioConfig_t cfg);
+void IOConfigGPIOAF(const ioDef_t *  io, ioConfig_t cfg, uint8_t af);

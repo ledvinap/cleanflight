@@ -292,13 +292,13 @@ void timerChClearCCFlag(const timerChDef_t *timChDef)
 }
 
 // configure timer channel GPIO mode
-void timerChConfigGPIO(const timerChDef_t *timChDef, GPIO_Mode mode)
+void timerChConfigGPIO(const timerChDef_t *timChDef, ioConfig_t config)
 {
     if(timChDef->ioDef) {
 #ifdef STM32F303xC
-        IOConfigGPIOAF(timChDef->ioDef, mode, timChDef->pinAF);
+        IOConfigGPIOAF(timChDef->ioDef, config, timChDef->pinAF);
 #else
-        IOConfigGPIO(timChDef->ioDef, mode);
+        IOConfigGPIO(timChDef->ioDef, config);
 #endif
     }
 }

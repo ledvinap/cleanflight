@@ -47,7 +47,7 @@ void timerOut_Release(timerOutputRec_t* self)
     timerChConfigCallbacks(self->timChDef, NULL, NULL);
     ATOMIC_AND(&self->flags, ~(TIMEROUT_RUNNING | TIMEROUT_RESTART));
     if(self->flags & TIMEROUT_RELEASEMODE_INPUT) {
-        timerChConfigGPIO(self->timChDef, (self->flags & TIMEROUT_IDLE_HI) ? Mode_IPU : Mode_IPD);
+        timerChConfigGPIO(self->timChDef, (self->flags & TIMEROUT_IDLE_HI) ? IOCFG_IPU : IOCFG_IPD);
     } else {
         if(self->flags & TIMEROUT_IDLE_HI)  // TODO - move this to IO driver
             digitalHi(self->timChDef->gpio, self->timChDef->pin);
@@ -63,7 +63,7 @@ void timerOut_Restart(timerOutputRec_t* self)
     self->qtailWake = ~0;
 
     timerChConfigOC(self->timChDef, true, !(self->flags & TIMEROUT_IDLE_HI));
-    timerChConfigGPIO(self->timChDef, Mode_AF_PP);
+    timerChConfigGPIO(self->timChDef, IOCFG_AF_PP);
     timerChConfigCallbacks(self->timChDef, &self->compareCb, NULL);
 }
 

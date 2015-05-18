@@ -41,6 +41,8 @@ DEF_IO(GPIOB, PIN15);
 
 DEF_IO(GPIOF, PIN0);
 DEF_IO(GPIOF, PIN1);
+DEF_IO(GPIOF, PIN6);  // for I2C2 .. see TODO
+
 
 DEF_TIMER(TIM1, TIM1_CC_IRQn,             TIM1_UP_TIM16_IRQn,      true,  RCC_APB2(TIM1));
 DEF_TIMER(TIM2, TIM2_IRQn,                TIM2_IRQn,               false, RCC_APB1(TIM2));

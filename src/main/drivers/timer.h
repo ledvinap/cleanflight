@@ -22,6 +22,7 @@
 #include "callback.h"
 #include "resource.h"
 #include "rcc.h"
+#include "io.h"
 
 #define TIM_N(i) (1 << (i))
 
@@ -99,7 +100,7 @@ volatile timCCR_t* timerChCCRLo(const timerChDef_t *timCh);
 volatile timCCR_t* timerChCCRHi(const timerChDef_t *timCh);
 volatile timCNT_t* timerChCNT(const timerChDef_t *timCh);
 void timerChConfigOC(const timerChDef_t *timCh, bool outEnable, bool stateHigh);
-void timerChConfigGPIO(const timerChDef_t *timCh, GPIO_Mode mode);
+void timerChConfigGPIO(const timerChDef_t *timCh, ioConfig_t cfg);
 
 void timerCCHandlerInit(timerCCHandlerRec_t *self, timerCCHandlerCallback *fn);
 void timerOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *fn);

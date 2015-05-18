@@ -270,7 +270,7 @@ void pwmInConfig(const timerChDef_t *timChDef, uint8_t channel)
     self->timChDef = timChDef;
 
     timerChInit(timChDef, OWNER_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
-    timerChConfigGPIO(timChDef, Mode_IPD);
+    timerChConfigGPIO(timChDef, IOCFG_IPD);
     timerChConfigIC(timChDef, true, INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX);
 
     timerCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
@@ -297,7 +297,7 @@ void ppmInConfig(const timerChDef_t *timChDef)
     self->timChDef = timChDef;
 
     timerChInit(timChDef, OWNER_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
-    timerChConfigGPIO(timChDef, Mode_IPD);
+    timerChConfigGPIO(timChDef, IOCFG_IPD);
     timerChConfigIC(timChDef, true, 0);
 
     timerCCHandlerInit(&self->edgeCb, ppmEdgeCallback);

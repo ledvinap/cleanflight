@@ -31,6 +31,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 # Flash size (KB).  Some low-end chips actually have more flash than advertised, use this to override.
 FLASH_SIZE ?=
+RAM_SIZE ?=
 
 ###############################################################################
 # Things that need to be maintained as the source changes
@@ -43,7 +44,7 @@ VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
 
-# Configure default flash sizes for the targets
+# Configure default memory sizes for the targets
 ifeq ($(FLASH_SIZE),)
 ifeq ($(TARGET),$(filter $(TARGET),CJMCU))
 FLASH_SIZE = 64
@@ -55,6 +56,20 @@ else
 $(error FLASH_SIZE not configured for target)
 endif
 endif
+
+ifeq ($(RAM_SIZE),)
+ifeq ($(TARGET),$(filter $(TARGET),CJMCU NAZE CC3D ALIENWIIF1 SPRACINGF3 OLIMEXINO))
+RAM_SIZE = 20
+else ifeq ($(TARGET),$(filter $(TARGET), STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO SPARKY ALIENWIIF3))
+RAM_SIZE = 40
+else ifeq ($(TARGET),$(filter $(TARGET), EUSTM32F103RC PORT103R))
+RAM_SIZE = 48
+else
+$(error RAM_SIZE not configured for target)
+endif
+endif
+
+
 
 REVISION = $(shell git log -1 --format="%h")
 
@@ -110,7 +125,7 @@ DEVICE_STDPERIPH_SRC := $(DEVICE_STDPERIPH_SRC)\
 
 endif
 
-LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_$(FLASH_SIZE)k.ld
+LD_OPTS	 = -D FLASH_SIZE=FLASH_SIZE
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
 DEVICE_FLAGS = -DSTM32F303xC -DSTM32F303
@@ -642,6 +657,8 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   -D'__FORKNAME__="$(FORKNAME)"' \
 		   -D'__TARGET__="$(TARGET)"' \
 		   -D'__REVISION__="$(REVISION)"' \
+		   -DRAM_SIZE=$(RAM_SIZE) \
+		   -DFLASH_SIZE=$(FLASH_SIZE) \
 		   -save-temps=obj \
 		   -MMD -MP
 
@@ -660,8 +677,7 @@ LDFLAGS		 = -lm \
 		   $(DEBUG_FLAGS) \
 		   -save-temps=obj \
 		   -static \
-		   -Wl,-gc-sections,-Map,$(TARGET_MAP) \
-		   -T$(LD_SCRIPT)
+		   -Wl,-gc-sections,-Map,$(TARGET_MAP)
 
 ###############################################################################
 # No user-serviceable parts below
@@ -679,6 +695,7 @@ TARGET_HEX	 = $(BIN_DIR)/$(FORKNAME)_$(TARGET).hex
 TARGET_ELF	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).elf
 TARGET_OBJS	 = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
 TARGET_DEPS	 = $(addsuffix .d,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
+TARGET_LD	 = $(OBJECT_DIR)/$(TARGET)/main.ld
 TARGET_MAP	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 
 # List of buildable ELF files and their object dependencies.
@@ -690,8 +707,8 @@ $(TARGET_HEX): $(TARGET_ELF)
 $(TARGET_BIN): $(TARGET_ELF)
 	$(OBJCOPY) -O binary $< $@
 
-$(TARGET_ELF):  $(TARGET_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+$(TARGET_ELF):  $(TARGET_OBJS) $(TARGET_LD)
+	$(CC) -o $@ $(sort $(TARGET_OBJS)) $(LDFLAGS) -T $(TARGET_LD)
 	$(SIZE) $(TARGET_ELF)
 	arm-none-eabi-objdump -d -S $@ > $(@:%.elf=%.dmp)
 
@@ -711,6 +728,11 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
+
+$(OBJECT_DIR)/$(TARGET)/%.ld : target/%.ld.in
+	@mkdir -p $(dir $@)
+	@echo %% $(notdir $<)
+	$(CC) -x c -E -P -C  $(CFLAGS) -o - $< | grep -v -e '^#' > $@
 
 clean:
 	rm -f $(TARGET_BIN) $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)

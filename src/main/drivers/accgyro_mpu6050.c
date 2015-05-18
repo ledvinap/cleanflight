@@ -454,7 +454,7 @@ int mpu6050FifoRead(uint8_t *buffer, int maxLen, int modulo) {
     do {
         fifoLen = mpu6050GetFifoLen();
         // read length again if only partial data are in FIFO (rest of registers will be writen very soon)
-        // this ensures that out-of-sync configiton is easily detected
+        // this ensures that out-of-sync condition is easily detected
         pinDbgToggle(DBP_MPU6050_1);
     } while(--tries && (fifoLen < maxLen && fifoLen % modulo));
     int len = MIN(maxLen, fifoLen);

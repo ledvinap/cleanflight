@@ -92,6 +92,7 @@ static const uartHwDef_t uartPort1Def = {
 #ifdef UART1_TX_IO_REMAP
     .txChRemap = UART1_TX_IO_REMAP,
 #endif
+    .afConfig = UART1_GPIO_AF,
 };
 #endif
 
@@ -121,6 +122,7 @@ static const uartHwDef_t uartPort2Def = {
 #ifdef UART2_TX_IO_REMAP
     .txChRemap = UART2_TX_IO_REMAP,
 #endif
+    .afConfig = UART2_GPIO_AF,
 };
 #endif
 
@@ -150,6 +152,7 @@ static const uartHwDef_t uartPort3Def = {
 #ifdef UART3_TX_IO_REMAP
     .txChRemap = UART3_TX_IO_REMAP,
 #endif
+    .afConfig = UART3_GPIO_AF,
 };
 #endif
 

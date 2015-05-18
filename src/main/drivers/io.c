@@ -2,9 +2,49 @@
 #include "common/utils.h"
 
 #include "drivers/io.h"
+#include "drivers/rcc.h"
 
 #include "target_io.h"
 #include "target.h"
+
+// io ports defs are stored in array by index now
+// TODO - tag them by GPIO addr (or index) and search for them when necesary ... 
+struct ioPortDef_s {
+    rccPeriphTag_t rcc;
+};
+
+#if defined(STM32F10X)
+const struct ioPortDef_s ioPortDefs[] = {
+    {RCC_APB2(IOPA)},
+    {RCC_APB2(IOPB)},
+    {RCC_APB2(IOPC)},
+    {RCC_APB2(IOPD)},
+    {RCC_APB2(IOPE)},
+    {
+#if defined (STM32F10X_HD) || defined (STM32F10X_XL) || defined (STM32F10X_HD_VL)
+        RCC_APB2(IOPF),
+#else
+        0,
+#endif
+    },
+    {
+#if defined (STM32F10X_HD) || defined (STM32F10X_XL) || defined (STM32F10X_HD_VL)
+        RCC_APB2(IOPG),
+#else
+        0,
+#endif
+    },
+};
+#elif defined(STM32F303xC)
+const struct ioPortDef_s ioPortDefs[] = {
+    {RCC_AHB(GPIOA)},
+    {RCC_AHB(GPIOB)},
+    {RCC_AHB(GPIOC)},
+    {RCC_AHB(GPIOD)},
+    {RCC_AHB(GPIOE)},
+    {RCC_AHB(GPIOF)},
+};
+#endif
 
 int IO_GPIOPortIdx(const ioDef_t *io)
 {
@@ -67,6 +107,9 @@ void IOConfigGPIO(const ioDef_t *io, GPIO_Mode mode)
 {
     if(!io)
         return;
+    // TODO!
+    rccPeriphTag_t rcc = ioPortDefs[IO_GPIOPortIdx(io)].rcc;
+    RCC_ClockCmd(rcc, ENABLE);
 
     gpio_config_t cfg;
 
@@ -81,7 +124,12 @@ void IOConfigGPIO(const ioDef_t *io, GPIO_Mode mode)
 void IOConfigGPIOAF(const ioDef_t *io, GPIO_Mode mode, uint8_t af)
 {
     if(!io)
-        return;
+       return;
+
+    // TODO!
+
+    rccPeriphTag_t rcc = ioPortDefs[IO_GPIOPortIdx(io)].rcc;
+    RCC_ClockCmd(rcc, ENABLE);
 
     GPIO_PinAFConfig(io->gpio, IO_GPIOPinSource(io), af);
 

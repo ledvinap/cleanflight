@@ -21,6 +21,7 @@
 
 #include "callback.h"
 #include "resource.h"
+#include "rcc.h"
 
 #define TIM_N(i) (1 << (i))
 
@@ -80,9 +81,14 @@ typedef struct timerDef_s {
     uint8_t irqCC, irqUP;
     uint8_t channels;        // number of channels allocated for this timer
     bool outputsNeedEnable;  // advanced timers
+    rccPeriphTag_t rcc;
 } timerDef_t;
 
 // TODO
+#ifndef USABLE_IO_CHANNEL_COUNT
+# warning "undefined USABLE_IO_CHANNEL_COUNT"
+# define USABLE_IO_CHANNEL_COUNT 1
+#endif
 extern const timerChDef_t* const timerChannelMap[USABLE_IO_CHANNEL_COUNT];
 
 void timerChConfigIC(const timerChDef_t *timCh, bool polarityRising, unsigned inputFilterSamples);

@@ -61,7 +61,7 @@ static const uartHwDef_t uartPort1Def = {
     .IRQPrio_rxDMA = NVIC_PRIO_SERIALUART1_RXDMA,
     .txDMAChannelId = DMAId1c4,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
-    .APB2Periph = RCC_APB2Periph_USART1,
+    .rcc = RCC_APB2(USART1),
     .rxCh = USART1_RX_IO,
     .txCh = USART1_TX_IO,
 #ifdef USART1_RX_IO_REMAP
@@ -87,7 +87,7 @@ static const uartHwDef_t uartPort2Def = {
     .USARTx = USART2,
     .IRQn = USART2_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART2,
-    .APB1Periph = RCC_APB1Periph_USART2,
+    .rcc = RCC_APB1(USART2),
     .rxCh = USART2_RX_IO,
     .txCh = USART2_TX_IO,
 #ifdef USART2_RX_PIN_REMAP
@@ -113,7 +113,7 @@ static const uartHwDef_t uartPort3Def = {
     .USARTx = USART3,
     .IRQn = USART3_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART3,
-    .APB1Periph = RCC_APB1Periph_USART3,
+    .rcc = RCC_APB1(USART3),
     .rxCh = USART3_RX_IO,
     .txCh = USART3_TX_IO,
 #ifdef USART3_RX_PIN_REMAP
@@ -136,8 +136,7 @@ void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
     self->rxDMAPeripheralBaseAddr = (uint32_t)&self->USARTx->DR;
 
 
-    RCC_APB1PeriphClockCmd(def->APB1Periph, ENABLE);
-    RCC_APB2PeriphClockCmd(def->APB2Periph, ENABLE);
+    RCC_ClockCmd(def->rcc, ENABLE);
 }
 
 void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {

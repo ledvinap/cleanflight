@@ -48,12 +48,8 @@ const timerChDef_t* const timerChannelMap[USABLE_IO_CHANNEL_COUNT] = {
     timerChDefs + 15,
 };
 
-#define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
-#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC)
 
 void timerInitTarget(void)
 {
-    RCC_APB1PeriphClockCmd(TIMER_APB1_PERIPHERALS, ENABLE);
-    RCC_APB2PeriphClockCmd(TIMER_APB2_PERIPHERALS, ENABLE);
-//    RCC_AHBPeriphClockCmd(TIMER_AHB_PERIPHERALS, ENABLE);
+
 }

@@ -279,6 +279,7 @@ COMMON_SRC	 = build_config.c \
 		   drivers/io.c \
 		   drivers/io_def.c \
 		   drivers/pin_debug.c \
+		   drivers/rcc.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
 		   drivers/system.c \

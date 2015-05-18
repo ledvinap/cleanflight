@@ -106,7 +106,8 @@ struct ioDef_s;
 
 #if defined(IO_DEF_DEFINE)
 // we are included in C file, emit actual TIMER definitions
-#define DEF_TIMER(tim_, iCC, iUP, outEna)                                             \
+// TODO - user timer type instead of outputs enable
+#define DEF_TIMER(tim_, iCC, iUP, outEna, rcc_)                              \
     struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_);          \
     const struct timerDef_s DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_)     \
         __attribute__ ((section (".text.timer." STR(DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_)) ))) \
@@ -116,14 +117,15 @@ struct ioDef_s;
         .irqCC = iCC,                                                   \
         .irqUP = iUP,                                                   \
         .channels = CC_CHANNELS_PER_TIMER,                              \
-        .outputsNeedEnable = outEna                                     \
+        .outputsNeedEnable = outEna,                                    \
+        .rcc = rcc_,                                                    \
     }                                                                   \
     /**/
 #else
 struct ioDef_s;
 struct timerRec_s;
-#define DEF_TIMER(tim_, iCC, iUP, outEna)                               \
+#define DEF_TIMER(tim_, iCC, iUP, outEna, rcc_)                         \
     extern const struct timerDef_s DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_); \
-    extern struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_)   \
+    extern struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_)    \
     /**/
 #endif

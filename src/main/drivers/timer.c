@@ -86,6 +86,8 @@ void timerConfigure(const timerDef_t *timDef, uint8_t irqPriority, uint16_t peri
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 
+    RCC_ClockCmd(timDef->rcc, ENABLE);
+
     // TODO - we should special-case reiniitialization
     TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
     TIM_TimeBaseStructure.TIM_Period = (period - 1) & 0xffff; // AKA TIMx_ARR

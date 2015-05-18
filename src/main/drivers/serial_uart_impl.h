@@ -19,6 +19,7 @@
 
 #include "drivers/dma.h"
 #include "drivers/io.h"
+#include "drivers/rcc.h"
 // device specific uart implementation is defined here
 
 
@@ -31,7 +32,7 @@ typedef struct uartHwDef_s {
     uint8_t IRQPrio;
     DMAChannelID rxDMAChannelId, txDMAChannelId;
     uint8_t IRQPrio_rxDMA, IRQPrio_txDMA;
-    uint32_t APB1Periph, APB2Periph, AHBPeriph;
+    rccPeriphTag_t rcc; 
     const ioDef_t *rxCh, *txCh, *rxChRemap, *txChRemap;
     uint8_t afConfig, afConfigRemap;
     uint32_t remap;

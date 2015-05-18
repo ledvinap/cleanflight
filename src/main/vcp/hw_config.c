@@ -101,7 +101,7 @@ void Set_System(void)
 
     GPIO_ResetBits(GPIOA, GPIO_Pin_12);                   // HJI
 
-    delay(200);                                           // HJI
+    delay(200);                                           // HJI  // TODO - may be shorter
 
     GPIO_SetBits(GPIOA, GPIO_Pin_12);                     // HJI
 

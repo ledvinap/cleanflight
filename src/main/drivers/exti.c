@@ -30,7 +30,10 @@ void EXTIInit(void)
     // TODO - stm32F303
     // enable AFIO for EXTI support
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-
+#ifdef STM32F303xC
+    /* Enable SYSCFG clock otherwise the EXTI irq handlers are not called */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+#endif
     memset(extiChannelRecs, 0, sizeof(extiChannelRecs));
 }
 

@@ -23,40 +23,55 @@
 
 #include "build_config.h"
 
-#include "gpio.h"
+#include "drivers/io.h"
+#include "drivers/rcc.h"
 #include "system.h"
 
 #include "bus_i2c.h"
 
 #ifndef SOFT_I2C
 
+typedef struct i2cHwDef_s {
+    I2C_TypeDef *i2cDev;
+    const ioDef_t *sclIO, *sdaIO;
+    uint32_t rccI2CCLKConfig;
+    rccPeriphTag_t rcc;
+    uint8_t afConfig;
+} i2cHwDef_t;
+
+#ifndef I2C1_SCL_IO
+# define I2C1_SCL_IO &IO_PB6
+# define I2C1_SDA_IO &IO_PB7
+# define I2C1_AF GPIO_AF_4
+#endif
+
+struct i2cHwDef_s i2c1Def = {
+    .i2cDev = I2C1,
+    .sclIO = I2C1_SCL_IO,
+    .sdaIO = I2C1_SDA_IO,
+    .rccI2CCLKConfig = RCC_I2C1CLK_SYSCLK,
+    .rcc = RCC_APB1(I2C1),
+    .afConfig = I2C1_AF,
+};
+
+#ifndef I2C2_SCL_IO
+# define I2C2_SCL_IO &IO_PF6
+# define I2C2_SDA_IO &IO_PA10
+# define I2C2_AF GPIO_AF_4
+#endif
+
+struct i2cHwDef_s i2c2Def = {
+    .i2cDev = I2C2,
+    .sclIO = I2C2_SCL_IO,   // this pin is available only on TQFP100 package
+    .sdaIO = I2C2_SDA_IO,
+    .rccI2CCLKConfig = RCC_I2C2CLK_SYSCLK,
+    .rcc = RCC_APB1(I2C2),
+    .afConfig = I2C2_AF,
+};
+
+
 #define I2C_SHORT_TIMEOUT             ((uint32_t)0x1000)
 #define I2C_LONG_TIMEOUT             ((uint32_t)(10 * I2C_SHORT_TIMEOUT))
-
-#define I2C1_SCL_GPIO        GPIOB
-#define I2C1_SCL_GPIO_AF     GPIO_AF_4
-#define I2C1_SCL_PIN         GPIO_Pin_6
-#define I2C1_SCL_PIN_SOURCE  GPIO_PinSource6
-#define I2C1_SCL_CLK_SOURCE  RCC_AHBPeriph_GPIOB
-#define I2C1_SDA_GPIO        GPIOB
-#define I2C1_SDA_GPIO_AF     GPIO_AF_4
-#define I2C1_SDA_PIN         GPIO_Pin_7
-#define I2C1_SDA_PIN_SOURCE  GPIO_PinSource7
-#define I2C1_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOB
-
-#if !defined(I2C2_SCL_GPIO)
-#define I2C2_SCL_GPIO        GPIOF
-#define I2C2_SCL_GPIO_AF     GPIO_AF_4
-#define I2C2_SCL_PIN         GPIO_Pin_6
-#define I2C2_SCL_PIN_SOURCE  GPIO_PinSource6
-#define I2C2_SCL_CLK_SOURCE  RCC_AHBPeriph_GPIOF
-#define I2C2_SDA_GPIO        GPIOA
-#define I2C2_SDA_GPIO_AF     GPIO_AF_4
-#define I2C2_SDA_PIN         GPIO_Pin_10
-#define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
-#define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
-
-#endif
 
 static uint32_t i2cTimeout;
 
@@ -79,110 +94,47 @@ uint32_t i2cTimeoutUserCallback(I2C_TypeDef *I2Cx)
     return false;
 }
 
-void i2cInitPort(I2C_TypeDef *I2Cx)
+void i2cInitPort(const struct i2cHwDef_s* def)
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
-    I2C_InitTypeDef I2C_InitStructure;
 
-    if (I2Cx == I2C1) {
-        RCC_AHBPeriphClockCmd(I2C1_SCL_CLK_SOURCE | I2C1_SDA_CLK_SOURCE, ENABLE);
-        RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
-        RCC_I2CCLKConfig(RCC_I2C1CLK_SYSCLK);
+    RCC_ClockCmd(def->rcc, ENABLE);
+    RCC_I2CCLKConfig(def->rccI2CCLKConfig);
 
-        //i2cUnstick(I2Cx);                                         // Clock out stuff to make sure slaves arent stuck
+    //i2cUnstick(I2Cx);                                         // Clock out stuff to make sure slaves arent stuck
 
-        GPIO_PinAFConfig(I2C1_SCL_GPIO, I2C1_SCL_PIN_SOURCE, I2C1_SCL_GPIO_AF);
-        GPIO_PinAFConfig(I2C1_SDA_GPIO, I2C1_SDA_PIN_SOURCE, I2C1_SDA_GPIO_AF);
+    IOConfigGPIOAF(def->sclIO, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), def->afConfig);
+    IOConfigGPIOAF(def->sdaIO, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), def->afConfig);
 
-        GPIO_StructInit(&GPIO_InitStructure);
-        I2C_StructInit(&I2C_InitStructure);
+    I2C_InitTypeDef I2C_InitStructure = {
+        .I2C_Mode = I2C_Mode_I2C,
+        .I2C_AnalogFilter = I2C_AnalogFilter_Enable,
+        .I2C_DigitalFilter = 0x00,
+        .I2C_OwnAddress1 = 0x00,
+        .I2C_Ack = I2C_Ack_Enable,
+        .I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit,
+        .I2C_Timing = 0x00E0257A, // 400 Khz, 72Mhz Clock, Analog Filter Delay ON, Rise 100, Fall 10.
+        //.I2C_Timing              = 0x8000050B;
+    };
+    I2C_Init(def->i2cDev, &I2C_InitStructure);
 
-        // Init pins
+    I2C_Cmd(def->i2cDev, ENABLE);
 
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-        GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-        GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 
-        GPIO_InitStructure.GPIO_Pin = I2C1_SCL_PIN;
-        GPIO_Init(I2C1_SCL_GPIO, &GPIO_InitStructure);
-
-        GPIO_InitStructure.GPIO_Pin = I2C1_SDA_PIN;
-        GPIO_Init(I2C1_SDA_GPIO, &GPIO_InitStructure);
-
-        I2C_StructInit(&I2C_InitStructure);
-
-        I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-        I2C_InitStructure.I2C_AnalogFilter = I2C_AnalogFilter_Enable;
-        I2C_InitStructure.I2C_DigitalFilter = 0x00;
-        I2C_InitStructure.I2C_OwnAddress1 = 0x00;
-        I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-        I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-        I2C_InitStructure.I2C_Timing = 0x00E0257A; // 400 Khz, 72Mhz Clock, Analog Filter Delay ON, Rise 100, Fall 10.
-        //I2C_InitStructure.I2C_Timing              = 0x8000050B;
-
-        I2C_Init(I2C1, &I2C_InitStructure);
-
-        I2C_Cmd(I2C1, ENABLE);
-    }
-
-    if (I2Cx == I2C2) {
-        RCC_AHBPeriphClockCmd(I2C2_SCL_CLK_SOURCE | I2C2_SDA_CLK_SOURCE, ENABLE);
-        RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
-        RCC_I2CCLKConfig(RCC_I2C2CLK_SYSCLK);
-
-        //i2cUnstick(I2Cx);                                         // Clock out stuff to make sure slaves arent stuck
-
-        GPIO_PinAFConfig(I2C2_SCL_GPIO, I2C2_SCL_PIN_SOURCE, I2C2_SCL_GPIO_AF);
-        GPIO_PinAFConfig(I2C2_SDA_GPIO, I2C2_SDA_PIN_SOURCE, I2C2_SDA_GPIO_AF);
-
-        GPIO_StructInit(&GPIO_InitStructure);
-        I2C_StructInit(&I2C_InitStructure);
-
-        // Init pins
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-        GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-        GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-
-        GPIO_InitStructure.GPIO_Pin = I2C2_SCL_PIN;
-        GPIO_Init(I2C2_SCL_GPIO, &GPIO_InitStructure);
-
-        GPIO_InitStructure.GPIO_Pin = I2C2_SDA_PIN;
-        GPIO_Init(I2C2_SDA_GPIO, &GPIO_InitStructure);
-
-        I2C_StructInit(&I2C_InitStructure);
-
-        I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-        I2C_InitStructure.I2C_AnalogFilter = I2C_AnalogFilter_Enable;
-        I2C_InitStructure.I2C_DigitalFilter = 0x00;
-        I2C_InitStructure.I2C_OwnAddress1 = 0x00;
-        I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-        I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-
-        // FIXME timing is board specific
-        //I2C_InitStructure.I2C_Timing = 0x00310309; // //400kHz I2C @ 8MHz input -> PRESC=0x0, SCLDEL=0x3, SDADEL=0x1, SCLH=0x03, SCLL=0x09 - value from TauLabs/Sparky
-        // ^ when using this setting and after a few seconds of a scope probe being attached to the I2C bus it was observed that the bus enters
-        // a busy state and does not recover.
-
-        I2C_InitStructure.I2C_Timing = 0x00E0257A; // 400 Khz, 72Mhz Clock, Analog Filter Delay ON, Rise 100, Fall 10.
-
-        //I2C_InitStructure.I2C_Timing              = 0x8000050B;
-
-        I2C_Init(I2C2, &I2C_InitStructure);
-
-        I2C_Cmd(I2C2, ENABLE);
-    }
+    // FIXME timing is board specific - I2C2 :
+    //   I2C_InitStructure.I2C_Timing = 0x00310309; // //400kHz I2C @ 8MHz input -> PRESC=0x0, SCLDEL=0x3, SDADEL=0x1, SCLH=0x03, SCLL=0x09 - value from TauLabs/Sparky
+    //    ^ when using this setting and after a few seconds of a scope probe being attached to the I2C bus it was observed that the bus enters
+    //    a busy state and does not recover.
 }
 
 void i2cInit(I2CDevice index)
 {
     if (index == I2CDEV_1) {
         I2Cx = I2C1;
+        i2cInitPort(&i2c1Def);
     } else {
         I2Cx = I2C2;
+        i2cInitPort(&i2c2Def);
     }
-    i2cInitPort(I2Cx);
 }
 
 uint16_t i2cGetErrorCounter(void)

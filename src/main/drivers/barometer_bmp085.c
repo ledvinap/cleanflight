@@ -140,9 +140,10 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
     if (bmp085InitDone)
         return true;
     if (config && config->xclrIO) {
-        IO_ConfigGPIO(config->xclrIO, Mode_Out_PP);
-        IO_DigitalWrite(config->xclrIO, true);   // enable baro
+        IOConfigGPIO(config->xclrIO, Mode_Out_PP);
+        IODigitalWrite(config->xclrIO, true);   // enable baro
     }
+#if defined(BARO_EOC_GPIO)
     if (config && config->eocIO) {
         // EXTI interrupt for barometer EOC
         IO_ConfigGPIO(config->eocIO, Mode_IN_FLOATING);
@@ -150,7 +151,7 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
         EXTIConfig(config->eocIO, &bmp085_extiCallbackRec, NVIC_PRIO_BARO_EXTI, EXTI_Trigger_Rising);
         EXTIEnable(config->eocIO, true);
     }
-
+#endif
     delay(20); // datasheet says 10ms, we'll be careful and do 20.
 
     ack = i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */ 
@@ -174,9 +175,11 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
             return true;
         }
     }
+#if defined(BARO_EOC_GPIO)
     if (config && config->eocIO) {
         EXTIRelease(config->eocIO);
     }
+#endif
     if (config && config->xclrIO) {
         IODigitalWrite(config->xclrIO, false);   // disable baro
     }

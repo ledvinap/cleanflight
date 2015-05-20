@@ -2,6 +2,11 @@
 
 #include "common/utils.h"
 
+#define BOOST_PP_VARIADICS 1
+#include <boost/preprocessor/control/if.hpp>
+#include <boost/preprocessor/comparison/less.hpp>
+
+
 // define macros for easy specification of IO pins.
 
 // Structure defining available IO pins is defined using DEF_IO macro. Parameters to this macro are intended to be easily readable.
@@ -10,6 +15,7 @@
 // used in future.
 
 // GPIOx
+#define DEFIO_GPIO_ID__NA    0
 #define DEFIO_GPIO_ID__GPIOA 1
 #define DEFIO_GPIO_ID__GPIOB 2
 #define DEFIO_GPIO_ID__GPIOC 3
@@ -24,6 +30,7 @@
 #define DEFIO_GPIO_LETTER(gpio) CONCAT(DEFIO_GPIO_LETTER__, gpio)
 
 // PINx
+#define DEFIO_PIN_ID__NA   0
 #define DEFIO_PIN_ID__PIN0 0
 #define DEFIO_PIN_ID__PIN1 1
 #define DEFIO_PIN_ID__PIN2 2
@@ -60,47 +67,63 @@
 #define DEFIO_TIMCH_ID__TIMCH3 3
 #define DEFIO_TIMCH_ID__TIMCH4 4
 
-#define DEFIO_TIMERCH_REC(tim, ch) (DEFIO_TIMER_REC(tim).channel[(ch)-1])
-#define DEFIO_TIMER_REC(tim) CONCAT(timerRec_TIM, tim)
-#define DEFIO_TIMER_DEF(tim) CONCAT(TIMER_TIM, tim)
-#define DEFIO_IO_DEF(gpio, pin) CONCAT(IO_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
-#define DEFIO_IO_REC(gpio, pin) CONCAT(ioRec_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
+#define DEFIO_TIMERCH_REC(tim, ch) (&(DEFIO_TIMER_REC(tim)->channel[(ch)-1]))
+#define DEFIO_TIMER_REC_NAME(tim) CONCAT(timerRec_TIM, tim)
+#define DEFIO_TIMER_REC(tim) (&DEFIO_TIMER_REC_NAME(tim))
+#define DEFIO_TIMER_DEF_NAME(tim) CONCAT(TIMER_TIM, tim)
+#define DEFIO_TIMER_DEF(tim) (&DEFIO_TIMER_DEF_NAME(tim))
+#define DEFIO_IO_DEF_NAME(gpio, pin) CONCAT(IO_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
+#define DEFIO_IO_DEF(gpio, pin) BOOST_PP_IF(gpio, &DEFIO_IO_DEF_NAME(gpio, pin), NULL)
+#define DEFIO_IO_REC_NAME(gpio, pin) CONCAT(ioRec_P, CONCAT(DEFIO_GPIO_LETTER(gpio), pin))
+#define DEFIO_IO_REC(gpio, pin) BOOST_PP_IF(gpio, &DEFIO_IO_REC_NAME(gpio, pin), NULL)
 #define DEFIO_TIM(tim) CONCAT(TIM, tim)
-#define DEFIO_GPIO(gpio) CONCAT(GPIO, DEFIO_GPIO_LETTER(gpio))
+#define DEFIO_GPIO(gpio) BOOST_PP_IF(gpio, CONCAT(GPIO, DEFIO_GPIO_LETTER(gpio)), NULL)
 #define DEFIO_PIN(pin) CONCAT(Pin_, pin)
 #define DEFIO_TIM_CHANNEL(ch) CONCAT(TIM_Channel_, ch)
 
 // the ## operator must be used directly here - the parameter should not be expanded
-// some magic may be used if expansion is desirable (#define DEFIO_GPIO__EXPAND(x) CONCAT(GPIO, x) )
-#define DEF_TIMCH(gpio_, pin_, tim_, tim_ch_) {                             \
-        .rec = &DEFIO_TIMERCH_REC(DEFIO_TIM_ID__  ## tim_, DEFIO_TIMCH_ID__ ## tim_ch_), \
-            .timerDef = &DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_),       \
-            .ioDef = &DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_), \
-            .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                   \
-            .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),               \
-            .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                   \
-            .channel = DEFIO_TIM_CHANNEL(DEFIO_TIMCH_ID__ ## tim_ch_)   \
-}                                                                       \
+// some magic may be used if expansion is desirable (#define DEFIO_GPIO_ID__EXPAND(x) x )
+#if defined(STM32F10X)
+# define DEF_TIMCH(gpio_, pin_, tim_, tim_ch_) {                        \
+        .rec = DEFIO_TIMERCH_REC(DEFIO_TIM_ID__  ## tim_, DEFIO_TIMCH_ID__ ## tim_ch_), \
+        .timerDef = DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_),            \
+        .ioDef = DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_), \
+        .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                       \
+        .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),                   \
+        .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                       \
+        .channel = DEFIO_TIM_CHANNEL(DEFIO_TIMCH_ID__ ## tim_ch_),      \
+    }                                                                   \
 /**/
-
+#elif defined(STM32F303xC)
+# define DEF_TIMCH(gpio_, pin_, tim_, tim_ch_, pin_af_) {                \
+        .rec = DEFIO_TIMERCH_REC(DEFIO_TIM_ID__  ## tim_, DEFIO_TIMCH_ID__ ## tim_ch_), \
+        .timerDef = DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_),            \
+        .ioDef = DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_), \
+        .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                       \
+        .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),                   \
+        .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                       \
+        .channel = DEFIO_TIM_CHANNEL(DEFIO_TIMCH_ID__ ## tim_ch_),      \
+        .pinAF = pin_af_                                                \
+    }                                                                   \
+/**/
+#endif
 #if defined(IO_DEF_DEFINE)
-
 
 // we are included in C file, emit actual IO definitions
 #define DEF_IO(gpio_, pin_)                                             \
-    struct ioRec_s DEFIO_IO_REC(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_); \
-    const struct ioDef_s DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
-        __attribute__ ((section (".text.gpio." STR(DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_)) ))) \
+    struct ioRec_s DEFIO_IO_REC_NAME(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_); \
+    const struct ioDef_s DEFIO_IO_DEF_NAME(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
+        __attribute__ ((section (".tab.gpio." STR(DEFIO_GPIO_ID__ ## gpio_) BOOST_PP_IF(BOOST_PP_LESS(DEFIO_PIN_ID__ ## pin_, 10), "0", "") STR(DEFIO_PIN_ID__ ## pin_) ))) \
         = {                                                             \
         .gpio = DEFIO_GPIO(DEFIO_GPIO_ID__ ## gpio_),                   \
         .pin = DEFIO_PIN(DEFIO_PIN_ID__ ## pin_),                       \
-        .rec = &DEFIO_IO_REC(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
+        .rec = DEFIO_IO_REC(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
     }                                                                   \
     /**/
 #else
 struct ioDef_s;
 #define DEF_IO(gpio_, pin_) \
-    extern const struct ioDef_s DEFIO_IO_DEF(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
+    extern const struct ioDef_s DEFIO_IO_DEF_NAME(DEFIO_GPIO_ID__ ## gpio_, DEFIO_PIN_ID__ ## pin_) \
     /**/
 #endif
 
@@ -108,11 +131,11 @@ struct ioDef_s;
 // we are included in C file, emit actual TIMER definitions
 // TODO - user timer type instead of outputs enable
 #define DEF_TIMER(tim_, iCC, iUP, outEna, rcc_)                              \
-    struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_);          \
-    const struct timerDef_s DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_)     \
-        __attribute__ ((section (".text.timer." STR(DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_)) ))) \
+    struct timerRec_s DEFIO_TIMER_REC_NAME(DEFIO_TIM_ID__ ## tim_);          \
+    const struct timerDef_s DEFIO_TIMER_DEF_NAME(DEFIO_TIM_ID__ ## tim_)     \
+        __attribute__ ((section (".tab.timer." BOOST_PP_IF(BOOST_PP_LESS(DEFIO_TIM_ID__ ## tim_, 10), "0", "") STR(DEFIO_TIM_ID__ ## tim_) ))) \
         = {                                                             \
-        .rec = &DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_),                \
+        .rec = DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_),                \
         .tim = DEFIO_TIM(DEFIO_TIM_ID__ ## tim_),                       \
         .irqCC = iCC,                                                   \
         .irqUP = iUP,                                                   \
@@ -125,7 +148,7 @@ struct ioDef_s;
 struct ioDef_s;
 struct timerRec_s;
 #define DEF_TIMER(tim_, iCC, iUP, outEna, rcc_)                         \
-    extern const struct timerDef_s DEFIO_TIMER_DEF(DEFIO_TIM_ID__ ## tim_); \
-    extern struct timerRec_s DEFIO_TIMER_REC(DEFIO_TIM_ID__ ## tim_)    \
+    extern const struct timerDef_s DEFIO_TIMER_DEF_NAME(DEFIO_TIM_ID__ ## tim_); \
+    extern struct timerRec_s DEFIO_TIMER_REC_NAME(DEFIO_TIM_ID__ ## tim_)    \
     /**/
 #endif

@@ -26,15 +26,29 @@ typedef struct ioRec_s {
 
 typedef uint8_t ioConfig_t;
 
+#if defined(STM32F10X)
+
+// mode is using bits 6-2
+# define IO_CONFIG(mode, speed) ((mode) | (speed))
+
+# define IOCFG_AF_PP IO_CONFIG(GPIO_Mode_AF_PP, GPIO_Speed_2MHz)
+# define IOCFG_IPD IO_CONFIG(GPIO_Mode_IPD, GPIO_Speed_2MHz)
+# define IOCFG_IPU IO_CONFIG(GPIO_Mode_IPU, GPIO_Speed_2MHz)
+
+#elif defined(STM32F303xC)
+
+// define it here to be compatible with STM32F10X
 #define GPIO_Speed_10MHz GPIO_Speed_Level_1  // Fast Speed:10MHz
 #define GPIO_Speed_2MHz  GPIO_Speed_Level_2  // Medium Speed:2MHz (same as zero)
 #define GPIO_Speed_50MHz GPIO_Speed_Level_3  // High Speed:50MHz
 
-#define IO_CONFIG(mode, speed, otype, pupd) ((mode) | ((speed) << 2) | ((otype) << 4) | ((pupd) << 5))
+# define IO_CONFIG(mode, speed, otype, pupd) ((mode) | ((speed) << 2) | ((otype) << 4) | ((pupd) << 5))
 
-#define IOCFG_AF_PP IO_CONFIG(GPIO_Mode_AF, 0, GPIO_OType_PP, GPIO_PuPd_NOPULL)
-#define IOCFG_IPD IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_DOWN)
-#define IOCFG_IPU IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP)
+# define IOCFG_AF_PP IO_CONFIG(GPIO_Mode_AF, 0, GPIO_OType_PP, GPIO_PuPd_NOPULL)
+# define IOCFG_IPD IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_DOWN)
+# define IOCFG_IPU IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP)
+
+#endif
 
 int IO_GPIOPortIdx(const ioDef_t *io);
 int IO_GPIOPortSource(const ioDef_t *io);
@@ -45,4 +59,6 @@ uint32_t IO_EXTILine(const ioDef_t *io);
 bool IODigitalRead(const ioDef_t *  io);
 void IODigitalWrite(const ioDef_t *  io, bool value);
 void IOConfigGPIO(const ioDef_t *  io, ioConfig_t cfg);
+#if defined(STM32F303xC)
 void IOConfigGPIOAF(const ioDef_t *  io, ioConfig_t cfg, uint8_t af);
+#endif

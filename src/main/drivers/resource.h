@@ -2,7 +2,7 @@
 #pragma once
 
 typedef enum {
-    OWNER_FREE,
+    OWNER_FREE = 0,
     OWNER_PWMINPUT,
     OWNER_PPMINPUT,
     OWNER_PWMOUTPUT_MOTOR,

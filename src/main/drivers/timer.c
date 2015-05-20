@@ -173,7 +173,6 @@ void timerChInit(const timerChDef_t *timChDef, resourceOwner_t owner, resourceTy
     if(ioDef) {  // claim io channel
         if(owner != OWNER_FREE)   // pass OWNER_FREE to keep old owner
             ioDef->rec->owner = owner;
-
     }
 
     timChDef->rec->owner = owner;
@@ -537,8 +536,8 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     void name(void)                                                     \
     {                                                                   \
         pinDbgHi(DBP_TIMER);                                            \
-        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## i), &DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## i)); \
-        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## j), &DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## j)); \
+        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## i), DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## i)); \
+        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## j), DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## j)); \
         pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 
@@ -546,7 +545,7 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     void name(void)                                                     \
     {                                                                   \
         pinDbgHi(DBP_TIMER);                                            \
-        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## i), &DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## i)); \
+        timIRQHandler(DEFIO_TIM(DEFIO_TIM_ID__  ## i), DEFIO_TIMER_REC(DEFIO_TIM_ID__  ## i)); \
         pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 #else

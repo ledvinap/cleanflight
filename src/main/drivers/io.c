@@ -102,7 +102,25 @@ void IODigitalWrite(const ioDef_t *io, bool value)
         digitalLo(io->gpio, io->pin);
 }
 
-#ifdef STM32F303xC
+#if defined(STM32F10X)
+
+void IOConfigGPIO(const ioDef_t *io, ioConfig_t cfg)
+{
+    if(!io)
+        return;
+    rccPeriphTag_t rcc = ioPortDefs[IO_GPIOPortIdx(io)].rcc;
+    RCC_ClockCmd(rcc, ENABLE);
+
+    GPIO_InitTypeDef init = {
+        .GPIO_Pin = io->pin,
+        .GPIO_Speed = cfg & 0x03,
+        .GPIO_Mode =  cfg & 0x7c,
+    };
+    GPIO_Init(io->gpio, &init);
+}
+
+
+#elif defined(STM32F303xC)
 
 void IOConfigGPIO(const ioDef_t *io, ioConfig_t cfg)
 {
@@ -139,5 +157,4 @@ void IOConfigGPIOAF(const ioDef_t *io, ioConfig_t cfg, uint8_t af)
     };
     GPIO_Init(io->gpio, &init);
 }
-
 #endif

@@ -1679,6 +1679,7 @@ static void cliVersion(char *cmdline)
 #define FILT_E 8
 static void cliVibration(char *cmdline)
 {
+#if 0
     UNUSED(cmdline);
     printf("Y,c,p\r\n");
     mpu6050FifoEnable();

@@ -47,6 +47,7 @@
 #include "drivers/pwm_rx.h"
 #include "drivers/accgyro_mpu6050.h"
 
+#include "drivers/timer_impl.h"
 
 #include "io/escservo.h"
 #include "io/gps.h"
@@ -110,6 +111,7 @@ static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
 static void cliVibration(char *cmdline);
+static void cliResources(char *cmdline);
 static void cliReboot(void);
 
 #ifdef GPS
@@ -221,6 +223,7 @@ const clicmd_t cmdTable[] = {
     { "play_sound", "index, or none for next", cliPlaySound },
     { "profile", "index (0 to 2)", cliProfile },
     { "rateprofile", "index (0 to 2)", cliRateProfile },
+    { "resources", "Resource allocation", cliResources },
     { "save", "save and reboot", cliSave },
 #ifdef USE_SERVOS
     { "servo", "servo config", cliServo },
@@ -1786,6 +1789,49 @@ static void cliVibration(char *cmdline)
         }
 //        if(!(tick % 4))
             printf("%d,%d,%d\r\n", y, period, per);
+    }
+#endif
+}
+
+const char * const ownerNames[] = {
+    "FREE",
+    "PWMIN",
+    "PPMIN",
+    "PWOUT_MOTOR",
+    "PWOUT_FAST",
+    "PWOUT_ONESHOT",
+    "PWOUT_SERVO",
+    "SOFTSERIAL_RX",
+    "SOFTSERIAL_TX",
+    "SOFTSERIAL_RXTX",        // bidirectional pin for softserial
+    "SOFTSERIAL_AUXTIMER",    // timer channel is used for softserial. No IO function on pin
+    "ADC",
+    "SERIAL_RX",
+    "SERIAL_TX",
+    "SERIAL_RXTX",
+    "PINDEBUG",
+    "TIMER",
+};
+
+extern const struct ioDef_s __tab_gpio_start[];
+extern const struct ioDef_s __tab_gpio_end[];
+extern const struct timerDef_s __tab_timer_start[];
+extern const struct timerDef_s __tab_timer_end[];
+
+static void cliResources(char *cmdline)
+{
+    UNUSED(cmdline);
+    printf("IO:\r\n");
+    const struct ioDef_s *gpio;
+    for(gpio = __tab_gpio_start; gpio < __tab_gpio_end; gpio++) {
+        printf("%c%02d: %19s %02x\r\n", IO_GPIOPortIdx(gpio)+'A', IO_GPIOPinIdx(gpio), ownerNames[gpio->rec->owner], gpio->rec->resourcesUsed);
+    }
+    printf("TIMER:\r\n");
+    const struct timerDef_s *tim;
+    for(tim = __tab_timer_start; tim < __tab_timer_end; tim++) {
+        printf("%d : time: %d prio: 0x%02x\r\n", tim-__tab_timer_start, tim->rec->runningTime, tim->rec->priority);
+        for(int i = 0; i < CC_CHANNELS_PER_TIMER; i++)
+            printf(" - %d: %08x %08x %19s\r\n", i, tim->rec->channel[i].edgeCallback, tim->rec->channel[i].overflowCallback, ownerNames[tim->rec->channel[i].owner]);
     }
 }
 

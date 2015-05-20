@@ -60,8 +60,17 @@ SECTIONS
     KEEP (*(.init))
     KEEP (*(.fini))
 
+    . = ALIGN(4);      /* start must be aligned */
+    __tab_gpio_start = .;
+    *(SORT(.tab.gpio.*))
+    __tab_gpio_end = .;
+
+    __tab_timer_start = .;
+    *(SORT(.tab.timer.*))
+    __tab_timer_end = .;
+
     . = ALIGN(4);
-    _etext = .;        /* define a global symbols at end of code */
+    _etext = .;        /* define a global symbol at end of code */
   } >FLASH
 
 

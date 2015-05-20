@@ -168,6 +168,7 @@
 #define SERIAL_RX
 //#define AUTOTUNE
 #define USE_SERVOS
+#define USE_CLI
 
 #define CurrentMeter_TIMER 7 // OUT6
 

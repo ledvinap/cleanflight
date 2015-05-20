@@ -123,5 +123,4 @@
 #define SERIAL_RX
 #define AUTOTUNE
 #define USE_SERVOS
-
-#define USABLE_TIMER_CHANNEL_COUNT (18 + 1)
+#define USE_CLI

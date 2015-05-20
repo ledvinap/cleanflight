@@ -98,5 +98,4 @@
 #define AUTOTUNE
 
 #define USE_SERVOS
-
-#define USABLE_TIMER_CHANNEL_COUNT (14 + 1)
+#define USE_CLI

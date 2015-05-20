@@ -1904,7 +1904,7 @@ void cliProcess(void)
                 const clicmd_t *cmd;
                 for (cmd = cmdTable; cmd < cmdTable + CMD_COUNT; cmd++) {
                     if(!strncasecmp(cliBuffer, cmd->name, strlen(cmd->name))   // command char match
-                       && !isalnum((int)cliBuffer[strlen(cmd->name)]))              // next characted in bufffer is not alphanumeric (command is correctly terminated)
+                       && !isalnum((unsigned)cliBuffer[strlen(cmd->name)]))              // next characted in bufffer is not alphanumeric (command is correctly terminated)
                         break;
                 }
                 if(cmd < cmdTable + CMD_COUNT)

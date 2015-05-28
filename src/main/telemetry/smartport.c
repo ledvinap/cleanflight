@@ -206,7 +206,7 @@ static void smartPortSendPackage(uint16_t id, uint32_t val)
     smartPortSendByte(u8p[3], &crc);
     smartPortSendByte(0xFF - (uint8_t)crc, NULL);
 
-    serialUpdateState(smartPortSerialPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE);
+//    serialUpdateState(smartPortSerialPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE);
     smartPortLastServiceTime = millis();
 }
 
@@ -284,14 +284,12 @@ void handleSmartPortTelemetry(void)
     uint32_t now = millis();
 
     // if timed out, reconfigure the UART back to normal so the GUI or CLI works
+#if 0
     if ((now - smartPortLastRequestTime) > SMARTPORT_NOT_CONNECTED_TIMEOUT_MS) {
         smartPortState = SPSTATE_TIMEDOUT;
         return;
     }
-
-    // limit the rate at which we send responses, we don't want to affect flight characteristics
-    if ((now - smartPortLastServiceTime) < SMARTPORT_SERVICE_DELAY_MS)
-        return;
+#endif
 
     if (smartPortHasRequest) {
         // we can send back any data we want, our table keeps track of the order and frequency of each data type we send

@@ -202,7 +202,7 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
         if ((self->port.mode & MODE_TX) && tx)
             IOConfigGPIOAF(tx, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), af);
         if ((self->port.mode & MODE_RX) && rx)
-            IOConfigGPIOAF(rx, ((self->port.mode & MODE_INVERTED)
+            IOConfigGPIOAF(rx, ((config->mode & MODE_INVERTED)
                                 ? IO_CONFIG(GPIO_Mode_AF, 0, 0, GPIO_PuPd_DOWN)
                                 : IO_CONFIG(GPIO_Mode_AF, 0, 0, GPIO_PuPd_UP)),
                            af);

@@ -173,10 +173,11 @@ static void uartReconfigure(uartPort_t *self, const serialPortMode_t *config)
         self->port.state |= STATE_TX;
         self->port.mode |= MODE_TX;
     }
-    self->port.mode |= config->mode & MODE_SINGLEWIRE;
+    self->port.mode |= config->mode & (MODE_SINGLEWIRE | MODE_INVERTED);
     self->port.baudRate = config->baudRate;
 
     usartHwConfigurePins(self, config);
+    usartConfigurePinInversion(self);
     usartConfigureDMAorIRQ(self, config);
 
     uartReconfigureState(self);
@@ -198,7 +199,7 @@ static void uartReconfigureState(uartPort_t *self)
         USART_InitStructure.USART_Mode |= USART_Mode_Rx;
     if (self->port.state & STATE_TX)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
-
+// TODO - check inversion and other flags to be copied ... 
     USART_Init(self->USARTx, &USART_InitStructure);
     usartConfigurePinInversion(self);
     if (self->port.mode & MODE_SINGLEWIRE)
@@ -238,6 +239,10 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortMode_t *config)
 void uartUpdateState(serialPort_t *serial, portState_t andMask, portState_t orMask)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
+    if(orMask & STATE_RX_WHENTXDONE) {  // hardware will handle this 
+        orMask |= STATE_RX;
+        andMask &= STATE_RX;
+    }
     portState_t newState = (self->port.state & andMask) | orMask;
     self->port.state = newState;
     uartReconfigureState(self);

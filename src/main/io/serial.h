@@ -49,7 +49,7 @@ typedef enum {
     BAUD_250000,
 } baudRate_e;
 
-extern uint32_t baudRates[];
+extern const uint32_t const baudRates[];
 
 // serial port identifiers are now fixed, these values are used by MSP commands.
 typedef enum {
@@ -64,7 +64,7 @@ typedef enum {
     SERIAL_PORT_IDENTIFIER_MAX = SERIAL_PORT_SOFTSERIAL2
 } serialPortIdentifier_e;
 
-extern serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT];
+extern const serialPortIdentifier_e const serialPortIdentifiers[SERIAL_PORT_COUNT];
 
 //
 // runtime
@@ -100,7 +100,11 @@ typedef struct serialConfig_s {
 //
 // configuration
 //
+void serialRemovePort(serialPortIdentifier_e identifier);
+uint8_t serialGetAvailablePortCount(void);
+bool serialIsPortAvailable(serialPortIdentifier_e identifier);
 bool isSerialConfigValid(serialConfig_t *serialConfig);
+serialPortConfig_t *serialFindPortConfiguration(serialPortIdentifier_e identifier);
 bool doesConfigurationUsePort(serialPortIdentifier_e portIdentifier);
 serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function);
 serialPortConfig_t *findNextSerialPortConfig(serialPortFunction_e function);
@@ -123,6 +127,7 @@ void closeSerialPort(serialPort_t *serialPort);
 void waitForSerialPortToFinishTransmitting(serialPort_t *serialPort);
 
 baudRate_e lookupBaudRateIndex(uint32_t baudRate);
+
 
 //
 // msp/cli/bootloader

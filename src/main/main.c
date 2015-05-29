@@ -283,10 +283,22 @@ void init(void)
     updateHardwareRevision();
 #endif
 
+#if defined(NAZE)
+    if (hardwareRevision == NAZE32_SP) {
+        serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
+    } else  {
+        serialRemovePort(SERIAL_PORT_USART3);
+    }
+#endif
+
 #ifdef USE_I2C
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);
+    } else {
+        if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+            i2cInit(I2C_DEVICE);
+        }
     }
 #elif defined(CC3D)
     if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
@@ -380,7 +392,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit(&masterConfig.batteryConfig);
+        sonarInit(&masterConfig.batteryConfig);  // TODO - sync with master
     }
 #endif
 

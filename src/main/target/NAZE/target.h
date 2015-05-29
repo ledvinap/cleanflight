@@ -117,6 +117,7 @@
 
 #define USE_USART1
 #define USE_USART2
+#define USE_USART3
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
 #define SERIAL_PORT_COUNT 4
@@ -132,6 +133,10 @@
 #define SOFTSERIAL_2_TIMER_RX_HARDWARE 2
 #define SOFTSERIAL_2_TIMER_TX_HARDWARE 2
 #endif
+
+// USART3 only on NAZE32_SP - Flex Port
+#define USART3_RX_IO &IO_PB11
+#define USART3_TX_IO &IO_PB10
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)

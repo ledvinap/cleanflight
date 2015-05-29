@@ -174,7 +174,8 @@ void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
 void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
     const ioDef_t *tx, *rx, *rxi, *txi;
     uint8_t af;
-    if(config->mode & MODE_U_REMAP) {
+    // allow remap only if remap pins are defined
+    if(config->mode & MODE_U_REMAP && self->hwDef->rxChRemap && self->hwDef->txChRemap) {
         rx = self->hwDef->rxChRemap;
         tx = self->hwDef->txChRemap;
         rxi = self->hwDef->rxCh;

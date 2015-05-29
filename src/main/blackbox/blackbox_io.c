@@ -63,10 +63,10 @@
 #ifdef BLACKBOX
 
 serialPortMode_t blackboxPortConfig = {
-#ifdef AMINI
-    .mode = MODE_TX | MODE_U_DMATX,
-#else
+#if defined(NAZE) && !defined(AMINI)
     .mode = MODE_TX | MODE_U_DMATX | MODE_U_REMAP,
+#else
+    .mode = MODE_TX | MODE_U_DMATX,
 #endif
     .baudRate = 115200,
 };

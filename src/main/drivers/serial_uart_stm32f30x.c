@@ -49,20 +49,20 @@
 //#define USE_USART3_TX_DMA
 
 #ifndef UART1_TX_IO
-#define UART1_TX_IO        &IO_PA9  // PA9
-#define UART1_RX_IO        &IO_PA10 // PA10
+#define UART1_TX_IO        &IO_PA9
+#define UART1_RX_IO        &IO_PA10
 #define UART1_GPIO_AF      GPIO_AF_7
 #endif
 
 #ifndef UART2_TX_IO
-#define UART2_TX_IO        &IO_PD5 // PD5
-#define UART2_RX_IO        &IO_PD6 // PD6
+#define UART2_TX_IO        &IO_PD5
+#define UART2_RX_IO        &IO_PD6
 #define UART2_GPIO_AF      GPIO_AF_7
 #endif
 
 #ifndef UART3_TX_IO
-#define UART3_TX_IO        &IO_PB10 // PB10 (AF7)
-#define UART3_RX_IO        &IO_PB11 // PB11 (AF7)
+#define UART3_TX_IO        &IO_PB10
+#define UART3_RX_IO        &IO_PB11
 #define UART3_GPIO_AF      GPIO_AF_7
 #endif
 
@@ -191,6 +191,7 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
     }
 
     if(self->port.mode & MODE_SINGLEWIRE) {
+        IOInit(tx, OWNER_SERIAL_RXTX, RESOURCE_USART);
         IOConfigGPIOAF(tx, ((self->port.mode & MODE_INVERTED)
                             ? IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz,  GPIO_OType_PP, GPIO_PuPd_DOWN)
                             : IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz,  GPIO_OType_OD, GPIO_PuPd_UP)),
@@ -199,6 +200,8 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
             IODigitalWrite(tx, true);   // OpenDrain output should be inactive
         // TODO - maybe allow remap
     } else {
+        IOInit(tx, OWNER_SERIAL_TX, RESOURCE_USART);
+        IOInit(rx, OWNER_SERIAL_RX, RESOURCE_USART);
         if ((self->port.mode & MODE_TX) && tx)
             IOConfigGPIOAF(tx, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), af);
         if ((self->port.mode & MODE_RX) && rx)
@@ -207,9 +210,11 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
                                 : IO_CONFIG(GPIO_Mode_AF, 0, 0, GPIO_PuPd_UP)),
                            af);
         // TODO - remaped IO may have different inversion
-        if (txi)
+        // TODO - unclaimed IO should be only weakly initialized
+        // do not claim remap IO, but configure PU/PD if it is not claimed yet
+        if (rxi && IOGetOwner(rxi) == OWNER_FREE)
             IOConfigGPIO(rxi, IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP));
-        if (rxi)
+        if (txi && IOGetOwner(txi) == OWNER_FREE)
             IOConfigGPIO(txi, IO_CONFIG(GPIO_Mode_IN, 0, 0, GPIO_PuPd_UP));
     }
 }

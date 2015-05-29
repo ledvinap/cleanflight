@@ -56,9 +56,14 @@ int IO_GPIOPinIdx(const ioDef_t *io);
 int IO_GPIOPinSource(const ioDef_t *io);
 uint32_t IO_EXTILine(const ioDef_t *io);
 
-bool IODigitalRead(const ioDef_t *  io);
-void IODigitalWrite(const ioDef_t *  io, bool value);
-void IOConfigGPIO(const ioDef_t *  io, ioConfig_t cfg);
+bool IODigitalRead(const ioDef_t *io);
+void IODigitalWrite(const ioDef_t *io, bool value);
+
+void IOInit(const ioDef_t *io, resourceOwner_t owner, resourceType_t resources);
+void IORelease(const ioDef_t *io);
+resourceOwner_t IOGetOwner(const ioDef_t *io);
+
+void IOConfigGPIO(const ioDef_t *io, ioConfig_t cfg);
 #if defined(STM32F303xC)
-void IOConfigGPIOAF(const ioDef_t *  io, ioConfig_t cfg, uint8_t af);
+void IOConfigGPIOAF(const ioDef_t *io, ioConfig_t cfg, uint8_t af);
 #endif

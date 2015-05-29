@@ -171,8 +171,8 @@ void timerChInit(const timerChDef_t *timChDef, resourceOwner_t owner, resourceTy
 {
     const ioDef_t* ioDef = timChDef->ioDef;
     if(ioDef) {  // claim io channel
-        if(owner != OWNER_FREE)   // pass OWNER_FREE to keep old owner
-            ioDef->rec->owner = owner;
+        IOInit(ioDef, owner, resources);
+
     }
 
     timChDef->rec->owner = owner;

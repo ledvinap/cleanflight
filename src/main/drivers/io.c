@@ -102,6 +102,23 @@ void IODigitalWrite(const ioDef_t *io, bool value)
         digitalLo(io->gpio, io->pin);
 }
 
+void IOInit(const ioDef_t *io, resourceOwner_t owner, resourceType_t resources)
+{
+    if(owner != OWNER_FREE)   // pass OWNER_FREE to keep old owner
+        io->rec->owner = owner;
+    io->rec->resourcesUsed |= resources;
+}
+
+void IORelease(const ioDef_t *io)
+{
+    io->rec->owner = OWNER_FREE;
+}
+
+resourceOwner_t IOGetOwner(const ioDef_t *io)
+{
+    return io->rec->owner;
+}
+
 #if defined(STM32F10X)
 
 void IOConfigGPIO(const ioDef_t *io, ioConfig_t cfg)

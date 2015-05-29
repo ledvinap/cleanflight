@@ -122,7 +122,7 @@ static const uartHwDef_t uartPort3Def = {
 #ifdef USART3_TX_PIN_REMAP
     .txChRemap = USART3_TX_PIN_REMAP,
 #endif
-    .remap = GPIO_Remap_USART3,
+    .remap = GPIO_PartialRemap_USART3,
 };
 #endif
 

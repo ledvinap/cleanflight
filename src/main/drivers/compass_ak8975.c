@@ -59,6 +59,8 @@
 #define AK8975_MAG_REG_CNTL         0x0a
 #define AK8975_MAG_REG_ASCT         0x0c // self test
 
+static int16_t gainComp[3];
+
 bool ak8975detect(mag_t *mag)
 {
     bool ack = false;
@@ -93,6 +95,13 @@ void ak8975Init()
     delay(10);
 
     ack = i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975A_ASAX, 3, &buffer[0]); // Read the x-, y-, and z-axis calibration values
+    if(ack) {
+        for(int i = 0; i < 3; i++)
+            gainComp[i] = 128 + buffer[i];  // scaled by 256
+    } else {
+        for(int i = 0; i < 3; i++)
+            gainComp[i] = 256;
+    }
     delay(10);
 
     ack = i2cWrite(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_CNTL, 0x00); // power down after reading.
@@ -147,10 +156,10 @@ void ak8975Read(int16_t *magData)
         return;
     }
 
-    magData[X] = -(int16_t)(buf[1] << 8 | buf[0]) * 4;
-    magData[Y] = -(int16_t)(buf[3] << 8 | buf[2]) * 4;
-    magData[Z] = -(int16_t)(buf[5] << 8 | buf[4]) * 4;
-
+    // gainComp is multiplied by 256, divide by (256/4) to get expected scale
+    magData[X] = -(int16_t)(buf[1] << 8 | buf[0]) * gainComp[X] / (256 / 4);
+    magData[Y] = -(int16_t)(buf[3] << 8 | buf[2]) * gainComp[Y] / (256 / 4);
+    magData[Z] = -(int16_t)(buf[5] << 8 | buf[4]) * gainComp[Z] / (256 / 4);
 
     ack = i2cWrite(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_CNTL, 0x01); // start reading again
 }

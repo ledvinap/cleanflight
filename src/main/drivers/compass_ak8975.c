@@ -80,7 +80,7 @@ bool ak8975detect(mag_t *mag)
 #define AK8975A_ASAY 0x11 // Fuse ROM y-axis sensitivity adjustment value
 #define AK8975A_ASAZ 0x12 // Fuse ROM z-axis sensitivity adjustment value
 
-void ak8975Init()
+void ak8975Init(void)
 {
     bool ack;
     uint8_t buffer[3];
@@ -120,6 +120,8 @@ void ak8975Init()
 #define BIT_STATUS2_REG_DATA_ERROR              (1 << 2)
 #define BIT_STATUS2_REG_MAG_SENSOR_OVERFLOW     (1 << 3)
 
+// TODO - timeout is neccesary to restart conversion if some error occurs
+
 void ak8975Read(int16_t *magData)
 {
     bool ack;
@@ -143,9 +145,10 @@ void ak8975Read(int16_t *magData)
     }
 #endif
 
-    ack = i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_STATUS2, 1, &status);
-    if (!ack) {
-        return;
+    ack = ack & i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_STATUS2, 1, &status);
+    if (!ack || status & (BIT_STATUS2_REG_DATA_ERROR | BIT_STATUS2_REG_MAG_SENSOR_OVERFLOW) ) {
+        // something went wrong, next conversion needs to be started
+        i2cWrite(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_CNTL, 0x01); // start reading again
     }
 
     if (status & BIT_STATUS2_REG_DATA_ERROR) {

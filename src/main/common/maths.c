@@ -105,6 +105,37 @@ void normalizeV(struct fp_vector *src, struct fp_vector *dest)
     }
 }
 
+
+void eulerToMat33(float mat[3][3], const fp_angles_t *delta) {
+    float cosx = cosf(delta->angles.roll);
+    float sinx = sinf(delta->angles.roll);
+    float cosy = cosf(delta->angles.pitch);
+    float siny = sinf(delta->angles.pitch);
+    float cosz = cosf(delta->angles.yaw);
+    float sinz = sinf(delta->angles.yaw);
+
+    mat[0][0] = cosz * cosy;
+    mat[0][1] = -cosy * sinz;
+    mat[0][2] = siny;
+    mat[1][0] = sinz * cosx + (sinx * cosz * siny);
+    mat[1][1] = cosz * cosx - (sinx * sinz * siny);
+    mat[1][2] = -sinx * cosy;
+    mat[2][0] = (sinx * sinz) - (cosz * cosx * siny);
+    mat[2][1] = (sinx * cosz) + (sinz * cosx * siny);
+    mat[2][2] = cosy * cosx;
+}
+
+void multiplyMat33Vec3(struct fp_vector *dst, const float mat[3][3], const struct fp_vector *v)
+{
+    float X = v->X;
+    float Y = v->Y;
+    float Z = v->Z;
+
+    dst->X = X * mat[0][0] + Y * mat[1][0] + Z * mat[2][0];
+    dst->Y = X * mat[0][1] + Y * mat[1][1] + Z * mat[2][1];
+    dst->Z = X * mat[0][2] + Y * mat[1][2] + Z * mat[2][2];
+}
+
 // Rotate a vector *v by the euler angles defined by the 3-vector *delta.
 void rotateV(struct fp_vector *v, fp_angles_t *delta)
 {

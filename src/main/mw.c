@@ -106,11 +106,6 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
 
-typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
-
-extern pidControllerFuncPtr pid_controller;
-
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)
 {
     currentProfile->accelerometerTrims.values.roll += rollAndPitchTrimsDelta->values.roll;
@@ -133,11 +128,11 @@ void updateAutotuneState(void)
                     autotuneReset();
                     landedAfterAutoTuning = false;
                 }
-                autotuneBeginNextPhase(&currentProfile->pidProfile);
+                autotuneActivated();
                 ENABLE_FLIGHT_MODE(AUTOTUNE_MODE);
                 autoTuneWasUsed = true;
             } else {
-                if (havePidsBeenUpdatedByAutotune()) {
+                if (autotuneShouldSavePIDs()) {
                     saveConfigAndNotify();
                     autotuneReset();
                 }
@@ -147,7 +142,7 @@ void updateAutotuneState(void)
     }
 
     if (FLIGHT_MODE(AUTOTUNE_MODE)) {
-        autotuneEndPhase();
+        autotuneDeactivated();
         DISABLE_FLIGHT_MODE(AUTOTUNE_MODE);
     }
 
@@ -819,6 +814,9 @@ void loop(void)
             &masterConfig.rxConfig
         );
 
+#ifdef AUTOTUNE
+        autotunePIDRelay();
+#endif
         mixTable();
 
 #ifdef USE_SERVOS

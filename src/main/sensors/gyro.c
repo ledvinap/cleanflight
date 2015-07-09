@@ -36,6 +36,7 @@
 uint16_t calibratingG = 0;
 int16_t gyroADC[XYZ_AXIS_COUNT];
 int16_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+int16_t gyroADCraw[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
 int8_t gyroADClastIdx;
 uint16_t gyroTicks = 0;
 int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
@@ -125,6 +126,7 @@ void gyroHandleData(int16_t *ADC) {
     if(gyroADClastIdx < ACCGYRO_FILTER_SIZE) {
         alignSensors(ADC, gyroADClast[gyroADClastIdx], gyroAlign);
         applyGyroZero(gyroADClast[gyroADClastIdx]);
+        memcpy(gyroADCraw[gyroADClastIdx], gyroADClast[gyroADClastIdx], sizeof(gyroADCraw[gyroADClastIdx]));
         gyroADClastIdx++;
     }
     gyroTicks++;

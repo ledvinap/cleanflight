@@ -337,7 +337,9 @@ bool mpu6050GyroDetect(const mpu6050Config_t *configToUse, gyro_t *gyro, uint16_
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;
 
-    if (lpf == 0xffff)            // diasable LPF if requested
+    if(lpf >= 2100)
+        mpuLowPassFilter = INV_FILTER_2100HZ_NOLPF;
+    if (lpf >= 256)             // diasable LPF if requested
         mpuLowPassFilter = INV_FILTER_256HZ_NOLPF2;
     else if (lpf >= 188)
         mpuLowPassFilter = INV_FILTER_188HZ;
@@ -391,7 +393,8 @@ static void mpu6050GyroInit(void)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x03);      //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
     delay(15); //PLL Settling time when changing CLKSEL is max 10ms.  Use 15ms to be sure 
 
-    if(mpuLowPassFilter == INV_FILTER_256HZ_NOLPF2)          // keep 1khz sampling frequency if internal filter is disabled
+    if(mpuLowPassFilter == INV_FILTER_256HZ_NOLPF2
+       || mpuLowPassFilter == INV_FILTER_2100HZ_NOLPF)          // keep 1khz sampling frequency if internal filter is disabled
         i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x07);  //SMPLRT_DIV    -- SMPLRT_DIV = 7  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
     else
         i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00);

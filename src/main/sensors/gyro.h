@@ -34,6 +34,7 @@ extern sensor_align_e gyroAlign;
 
 extern int16_t gyroADC[XYZ_AXIS_COUNT];
 extern int16_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+extern int16_t gyroADCraw[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
 extern int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT];
 extern uint16_t gyroTicks;
 

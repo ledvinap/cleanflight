@@ -812,7 +812,7 @@ static void loadBlackboxState(void)
 #ifdef NEWACCGYRO
     for(int j=0; j<4; j++)
         for (i = 0; i < XYZ_AXIS_COUNT; i++) {
-            blackboxCurrent->gyroDataHistory[j][i] = gyroADClast[j][i];
+            blackboxCurrent->gyroDataHistory[j][i] = gyroADCraw[j][i];
         }
 #endif
     for (i = 0; i < XYZ_AXIS_COUNT; i++) {

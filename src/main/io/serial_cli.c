@@ -46,6 +46,7 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 #include "drivers/accgyro_mpu6050.h"
+#include "drivers/light_led.h"
 
 #include "drivers/timer_impl.h"
 
@@ -95,8 +96,6 @@ uint8_t cliMode = 0;
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 
-void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort);
-
 static serialPort_t *cliPort;
 
 static void cliAux(char *cmdline);
@@ -107,6 +106,7 @@ static void cliDump(char *cmdLine);
 static void cliExit(char *cmdline);
 static void cliFeature(char *cmdline);
 static void cliMotor(char *cmdline);
+static void cliPassthrough(char *cmdline);
 static void cliPlaySound(char *cmdline);
 static void cliProfile(char *cmdline);
 static void cliRateProfile(char *cmdline);
@@ -119,10 +119,6 @@ static void cliVersion(char *cmdline);
 static void cliVibration(char *cmdline);
 static void cliResources(char *cmdline);
 static void cliReboot(void);
-
-#ifdef GPS
-static void cliGpsPassthrough(char *cmdline);
-#endif
 
 static void cliHelp(char *cmdline);
 static void cliMap(char *cmdline);
@@ -211,9 +207,6 @@ const clicmd_t cmdTable[] = {
     { "flash_write", "write text to the given address", cliFlashWrite },
 #endif
     { "get", "get variable value", cliGet },
-#ifdef GPS
-    { "gpspassthrough", "passthrough gps to serial", cliGpsPassthrough },
-#endif
     { "help", "", cliHelp },
 #ifdef LED_STRIP
     { "led", "configure leds", cliLed },
@@ -223,6 +216,7 @@ const clicmd_t cmdTable[] = {
     { "mixer", "mixer name or list", cliMixer },
 #endif
     { "motor", "get/set motor output value", cliMotor },
+    { "passtrough", "<id> [baud [mode]] : passthrough to serial", cliPassthrough },
     { "play_sound", "index, or none for next", cliPlaySound },
     { "profile", "index (0 to 2)", cliProfile },
     { "rateprofile", "index (0 to 2)", cliRateProfile },
@@ -516,6 +510,7 @@ typedef union {
 
 static void cliSetVar(const clivalue_t *var, const int_float_value_t value);
 static void cliPrintVar(const clivalue_t *var, uint32_t full);
+static int cliPrintf(const char *fmt, ...);
 static void cliPrint(const char *str);
 static void cliWrite(uint8_t ch);
 static void cliPrompt(void)
@@ -1124,6 +1119,109 @@ static void cliDump(char *cmdline)
     }
 }
 
+static void cliPassthrough(char *cmdline)
+{
+    serialPort_t *passthroughPort = NULL;
+    if(isEmpty(cmdline)) {
+        cliPrint("Usage:passthrough portid [baud [mode]] \r\n");
+        return;
+    }
+
+    int portId = -1;
+    unsigned baud = 0;
+    unsigned mode = 0;
+
+    char* tok = strtok(cmdline, " ");
+    int index = 0;
+    while (tok != NULL) {
+        switch (index) {
+        case 0:
+            portId = atoi(tok);
+            break;
+        case 1:
+            baud = atoi(tok);
+            break;
+        case 2:
+            if(strchr(tok, 'R'))
+                mode |= MODE_RX;
+            if(strchr(tok, 'T'))
+                mode |= MODE_TX;
+            break;
+        }
+        index++;
+        tok = strtok(NULL, " ");
+    }
+
+    serialPortUsage_t *pUsage = findSerialPortUsageByIdentifier(portId);
+    if(!pUsage || pUsage->serialPort == NULL) {
+        if(!baud) {
+            cliPrintf("Port %d is not open, you must specify baudrate\r\n", portId);
+            return;
+        }
+        if(!mode)
+            mode = MODE_RXTX;
+
+        serialPortMode_t tmpCfg = {
+            .mode = mode,
+            .baudRate = baud,
+            .rxCallback = NULL,
+        };
+        passthroughPort = openSerialPort(portId, FUNCTION_PASSTHROUGH, &tmpCfg);
+        if(!passthroughPort) {
+            cliPrint("Failed to open serial port\r\n");
+            return;
+        }
+        cliPrintf("Opened port %d, baudrate=%d mode=%x\r\n", portId, tmpCfg.baudRate, tmpCfg.mode);
+    } else {
+        passthroughPort = pUsage->serialPort;
+        // reconfigure passthrough port if neccessary
+        serialPortMode_t tmpCfg;
+        serialGetConfig(passthroughPort, &tmpCfg);
+        bool changed=false;
+        // enable TX     TODO - use parameter to allow this
+        if(mode) {
+            tmpCfg.mode = mode;
+            changed = true;
+        }
+        if(baud > 0 && baud != tmpCfg.baudRate) {
+            tmpCfg.baudRate = baud;
+            changed = true;
+        }
+        // disable callback
+        if(tmpCfg.rxCallback) {
+            tmpCfg.rxCallback = 0;
+            changed = true;
+        }
+        if(changed) {
+            serialRelease(passthroughPort);
+            serialConfigure(passthroughPort, &tmpCfg);
+            cliPrintf("Reconfigured port %d, baudrate=%d mode=%x\r\n", portId, tmpCfg.baudRate, tmpCfg.mode);
+        } else {
+            cliPrintf("Using port %d, baudrate=%d mode=%x\r\n", portId, tmpCfg.baudRate, tmpCfg.mode);
+        }
+    }
+
+    waitForSerialPortToFinishTransmitting(cliPort);
+    waitForSerialPortToFinishTransmitting(passthroughPort);
+
+    LED0_OFF;
+    LED1_OFF;
+
+    while(1) {
+        if (serialTotalBytesWaiting(passthroughPort)) {
+            LED0_ON;
+            serialWrite(cliPort, serialRead(passthroughPort));
+            LED0_OFF;
+        }
+        if (serialTotalBytesWaiting(cliPort)) {
+            LED1_ON;
+            serialWrite(passthroughPort, serialRead(cliPort));
+            LED1_OFF;
+        }
+    }
+}
+
+
 void cliEnter(serialPort_t *serialPort)
 {
     cliMode = 1;
@@ -1223,14 +1321,6 @@ static void cliFeature(char *cmdline)
     }
 }
 
-#ifdef GPS
-static void cliGpsPassthrough(char *cmdline)
-{
-    UNUSED(cmdline);
-
-    gpsEnablePassthrough(cliPort);
-}
-#endif
 
 static void cliHelp(char *cmdline)
 {
@@ -1448,6 +1538,24 @@ static void cliDefaults(char *cmdline)
     cliPrint("Resetting to defaults");
     resetEEPROM();
     cliReboot();
+}
+
+int cliPrintf_writef(void *param, const char *data, int len)
+{
+    UNUSED(param);
+    int ret = len;
+    while(len--)
+        serialWrite(cliPort, *data++);
+    return ret;
+}
+
+static int cliPrintf(const char *fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+    int written = tfp_format(NULL, cliPrintf_writef, fmt, va);
+    va_end(va);
+    return written;
 }
 
 static void cliPrint(const char *str)

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 // port mode is set when port is open and can't be changed (reopen port if neccesary)
 // there are about 64 bits for customization, so it should be enough for some time
 // change this to configuration structure (possibly with bitfields) if this is going out of control
@@ -111,7 +113,7 @@ void serialPrint(serialPort_t *instance, const char *str);
 
 int serialTotalBytesWaiting(serialPort_t *instance);
 int serialRead(serialPort_t *instance);
-int serialReadBlock(serialPort_t *instance, const uint8_t *data, int len);
+int serialReadBlock(serialPort_t *instance, uint8_t *data, int len);
 // release port
 void serialRelease(serialPort_t *instance);
 // restore previous configuration

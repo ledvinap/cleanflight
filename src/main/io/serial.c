@@ -92,7 +92,7 @@ baudRate_e lookupBaudRateIndex(uint32_t baudRate)
     return 0;
 }
 
-static serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier)
+serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier)
 {
     uint8_t index;
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {

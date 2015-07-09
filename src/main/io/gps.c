@@ -1029,60 +1029,6 @@ static bool gpsNewFrameUBLOX(uint8_t data)
 
 //static serialPortMode_t gpsPassthroughPortConfig = { .mode = MODE_RXTX | MODE_DEFAULT_FAST };
 
-void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort)
-{
-    waitForSerialPortToFinishTransmitting(gpsPort);
-    waitForSerialPortToFinishTransmitting(gpsPassthroughPort);
-
-    // reconfigure GPS, enable TX mode
-    serialPortMode_t tmpCfg;
-    serialGetConfig(gpsPort, &tmpCfg);
-    bool changed=false;
-    // enable TX     TODO - use parameter to allow this
-    if(!(tmpCfg.mode & MODE_TX)) {
-        tmpCfg.mode |= MODE_TX;
-        changed = true;
-    }
-    // disable callback (callback is not used in current code, but be sure)
-    if(tmpCfg.rxCallback) {
-        tmpCfg.rxCallback = 0;
-        changed = true;
-    }
-    if(changed) {
-        serialRelease(gpsPort);
-        serialConfigure(gpsPort, &tmpCfg);
-    }
-
-    LED0_OFF;
-    LED1_OFF;
-
-#ifdef DISPLAY
-    if (feature(FEATURE_DISPLAY)) {
-        displayShowFixedPage(PAGE_GPS);
-    }
-#endif
-    char c;
-    while(1) {
-        if (serialTotalBytesWaiting(gpsPort)) {
-            LED0_ON;
-            c = serialRead(gpsPort);
-            gpsNewData(c);
-            serialWrite(gpsPassthroughPort, c);
-            LED0_OFF;
-        }
-        if (serialTotalBytesWaiting(gpsPassthroughPort)) {
-            LED1_ON;
-            serialWrite(gpsPort, serialRead(gpsPassthroughPort));
-            LED1_OFF;
-        }
-#ifdef DISPLAY
-        if (feature(FEATURE_DISPLAY)) {
-            updateDisplay();
-        }
-#endif
-    }
-}
-
 void updateGpsIndicator(uint32_t currentTime)
 {
     static uint32_t GPSLEDTime;

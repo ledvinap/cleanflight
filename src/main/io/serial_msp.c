@@ -307,6 +307,10 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
 
+#define MSP_BLACKBOX_FRAME       241    //out message         blackbox frame over MSP
+#define MSP_BLACKBOX_INFO        242    //out message         blackbox info frame
+
+
 #define INBUF_SIZE 64
 
 typedef struct box_e {
@@ -1838,4 +1842,38 @@ void sendMspTelemetry(void)
     if (sequenceIndex >= TELEMETRY_MSP_COMMAND_SEQUENCE_ENTRY_COUNT) {
         sequenceIndex = 0;
     }
+}
+
+static mspPort_t *mspBlackboxPort = NULL;
+
+void mspSetBlackboxPort(serialPort_t *serialPort)
+{
+    // find existing telemetry port
+    for (mspPort_t *mspPort = mspPorts; mspPort < mspPorts + MAX_MSP_PORT_COUNT; mspPort++) {
+        if (mspPort->port == serialPort) {
+            mspBlackboxPort = mspPort;
+            return;
+        }
+    }
+}
+
+void sendMspBlackbox(uint8_t *data, unsigned len)
+{
+    if(!mspBlackboxPort) return;
+    setCurrentPort(mspBlackboxPort);
+    currentPort->cmdMSP = MSP_BLACKBOX_FRAME;
+    headSerialReply(len);
+    while(len--)
+        serialize8(*data++);
+    tailSerialReply();
+}
+
+void sendMspBlackboxInfo(int16_t cmd)
+{
+    if(!mspBlackboxPort) return;
+    setCurrentPort(mspBlackboxPort);
+    currentPort->cmdMSP = MSP_BLACKBOX_INFO;
+    headSerialReply(2);
+    serialize16(cmd);
+    tailSerialReply();
 }

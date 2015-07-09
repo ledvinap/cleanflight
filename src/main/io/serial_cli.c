@@ -86,6 +86,8 @@
 
 #include "common/printf.h"
 
+#include "blackbox/blackbox_io.h"
+
 #include "serial_cli.h"
 
 // FIXME remove this for targets that don't need a CLI.  Perhaps use a no-op macro when USE_CLI is not enabled
@@ -496,7 +498,7 @@ const clivalue_t valueTable[] = {
 #ifdef BLACKBOX
     { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
     { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
-    { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, 1 },
+    { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, BLACKBOX_DEVICE_END - 1 },
 #endif
 };
 

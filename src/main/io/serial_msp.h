@@ -26,7 +26,10 @@
 void mspInit(serialConfig_t *serialConfig);
 
 void mspProcess(void);
-void sendMspTelemetry(void);
+void mspSetBlackboxPort(serialPort_t *serialPort);
+void sendMspBlackbox(uint8_t *data, unsigned len);
+void sendMspBlackboxInfo(int16_t cmd);
 void mspSetTelemetryPort(serialPort_t *mspTelemetryPort);
+void sendMspTelemetry(void);
 void mspAllocateSerialPorts(serialConfig_t *serialConfig);
 void mspReleasePortIfAllocated(serialPort_t *serialPort);

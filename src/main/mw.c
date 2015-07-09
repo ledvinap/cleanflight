@@ -83,6 +83,8 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
+#include "blackbox/blackbox_io.h"
+
 // June 2013     V2.2-dev
 
 enum {
@@ -362,7 +364,7 @@ void mwArm(void)
 #ifdef BLACKBOX
             if (feature(FEATURE_BLACKBOX)) {
                 serialPort_t *sharedBlackboxAndMspPort = findSharedSerialPort(FUNCTION_BLACKBOX, FUNCTION_MSP);
-                if (sharedBlackboxAndMspPort) {
+                if (sharedBlackboxAndMspPort && masterConfig.blackbox_device == BLACKBOX_DEVICE_SERIAL) {
                     mspReleasePortIfAllocated(sharedBlackboxAndMspPort);
                 }
                 startBlackbox();

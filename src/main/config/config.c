@@ -65,6 +65,8 @@
 #include "flight/altitudehold.h"
 #include "flight/navigation.h"
 
+#include "blackbox/blackbox_io.h"
+
 #include "config/runtime_config.h"
 #include "config/config.h"
 
@@ -522,9 +524,9 @@ static void resetConf(void)
 #ifdef BLACKBOX
 #ifdef SPRACINGF3
     featureSet(FEATURE_BLACKBOX);
-    masterConfig.blackbox_device = 1;
+    masterConfig.blackbox_device = BLACKBOX_DEVICE_FLASH;
 #else
-    masterConfig.blackbox_device = 0;
+    masterConfig.blackbox_device = BLACKBOX_DEVICE_SERIAL;
 #endif
     masterConfig.blackbox_rate_num = 1;
     masterConfig.blackbox_rate_denom = 1;

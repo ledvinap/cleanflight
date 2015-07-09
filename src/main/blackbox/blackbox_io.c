@@ -60,7 +60,12 @@
 
 #include "io/flashfs.h"
 
+#include "blackbox/blackbox_msp.h"
+
 #ifdef BLACKBOX
+
+#define BLACKBOX_LOG_BEGIN 1
+#define BLACKBOX_LOG_END   2
 
 serialPortMode_t blackboxPortConfig = {
 #if defined(NAZE) && !defined(AMINI)
@@ -86,6 +91,9 @@ void blackboxWrite(uint8_t value)
             flashfsWriteByte(value); // Write byte asynchronously
         break;
 #endif
+        case BLACKBOX_DEVICE_MSP:
+            bbmspWriteByte(value);
+            break;
         case BLACKBOX_DEVICE_SERIAL:
         default:
             serialWrite(blackboxPort, value);
@@ -101,6 +109,9 @@ void blackboxWriteBytes(const uint8_t* data, int len)
             flashfsWrite(data, len, false); // Write byte asynchronously
         break;
 #endif
+        case BLACKBOX_DEVICE_MSP:
+            bbmspWrite(data, len);
+            break;
         case BLACKBOX_DEVICE_SERIAL:
         default:
             while(len--)
@@ -140,7 +151,10 @@ int blackboxPrint(const char *s)
             flashfsWrite((const uint8_t*) s, length, false); // Write asynchronously
         break;
 #endif
-
+        case BLACKBOX_DEVICE_MSP:
+            length = strlen(s);
+            bbmspWrite((const uint8_t*)s, length);
+            break;
         case BLACKBOX_DEVICE_SERIAL:
         default:
             pos = (uint8_t*) s;
@@ -447,6 +461,8 @@ bool blackboxDeviceFlush(void)
         case BLACKBOX_DEVICE_FLASH:
             return flashfsFlushAsync();
 #endif
+        case BLACKBOX_DEVICE_MSP:
+            return bbmspFlush();
 
         default:
             return false;
@@ -459,49 +475,49 @@ bool blackboxDeviceFlush(void)
 bool blackboxDeviceOpen(void)
 {
     /*
-     * We want to write at about 7200 bytes per second to give the OpenLog a good chance to save to disk. If
-     * about looptime microseconds elapse between our writes, this is the budget of how many bytes we should
-     * transmit with each write.
+     * We want to write headers at about 7200 bytes per second to give the OpenLog a good chance to save to
+     * disk. If about looptime microseconds elapse between our writes, this is the budget of how many bytes
+     * we should transmit with each write.
      *
      * 9 / 1250 = 7200 / 1000000
      */
     blackboxWriteChunkSize = MIN(MAX((masterConfig.loopTime * 9) / 1250, 4), 255);
 
     switch (masterConfig.blackbox_device) {
-        case BLACKBOX_DEVICE_SERIAL:
-            {
-                serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+        case BLACKBOX_DEVICE_SERIAL: {
+            serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
 
-                if (!portConfig) {
-                    return false;
-                }
-
-                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
-                baudRate_e baudRateIndex = portConfig->blackbox_baudrateIndex;
-
-                blackboxPortConfig.baudRate = baudRates[baudRateIndex];
-
-                if (baudRates[baudRateIndex] == 230400) {
-                    /*
-                     * OpenLog's 230400 baud rate is very inaccurate, so it requires a larger inter-character gap in
-                     * order to maintain synchronization.
-                     */
-                    blackboxPortConfig.mode |= MODE_STOPBITS2;
-                }
-                blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, &blackboxPortConfig);
-                return blackboxPort != NULL;
+            if (!portConfig) {
+                return false;
             }
+
+            blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
+            baudRate_e baudRateIndex = portConfig->blackbox_baudrateIndex;
+
+            blackboxPortConfig.baudRate = baudRates[baudRateIndex];
+
+            blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, &blackboxPortConfig);
+            return blackboxPort != NULL;
+        }
             break;
 #ifdef USE_FLASHFS
-    case BLACKBOX_DEVICE_FLASH:
-        if (flashfsGetSize() == 0 || isBlackboxDeviceFull()) {
-            return false;
-        }
+        case BLACKBOX_DEVICE_FLASH:
+            if (flashfsGetSize() == 0 || isBlackboxDeviceFull()) {
+                return false;
+            }
 
-        return true;
+            return true;
 #endif
-    default:
-        return false;
+        case BLACKBOX_DEVICE_MSP: {
+            serialPort_t *port = findSharedSerialPort(FUNCTION_BLACKBOX, FUNCTION_MSP);
+            if(port) {
+                mspSetBlackboxPort(port);
+                bbmspInfo(BLACKBOX_LOG_BEGIN);  
+            }
+            return port != NULL;
+        }
+        default:
+            return false;
     }
 }
 
@@ -523,6 +539,9 @@ void blackboxDeviceClose(void)
                 mspAllocateSerialPorts(&masterConfig.serialConfig);
             }
             break;
+        case BLACKBOX_DEVICE_MSP:
+            bbmspInfo(BLACKBOX_LOG_END);
+            break;
 #ifdef USE_FLASHFS
         case BLACKBOX_DEVICE_FLASH:
             // No-op since the flash doesn't have a "close" and there's nobody else to hand control of it to.
@@ -535,6 +554,7 @@ bool isBlackboxDeviceFull(void)
 {
     switch (masterConfig.blackbox_device) {
         case BLACKBOX_DEVICE_SERIAL:
+        case BLACKBOX_DEVICE_MSP:
             return false;
 
 #ifdef USE_FLASHFS

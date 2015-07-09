@@ -28,6 +28,7 @@ typedef enum BlackboxDevice {
 #ifdef USE_FLASHFS
     BLACKBOX_DEVICE_FLASH,
 #endif
+    BLACKBOX_DEVICE_MSP,
 
     BLACKBOX_DEVICE_END
 } BlackboxDevice;

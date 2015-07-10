@@ -335,6 +335,10 @@ static const uint16_t multiPPM[] = {
     PWM14 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM15 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM16 | (MAP_TO_MOTOR_OUTPUT << 8),
+    PWM5  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
+    PWM6  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
+    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
+    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
     0xFFFF
 };
 
@@ -583,7 +587,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             channelIndex++;
         } else if (type == MAP_TO_MOTOR_OUTPUT) {
             if (init->useOneshot) {
-                pwmOneshotMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->idlePulse);
+                pwmOneshotMotorConfig(timChDef, pwmOutputConfiguration.motorCount);
             } else if (init->motorPwmRate > 500) {
                 pwmBrushedMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
             } else {

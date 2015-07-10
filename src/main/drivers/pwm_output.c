@@ -120,8 +120,16 @@ void pwmWriteMotor(uint8_t index, uint16_t value)
         motors[index]->pwmWritePtr(index, value);
 }
 
+void pwmShutdownPulsesForAllMotors(uint8_t motorCount)
+{
+    uint8_t index;
 
-// TODO - needs rework
+    for(index = 0; index < motorCount; index++){
+        // Set the compare register to 0, which stops the output pulsing if the timer overflows
+        *motors[index]->ccr = 0;
+    }
+}
+
 void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
 {
     uint8_t index;
@@ -154,9 +162,9 @@ void pwmBrushlessMotorConfig(const timerChDef_t *timChDef, uint8_t motorIndex, u
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
-void pwmOneshotMotorConfig(const timerChDef_t *timChDef, uint8_t motorIndex, uint16_t idlePulse)
+void pwmOneshotMotorConfig(const timerChDef_t *timChDef, uint8_t motorIndex)
 {
-    motors[motorIndex] = pwmOutConfig(timChDef, OWNER_PWMOUTPUT_ONESHOT, ONESHOT125_TIMER_HZ, 0, idlePulse);
+    motors[motorIndex] = pwmOutConfig(timChDef, OWNER_PWMOUTPUT_ONESHOT, ONESHOT125_TIMER_HZ, 0);
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 

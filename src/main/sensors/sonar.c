@@ -42,11 +42,11 @@ void sonarInit(batteryConfig_t *batteryConfig)
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
 # if 0
-    static const sonarHardware_t const sonarPWM56 = {
+    static const sonarHardware_t sonarPWM56 = {
         .triggerIO = &IO_PB8,   // PWM5 (PB8) - 5v tolerant
         .echoIO = &IO_PB9       // PWM6 (PB9) - 5v tolerant
     };
-    static const sonarHardware_t const sonarRC78 = {
+    static const sonarHardware_t sonarRC78 = {
         .triggerIO = &IO_PB0,   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echoIO = &IO_PB1,      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };

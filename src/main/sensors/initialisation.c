@@ -61,6 +61,7 @@
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/sonar.h"
+#include "sensors/initialisation.h"
 
 #ifdef NAZE
 #include "hardware_revision.h"
@@ -105,8 +106,8 @@ const mpu6050Config_t *selectMPU6050Config(void)
 
 #ifdef USE_FAKE_GYRO
 static void fakeGyroInit(void) {}
-static void fakeGyroRead(int16_t *gyroData) {
-    memset(gyroData, 0, sizeof(int16_t[XYZ_AXIS_COUNT]));
+static void fakeGyroRead(int16_t *gyroADC) {
+    memset(gyroADC, 0, sizeof(int16_t[XYZ_AXIS_COUNT]));
 }
 static void fakeGyroReadTemp(int16_t *tempData) {
     UNUSED(tempData);
@@ -398,7 +399,7 @@ static void detectBaro()
 
 #if defined(BARO_XCLR_IO) && defined(BARO_EOC_IO)
     static const bmp085Config_t defaultBMP085Config = {
-        .xclrIO = BARO_XCLR_IO, 
+        .xclrIO = BARO_XCLR_IO,
         .eocIO = BARO_EOC_IO,
     };
     bmp085Config = &defaultBMP085Config;
@@ -543,8 +544,8 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
 {
     int16_t deg, min;
 
-    memset(&acc, sizeof(acc), 0);
-    memset(&gyro, sizeof(gyro), 0);
+    memset(&acc, 0, sizeof(acc));
+    memset(&gyro, 0, sizeof(gyro));
 
     if (!detectGyro(gyroLpf)) {
         return false;

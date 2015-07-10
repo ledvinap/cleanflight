@@ -102,6 +102,7 @@
 #include "debug.h"
 
 extern uint32_t previousTime;
+extern uint8_t motorControlEnable;
 
 //#define SOFTSERIAL_LOOPBACK
 
@@ -174,6 +175,9 @@ void init(void)
     EXTIInit();
 #endif
 
+    // Latch active features to be used for feature() in the remainder of init().
+    latchActiveFeatures();
+
     ledInit();
 
 #ifdef SPEKTRUM_BIND
@@ -243,13 +247,16 @@ void init(void)
 
     mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
 
+    if (!feature(FEATURE_ONESHOT125))
+        motorControlEnable = true;
+
     systemState |= SYSTEM_STATE_MOTORS_READY;
 
 #ifdef BEEPER
     beeperConfig_t beeperConfig = {
+        .gpioPeripheral = BEEP_PERIPHERAL,
         .gpioPin = BEEP_PIN,
         .gpioPort = BEEP_GPIO,
-        .gpioPeripheral = BEEP_PERIPHERAL,
 #ifdef BEEPER_INVERTED
         .gpioMode = Mode_Out_PP,
         .isInverted = true
@@ -290,6 +297,13 @@ void init(void)
         serialRemovePort(SERIAL_PORT_USART3);
     }
 #endif
+
+#if defined(SPRACINGF3) && defined(SONAR) && defined(USE_SOFTSERIAL2)
+    if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
+        serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
+    }
+#endif
+
 
 #ifdef USE_I2C
 #if defined(NAZE)
@@ -477,6 +491,10 @@ void init(void)
 #ifdef CJMCU
     LED2_ON;
 #endif
+
+    // Latch active features AGAIN since some may be modified by init().
+    latchActiveFeatures();
+    motorControlEnable = true;
 
     systemState |= SYSTEM_STATE_READY;
 }

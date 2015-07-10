@@ -44,7 +44,7 @@
 
 static telemetryConfig_t *telemetryConfig;
 
-void useTelemetryConfig(telemetryConfig_t *telemetryConfigToUse)
+void telemetryUseConfig(telemetryConfig_t *telemetryConfigToUse)
 {
     telemetryConfig = telemetryConfigToUse;
 }
@@ -57,10 +57,10 @@ void telemetryInit(void)
     initSmartPortTelemetry(telemetryConfig);
     initSPortTelemetry(telemetryConfig);
 
-    checkTelemetryState();
+    telemetryCheckState();
 }
 
-bool determineNewTelemetryEnabledState(portSharing_e portSharing)
+bool telemetryDetermineEnabledState(portSharing_e portSharing)
 {
     bool enabled = portSharing == PORTSHARING_NOT_SHARED;
 
@@ -74,7 +74,7 @@ bool determineNewTelemetryEnabledState(portSharing_e portSharing)
     return enabled;
 }
 
-void checkTelemetryState(void)
+void telemetryCheckState(void)
 {
     checkFrSkyTelemetryState();
     checkHoTTTelemetryState();
@@ -83,7 +83,7 @@ void checkTelemetryState(void)
     checkSPortTelemetryState();
 }
 
-void handleTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
+void telemetryProcess(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 {
     handleFrSkyTelemetry(rxConfig, deadband3d_throttle);
     handleHoTTTelemetry();

@@ -27,6 +27,7 @@
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "sensors/sensors.h"
+#include "io/beeper.h"
 #include "io/statusindicator.h"
 #include "sensors/boardalignment.h"
 #include "sensors/acceleration.h"
@@ -101,10 +102,14 @@ static void performGyroCalibration(uint8_t gyroMovementCalibrationThreshold)
                 return;
             }
             gyroZero[axis] = (g[axis] + (CALIBRATING_GYRO_CYCLES / 2)) / CALIBRATING_GYRO_CYCLES;
-            blinkLedAndSoundBeeper(10, 15, 1);
         }
     }
+
+    if (isOnFinalGyroCalibrationCycle()) {
+        beeper(BEEPER_GYRO_CALIBRATED);
+    }
     calibratingG--;
+
 }
 
 static void applyGyroZero(int16_t *ADC)

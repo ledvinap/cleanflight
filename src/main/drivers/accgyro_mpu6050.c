@@ -199,7 +199,7 @@ static uint8_t mpuLowPassFilter = INV_FILTER_42HZ;
 static void mpu6050AccInit(void);
 static void mpu6050AccRead(int16_t *accData);
 static void mpu6050GyroInit(void);
-static void mpu6050GyroRead(int16_t *gyroData);
+static void mpu6050GyroRead(int16_t *gyroADC);
 void mpu6050FifoEnable(void);
 
 
@@ -418,7 +418,7 @@ static void mpu6050GyroInit(void)
 #endif
 }
 
-static void mpu6050GyroRead(int16_t *gyroData)
+static void mpu6050GyroRead(int16_t *gyroADC)
 {
     uint8_t buf[6];
 
@@ -426,9 +426,9 @@ static void mpu6050GyroRead(int16_t *gyroData)
         return;
     }
 
-    gyroData[0] = (int16_t)((buf[0] << 8) | buf[1]);
-    gyroData[1] = (int16_t)((buf[2] << 8) | buf[3]);
-    gyroData[2] = (int16_t)((buf[4] << 8) | buf[5]);
+    gyroADC[0] = (int16_t)((buf[0] << 8) | buf[1]);
+    gyroADC[1] = (int16_t)((buf[2] << 8) | buf[3]);
+    gyroADC[2] = (int16_t)((buf[4] << 8) | buf[5]);
 }
 
 int mpu6050GetFifoLen(void)

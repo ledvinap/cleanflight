@@ -49,11 +49,9 @@ typedef struct telemetryConfig_s {
 
 void telemetryInit(void);
 
-void checkTelemetryState(void);
-void handleTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
 
-bool determineNewTelemetryEnabledState(portSharing_e portSharing);
+bool telemetryDetermineEnabledState(portSharing_e portSharing);
 
-void useTelemetryConfig(telemetryConfig_t *telemetryConfig);
+void telemetryUseConfig(telemetryConfig_t *telemetryConfig);
 
 #endif /* TELEMETRY_COMMON_H_ */

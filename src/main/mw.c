@@ -73,7 +73,7 @@
 #include "flight/imu.h"
 #include "flight/altitudehold.h"
 #include "flight/failsafe.h"
-#include "flight/autotune.h"
+#include "flight/autotune_relay.h"
 #include "flight/navigation.h"
 #include "flight/filter.h"
 

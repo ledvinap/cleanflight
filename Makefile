@@ -666,7 +666,7 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   -D'__REVISION__="$(REVISION)"' \
 		   -DRAM_SIZE=$(RAM_SIZE) \
 		   -DFLASH_SIZE=$(FLASH_SIZE) \
-		   -save-temps=obj \
+		   -save-temps=obj -fverbose-asm \
 		   -MMD -MP
 
 ASFLAGS		 = $(ARCH_FLAGS) \

@@ -17,9 +17,6 @@
 
 #pragma once
 
-#define UNUSED(x) (void)(x)
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-
 #ifdef UNIT_TEST
 #define STATIC_UNIT_TESTED // make visible to unit test
 #define UNIT_TESTED

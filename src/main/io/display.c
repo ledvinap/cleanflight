@@ -340,7 +340,7 @@ void showGpsPage() {
     i2c_OLED_set_xy(0, rowIndex);
     i2c_OLED_send_char(tickerCharacters[gpsTicker]);
 
-    i2c_OLED_set_xy(MAX(0, SATELLITE_GRAPH_LEFT_OFFSET), rowIndex++);
+    i2c_OLED_set_xy(MAX(0, (int)SATELLITE_GRAPH_LEFT_OFFSET), rowIndex++);
 
     uint32_t index;
     for (index = 0; index < SATELLITE_COUNT && index < SCREEN_CHARACTER_COLUMN_COUNT; index++) {

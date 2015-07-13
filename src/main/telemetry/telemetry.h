@@ -47,11 +47,15 @@ typedef struct telemetryConfig_s {
     uint8_t hottAlarmSoundInterval;
 } telemetryConfig_t;
 
+struct rxConfig_s;
+
 void telemetryInit(void);
 
-
+void telemetryCheckState(void);
 bool telemetryDetermineEnabledState(portSharing_e portSharing);
 
 void telemetryUseConfig(telemetryConfig_t *telemetryConfig);
+
+void telemetryProcess(struct rxConfig_s *rxConfig, uint16_t deadband3d_throttle);
 
 #endif /* TELEMETRY_COMMON_H_ */

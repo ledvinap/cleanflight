@@ -280,10 +280,10 @@ void handleSmartPortTelemetry(void)
         smartPortDataReceive(c);
     }
 
-    uint32_t now = millis();
-
-    // if timed out, reconfigure the UART back to normal so the GUI or CLI works
 #if 0
+    uint32_t now = millis();
+    // if timed out, reconfigure the UART back to normal so the GUI or CLI works
+
     if ((now - smartPortLastRequestTime) > SMARTPORT_NOT_CONNECTED_TIMEOUT_MS) {
         smartPortState = SPSTATE_TIMEDOUT;
         return;

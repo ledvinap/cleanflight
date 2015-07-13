@@ -36,6 +36,7 @@
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
+#include "sensors/gyro.h"
 
 #include "flight/pid.h"
 #include "flight/imu.h"
@@ -92,7 +93,7 @@ int16_t autotunePIDRelay(void)
         break;
     }
     // angular speed
-    currentDelta[1] = gyroData[axis];
+    currentDelta[1] = gyroADC[axis];
 
     if(ABS(inclination.raw[FD_ROLL]) > RELAY_ABORT_ANGLE
        || ABS(inclination.raw[FD_PITCH]) > RELAY_ABORT_ANGLE) {

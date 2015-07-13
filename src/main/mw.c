@@ -774,6 +774,7 @@ void loop(void)
         }
 
         annexCode();
+
 #if defined(BARO) || defined(SONAR)
         haveProcessedAnnexCodeOnce = true;
 #endif

@@ -32,13 +32,14 @@
 #include "timer.h"      // timer configuration needed, TODO!
 #include "system.h"
 
+// cached value of RCC->CSR
+uint32_t cachedRccCsrValue;
+
 #ifndef TIME_USE_TIMER
 // cycles per microsecond
 static uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
-// cached value of RCC->CSR
-uint32_t cachedRccCsrValue;
 
 static void cycleCounterInit(void)
 {

@@ -684,9 +684,7 @@ LDFLAGS		 = -lm \
 		   $(DEBUG_FLAGS) \
 		   -save-temps=obj \
 		   -static \
-		   -Wl,-gc-sections,-Map,$(TARGET_MAP) \
-		   -Wl,-L$(LINKER_DIR) \
-		   -T$(LD_SCRIPT)
+		   -Wl,-gc-sections,-Map,$(TARGET_MAP)
 
 ###############################################################################
 # No user-serviceable parts below

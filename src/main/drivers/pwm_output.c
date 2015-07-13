@@ -164,7 +164,7 @@ void pwmBrushlessMotorConfig(const timerChDef_t *timChDef, uint8_t motorIndex, u
 
 void pwmOneshotMotorConfig(const timerChDef_t *timChDef, uint8_t motorIndex)
 {
-    motors[motorIndex] = pwmOutConfig(timChDef, OWNER_PWMOUTPUT_ONESHOT, ONESHOT125_TIMER_HZ, 0);
+    motors[motorIndex] = pwmOutConfig(timChDef, OWNER_PWMOUTPUT_ONESHOT, ONESHOT125_TIMER_HZ, (uint16_t)0x10000, 0);
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 

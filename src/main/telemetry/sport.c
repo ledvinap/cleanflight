@@ -497,7 +497,7 @@ static void telemQueueDeleteIdx(unsigned parent)
 
 void checkSPortTelemetryState(void)
 {
-    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(sPortPortSharing);
+    bool newTelemetryEnabledValue = telemetryDetermineEnabledState(sPortPortSharing);
 
     if (newTelemetryEnabledValue == sPortTelemetryEnabled) {
         return;

@@ -368,27 +368,12 @@ static void processRxChannels(void)
     }
 }
 
-static void processDataDrivenRx(void)
-{
-    processRxChannels();
-}
-
-static void processNonDataDrivenRx(void)
-{
-    processRxChannels();
-}
-
 void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
 {
     rxUpdateAt = currentTime + DELAY_50_HZ;
 
     failsafeOnRxCycleStarted();
-
-    if (isRxDataDriven()) {
-        processDataDrivenRx();
-    } else {
-        processNonDataDrivenRx();
-    }
+    processRxChannels();
 }
 
 void parseRcChannels(const char *input, rxConfig_t *rxConfig)

@@ -39,7 +39,7 @@
 #include "drivers/system.h"
 #include "drivers/nvic.h"
 
-#include "build_config.h"
+#include "common/utils.h"
 
 
 /* Private typedef -----------------------------------------------------------*/

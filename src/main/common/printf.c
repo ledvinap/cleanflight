@@ -37,8 +37,7 @@
 
 #include "platform.h"
 
-#include "build_config.h"
-
+#include "common/utils.h"
 #include "common/maths.h"
 
 #include "drivers/serial.h"

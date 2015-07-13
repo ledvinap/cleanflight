@@ -28,6 +28,9 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
+#define UNUSED(x) (void)(x)
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
 /*
 http://resnet.uoregon.edu/~gurney_j/jmpc/bitwise.html
 */

@@ -25,6 +25,7 @@
 #include "debug.h"
 
 #include "common/maths.h"
+#include "common/utils.h"
 
 #include "drivers/pin_debug.h"
 #include "drivers/exti.h"

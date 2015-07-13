@@ -21,7 +21,7 @@
 
 #include "platform.h"
 
-#include "build_config.h"
+#include "common/utils.h"
 
 #include "system.h"
 #include "gpio.h"

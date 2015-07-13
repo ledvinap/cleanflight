@@ -20,12 +20,11 @@
 
 #include <math.h>
 
-#include "build_config.h"
-
 #include "platform.h"
 
 #include "common/axis.h"
 #include "common/maths.h"
+#include "common/utils.h"
 
 #include "system.h"
 #include "gpio.h"

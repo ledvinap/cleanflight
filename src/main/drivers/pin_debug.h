@@ -20,7 +20,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "build_config.h"
+#include "common/utils.h"
 
 #ifdef PINDEBUG
 

@@ -27,7 +27,7 @@
 
 #include "platform.h"
 
-#include "build_config.h"
+#include "common/utils.h"
 
 #include "drivers/system.h"
 

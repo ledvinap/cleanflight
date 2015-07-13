@@ -272,6 +272,7 @@ COMMON_SRC	 = build_config.c \
 		   flight/mixer.c \
 		   flight/lowpass.c \
 		   filter/biquad_float.c \
+		   filter/fir.c \
 		   flight/filter.c \
 		   drivers/bus_i2c_soft.c \
 		   drivers/callback.c \

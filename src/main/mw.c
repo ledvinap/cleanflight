@@ -39,6 +39,7 @@
 #include "drivers/pwm_rx.h"
 
 #include "filter/biquad.h"
+#include "filter/fir.h"
 
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
@@ -685,6 +686,21 @@ void processRx(void)
 
 }
 
+static filterStateFIRi16_t filterRCstate[3];
+#define FILTER_RC_TAPS 5
+#define F FILTER_FIR_I16_COEF(1.0 / FILTER_RC_TAPS)
+static const filterConfigFIRi16_t filterRCconfig = {
+    .taps = 5,
+    .coef = {F, F, F, F, F},
+};
+
+
+void filterRc(void){
+    for (int chan = 0; chan < 3; chan++) {
+        rcCommand[chan] = filterApplyFIRi16(rcCommand[chan], &filterRCstate[chan], &filterRCconfig);
+    }
+}
+
 void loop(void)
 {
 #if defined(BARO) || defined(SONAR)
@@ -823,6 +839,8 @@ void loop(void)
             }
         }
 #endif
+
+        filterRc();
 
         // PID - note this is function pointer set by setPIDController()
         pid_controller(

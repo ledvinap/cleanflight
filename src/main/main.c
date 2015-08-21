@@ -199,11 +199,15 @@ void init(void)
 
     serialInit(&masterConfig.serialConfig, feature(FEATURE_SOFTSERIAL));
 
-    mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
+#ifdef USE_SERVOS
+    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer, masterConfig.customServoMixer);
+#else
+    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer);
+#endif
 
     memset(&pwm_params, 0, sizeof(pwm_params));
     // when using airplane/wing mixer, servo/motor outputs are remapped
-    if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING)
+    if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
@@ -228,7 +232,7 @@ void init(void)
 
 #ifdef USE_SERVOS
     pwm_params.useServos = isMixerUsingServos();
-    pwm_params.extraServos = currentProfile->gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
+    pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
     pwm_params.servoCenterPulse = masterConfig.escAndServoConfig.servoCenterPulse;
     pwm_params.servoPwmRate = masterConfig.servo_pwm_rate;
 #endif
@@ -429,10 +433,10 @@ void init(void)
     if (hardwareRevision == NAZE32_REV5) {
         m25p16_init();
     }
-#endif
-#if defined(SPRACINGF3) || defined(CC3D)
+#elif defined(USE_FLASH_M25P16)
     m25p16_init();
 #endif
+
     flashfsInit();
 #endif
 

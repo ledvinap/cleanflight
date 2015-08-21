@@ -23,6 +23,10 @@
 #define sq(x) ((x)*(x))
 #endif
 
+// Undefine this for use libc sinf/cosf. Keep this defined to use fast sin/cos approximations
+#define FAST_TRIGONOMETRY               // order 9 approximation
+//#define EVEN_FASTER_TRIGONOMETRY      // order 7 approximation
+
 // Use floating point M_PI instead explicitly.
 #define M_PIf       3.14159265358979323846f
 
@@ -107,3 +111,13 @@ int32_t quickMedianFilter3(int32_t * v);
 int32_t quickMedianFilter5(int32_t * v);
 int32_t quickMedianFilter7(int32_t * v);
 int32_t quickMedianFilter9(int32_t * v);
+
+#if defined(FAST_TRIGONOMETRY) || defined(EVEN_FASTER_TRIGONOMETRY)
+float sin_approx(float x);
+float cos_approx(float x);
+#else
+#define sin_approx(x)   sinf(x)
+#define cos_approx(x)   cosf(x)
+#endif
+
+void arraySubInt32(int32_t *dest, int32_t *array1, int32_t *array2, int count);

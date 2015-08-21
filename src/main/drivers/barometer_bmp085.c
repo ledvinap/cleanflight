@@ -110,10 +110,10 @@ typedef struct {
 #define SMD500_PARAM_MH     -7357        //calibration parameter
 #define SMD500_PARAM_MI      3791        //calibration parameter
 
-static bmp085_t bmp085;
+STATIC_UNIT_TESTED bmp085_t bmp085;
 static bool bmp085InitDone = false;
-static uint16_t bmp085_ut;  // static result of temperature measurement
-static uint32_t bmp085_up;  // static result of pressure measurement
+STATIC_UNIT_TESTED uint16_t bmp085_ut;  // static result of temperature measurement
+STATIC_UNIT_TESTED uint32_t bmp085_up;  // static result of pressure measurement
 
 static void bmp085_get_cal_param(void);
 static void bmp085_start_ut(void);
@@ -122,7 +122,7 @@ static void bmp085_start_up(void);
 static void bmp085_get_up(void);
 static int32_t bmp085_get_temperature(uint32_t ut);
 static int32_t bmp085_get_pressure(uint32_t up);
-static void bmp085_calculate(int32_t *pressure, int32_t *temperature);
+STATIC_UNIT_TESTED void bmp085_calculate(int32_t *pressure, int32_t *temperature);
 
 void bmp085Disable(const bmp085Config_t *config)
 {
@@ -296,9 +296,10 @@ static void bmp085_get_up(void)
             >> (8 - bmp085.oversampling_setting);
 }
 
-static void bmp085_calculate(int32_t *pressure, int32_t *temperature)
+STATIC_UNIT_TESTED void bmp085_calculate(int32_t *pressure, int32_t *temperature)
 {
     int32_t temp, press;
+
     temp = bmp085_get_temperature(bmp085_ut);
     press = bmp085_get_pressure(bmp085_up);
     if (pressure)

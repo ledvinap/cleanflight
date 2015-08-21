@@ -24,13 +24,18 @@ typedef enum {
     INPUT_FILTERING_ENABLED
 } inputFilteringMode_e;
 
+#define PPM_RCVR_TIMEOUT            0
+
 void ppmInConfig(const timerChDef_t *timCh);
 void ppmAvoidPWMTimerClash(const timerChDef_t *timCh, TIM_TypeDef *sharedPwmTimer);
 
 void pwmInConfig(const timerChDef_t *timCh, uint8_t channel);
 uint16_t pwmRead(uint8_t channel);
+uint16_t ppmRead(uint8_t channel);
 
 bool isPPMDataBeingReceived(void);
 void resetPPMDataReceivedState(void);
 
 void pwmRxInit(inputFilteringMode_e initialInputFilteringMode);
+
+bool isPWMDataBeingReceived(void);

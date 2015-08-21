@@ -72,8 +72,10 @@ typedef struct master_t {
     uint8_t loopTicks;                       // imu loop time in gyro periods
     uint8_t emf_avoidance;                   // change pll settings to avoid noise in the uhf band
 
-    motorMixer_t customMixer[MAX_SUPPORTED_MOTORS]; // custom mixtable
-
+    motorMixer_t customMotorMixer[MAX_SUPPORTED_MOTORS];
+#ifdef USE_SERVOS
+    servoMixer_t customServoMixer[MAX_SERVO_RULES];
+#endif
     // motor/esc/servo related stuff
     escAndServoConfig_t escAndServoConfig;
     flight3DConfig_t flight3DConfig;

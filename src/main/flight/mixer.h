@@ -220,5 +220,5 @@ void writeMotors(void);
 void stopMotors(void);
 void StopPwmAllMotors(void);
 
-void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers);
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMotorMixers, servoMixer_t *initialCustomServoMixers);
 void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);

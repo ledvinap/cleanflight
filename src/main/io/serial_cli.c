@@ -1324,9 +1324,7 @@ static void cliFlashErase(char *cmdline)
     printf("Done.\r\n");
 }
 
-#endif
-
-# ifdef USE_FLASH_TOOLS
+#ifdef USE_FLASH_TOOLS
 
 static void cliFlashWrite(char *cmdline)
 {
@@ -2522,4 +2520,5 @@ void cliInit(serialConfig_t *serialConfig)
 {
     UNUSED(serialConfig);
 }
+
 #endif

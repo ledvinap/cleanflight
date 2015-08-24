@@ -202,7 +202,7 @@ void init(void)
 #ifdef USE_SERVOS
     mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer, masterConfig.customServoMixer);
 #else
-    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer);
+    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer, NULL);
 #endif
 
     memset(&pwm_params, 0, sizeof(pwm_params));

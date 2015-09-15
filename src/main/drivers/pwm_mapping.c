@@ -620,12 +620,12 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 
         if (type == MAP_TO_PPM_INPUT) {
 #ifdef CC3D
-            if (init->useOneshot) {
+            if (init->useOneshot || isMotorBrushed(init->motorPwmRate)) {
                 ppmAvoidPWMTimerClash(timChDef, TIM4);
             }
 #endif
 #ifdef SPARKY
-            if (init->useOneshot) {
+            if (init->useOneshot || isMotorBrushed(init->motorPwmRate)) {
                 ppmAvoidPWMTimerClash(timChDef, TIM2);
             }
 #endif
@@ -636,7 +636,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         } else if (type == MAP_TO_MOTOR_OUTPUT) {
             if (init->useOneshot) {
                 pwmOneshotMotorConfig(timChDef, pwmOutputConfiguration.motorCount);
-            } else if (init->motorPwmRate > 500) {
+            } else if (isMotorBrushed(init->motorPwmRate)) {
                 pwmBrushedMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
             } else {
                 pwmBrushlessMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);

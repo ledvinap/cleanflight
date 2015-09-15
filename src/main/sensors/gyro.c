@@ -148,7 +148,8 @@ void gyroUpdate(void)
     }
     gyroADClastIdx = 0;
 #else
-    gyro.read(gyroADC);
+    if (!gyro.read(gyroADC))
+        return;
     alignSensors(gyroADC, gyroADC, gyroAlign);
     applyGyroZero(gyroADC);
 #endif

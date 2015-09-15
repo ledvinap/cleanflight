@@ -29,3 +29,6 @@ void pwmBrushedMotorConfig(const struct timerChDef_s *timChDef, uint8_t motorInd
 void pwmBrushlessMotorConfig(const struct timerChDef_s *timChDef, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
 void pwmOneshotMotorConfig(const struct timerChDef_s *timChDef, uint8_t motorIndex);
 void pwmServoConfig(const struct timerChDef_s *timChDef, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse);
+
+bool isMotorBrushed(uint16_t motorPwmRate);
+

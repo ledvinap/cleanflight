@@ -35,6 +35,7 @@
 
 #define PWM_TIMER_HZ 1000000
 #define ONESHOT125_TIMER_HZ 8000000
+#define PWM_BRUSHED_TIMER_HZ 8000000
 
 typedef struct sonarGPIOConfig_s {
     GPIO_TypeDef *gpio;

@@ -121,7 +121,7 @@ void ak8975Init(void)
 
 // TODO - timeout is neccesary to restart conversion if some error occurs
 
-void ak8975Read(int16_t *magData)
+bool ak8975Read(int16_t *magData)
 {
     bool ack;
     UNUSED(ack);
@@ -130,7 +130,7 @@ void ak8975Read(int16_t *magData)
 
     ack = i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_STATUS1, 1, &status);
     if (!ack || (status & BIT_STATUS1_REG_DATA_READY) == 0) {
-        return;
+        return false;
     }
 
 #if 1 // USE_I2C_SINGLE_BYTE_READS
@@ -151,11 +151,11 @@ void ak8975Read(int16_t *magData)
     }
 
     if (status & BIT_STATUS2_REG_DATA_ERROR) {
-        return;
+        return false;
     }
 
     if (status & BIT_STATUS2_REG_MAG_SENSOR_OVERFLOW) {
-        return;
+        return false;
     }
 
     // gainComp is multiplied by 256, divide by (256/4) to get expected scale
@@ -164,4 +164,5 @@ void ak8975Read(int16_t *magData)
     magData[Z] = -(int16_t)(buf[5] << 8 | buf[4]) * gainComp[Z] / (256 / 4);
 
     ack = i2cWrite(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_CNTL, 0x01); // start reading again
+    return true;
 }

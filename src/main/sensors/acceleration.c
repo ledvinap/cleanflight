@@ -174,6 +174,7 @@ static void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
 
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
+<<<<<<< HEAD
 #ifdef ACCGYRO_FIFO
     if(accADClastIdx) {
         memcpy(accADC, accADClast[accADClastIdx-1], sizeof(accADC));
@@ -184,6 +185,11 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 #else
     acc.read(accADC);
 #endif
+=======
+    if (!acc.read(accADC)) {
+        return;
+    }
+>>>>>>> upstream/master
     alignSensors(accADC, accADC, accAlign);
 
     if (!isAccelerationCalibrationComplete()) {

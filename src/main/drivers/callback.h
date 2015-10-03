@@ -12,13 +12,12 @@
 
 #include <stdint.h>
 
-struct callbackRec_s;
-typedef void callbackFun_t(struct callbackRec_s* data);
-
-typedef struct callbackRec_s {
+typedef struct callbackRec_s callbackRec_t;
+typedef void callbackFun_t(callbackRec_t* data);
+struct callbackRec_s {
     callbackFun_t* fn;
     uint8_t id;
-} callbackRec_t;
+};
 
 void callbackInit(void);
 void callbackRegister(callbackRec_t *self, callbackFun_t *fn);

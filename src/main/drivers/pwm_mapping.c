@@ -24,6 +24,7 @@
 
 #include "gpio.h"
 #include "timer.h"
+#include "timer_impl.h"
 
 #include "config/config_master.h"
 
@@ -472,7 +473,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         uint8_t timerIndex = setup[i] & 0x00FF;
         uint8_t type = (setup[i] & 0xFF00) >> 8;
 
-        const timerChDef_t *timChDef = timerChannelMap[timerIndex];
+        const timerChDef_t *timChDef = &timerChannelMap[timerIndex];
 
 #ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
         // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
@@ -513,36 +514,33 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #ifdef LED_STRIP_TIMER
         // skip LED Strip output
         if (init->useLEDStrip) {
-            if (timChDef->tim == LED_STRIP_TIMER)
+            if (timerChDef_TIM(timChDef) == LED_STRIP_TIMER)
                 continue;
 #if defined(STM32F303xC) && defined(WS2811_GPIO) && defined(WS2811_PIN)
-            if (timChDef->gpio == WS2811_GPIO && timChDef->pin == WS2811_PIN)
+            if (timerChDef_IO(timChDef) == DEFIO_REC(WS2811_IO))
                 continue;
 #endif
         }
 
 #endif
 
-#ifdef VBAT_ADC_GPIO
-        if (init->useVbat && timChDef->gpio == VBAT_ADC_GPIO && timChDef->pin == VBAT_ADC_GPIO_PIN) {
+#ifdef VBAT_ADC_IO
+        if (init->useVbat && timerChDef_IO(timChDef) == DEFIO_REC(VBAT_ADC_IO))
             continue;
-        }
 #endif
 
-#ifdef RSSI_ADC_GPIO
-        if (init->useRSSIADC && timChDef->gpio == RSSI_ADC_GPIO && timChDef->pin == RSSI_ADC_GPIO_PIN) {
+#ifdef RSSI_ADC_IO
+        if (init->useRSSIADC && timerChDef_IO(timChDef) == DEFIO_REC(RSSI_ADC_IO))
             continue;
-        }
 #endif
 
-#ifdef CURRENT_METER_ADC_GPIO
-        if (init->useCurrentMeterADC && timChDef->gpio == CURRENT_METER_ADC_GPIO && timChDef->pin == CURRENT_METER_ADC_GPIO_PIN) {
+#ifdef CURRENT_METER_ADC_IO
+        if (init->useCurrentMeterADC && timerChDef_IO(timChDef) == DEFIO_REC(CURRENT_METER_ADC_IO))
             continue;
-        }
 #endif
 
         // TODO - SONAR
-        if(timerChGetUsedResources(timChDef) & (RESOURCE_IO | RESOURCE_TIMER))
+        if(timerChDef_GetResources(timChDef) & (RESOURCE_IO | RESOURCE_TIMER))
             continue;
 
         // hacks to allow current functionality
@@ -556,30 +554,31 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         if (init->useServos && !init->airplane) {
 #if defined(NAZE)
             // remap PWM9+10 as servos
-            if ((timerIndex == PWM9 || timerIndex == PWM10) && timChDef->tim == TIM1)
+            if ((timerIndex == PWM9 || timerIndex == PWM10) && timerChDef_TIM(timChDef) == TIM1)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
 #if defined(COLIBRI_RACE)
             // remap PWM1+2 as servos
-            if ((timerIndex == PWM6 || timerIndex == PWM7 || timerIndex == PWM8 || timerIndex == PWM9) && timerHardwarePtr->tim == TIM2)
+            if ((timerIndex == PWM6 || timerIndex == PWM7 || timerIndex == PWM8 || timerIndex == PWM9) && timerChDef_TIM(timChDef) == TIM2)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
 #if defined(SPARKY)
             // remap PWM1+2 as servos
-            if ((timerIndex == PWM1 || timerIndex == PWM2) && timChDef->tim == TIM15)
+            if ((timerIndex == PWM1 || timerIndex == PWM2) && timerChDef_TIM(timChDef) == TIM15)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
 #if defined(SPRACINGF3)
             // remap PWM15+16 as servos
-            if ((timerIndex == PWM15 || timerIndex == PWM16) && timChDef->tim == TIM15)
+            if ((timerIndex == PWM15 || timerIndex == PWM16) && timerChDef_TIM(timChDef) == TIM15)
                 type = MAP_TO_SERVO_OUTPUT;
 #endif
 
 #if defined(NAZE32PRO) || (defined(STM32F3DISCOVERY) && !defined(CHEBUZZF3))
             // remap PWM 5+6 or 9+10 as servos - softserial pin pairs require timer ports that use the same timer
+            // TODO!
             if (init->useSoftSerial) {
                 if (timerIndex == PWM5 || timerIndex == PWM6)
                     type = MAP_TO_SERVO_OUTPUT;

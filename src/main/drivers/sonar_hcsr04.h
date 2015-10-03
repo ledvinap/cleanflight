@@ -20,8 +20,8 @@
 #include <drivers/io.h>
 
 typedef struct sonarHardware_s {
-    const ioDef_t *triggerIO;
-    const ioDef_t *echoIO;
+    ioRec_t *triggerIO;
+    ioRec_t *echoIO;
 } sonarHardware_t;
 
 void hcsr04_Init(const sonarHardware_t *sonarHardware);

@@ -82,11 +82,11 @@ const mpu6050Config_t *selectMPU6050Config(void)
 #ifdef NAZE
     // MPU_INT output on rev4 PB13
     static const mpu6050Config_t nazeRev4MPU6050Config = {
-        .intIO = &IO_PB13
+        .intIO = DEFIO_REC(PB13)
     };
     // MPU_INT output on rev5 hardware PC13
     static const mpu6050Config_t nazeRev5MPU6050Config = {
-        .intIO = &IO_PC13
+        .intIO = DEFIO_REC(PC13)
     };
 
     if (hardwareRevision < NAZE32_REV5) {
@@ -463,10 +463,10 @@ static void detectMag(magSensor_e magHardwareToUse)
 
 #ifdef NAZE
     static const hmc5883Config_t nazeHmc5883Config_v1_v4 = {
-        .intIO = &IO_PB12,
+        .intIO = DEFIO_REC(PB12),
     };
     static const hmc5883Config_t nazeHmc5883Config_v5 = {
-        .intIO = &IO_PC14,
+        .intIO = DEFIO_REC(PC14),
     };
     if (hardwareRevision < NAZE32_REV5) {
         hmc5883Config = &nazeHmc5883Config_v1_v4;
@@ -477,7 +477,7 @@ static void detectMag(magSensor_e magHardwareToUse)
 
 #ifdef SPRACINGF3
     static const hmc5883Config_t spRacingF3Hmc5883Config = {
-        .intIO = &IO_PC14,
+        .intIO = DEFIO_REC(PC14),
     };
     hmc5883Config = &spRacingF3Hmc5883Config;
 #endif

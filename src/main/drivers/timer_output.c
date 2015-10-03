@@ -25,35 +25,32 @@
 #endif
 
 void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare);
- 
+
 void timerOut_Config(timerOutputRec_t* self, const timerChDef_t* timChDef, resourceOwner_t owner, int priority, callbackRec_t *callback, uint16_t flags)
 {
-    self->timChDef = timChDef;
-    self->tim = timChDef->tim;
-    self->timCCR = timerChCCR(timChDef);
+    timerChRec_t *timChRec = timerChInit(timChDef, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, priority, 0, 1000000);
+    self->timChRec = timChRec;
+    self->tim = timerChTIM(timChRec);
+    self->timCCR = timerChCCR(timChRec);
     self->callback = callback;
     self->flags = flags;
-    timerChInit(timChDef, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, priority, 0, 1000000);
     timerCCHandlerInit(&self->compareCb, timerOut_timerCompareEvent);
     // Enable PWM for advanced timers here, it is not cleared during release
-    if (timChDef->timerDef->outputsNeedEnable)
-        TIM_CtrlPWMOutputs(self->timChDef->tim, ENABLE);
-
+#warning "TODO - enable in timer code"
+    //if (timChDef->timerDef->outputsNeedEnable)
+    //        TIM_CtrlPWMOutputs(self->timChDef->tim, ENABLE);
     timerOut_Restart(self);
 }
 
 void timerOut_Release(timerOutputRec_t* self)
 {
-    timerChConfigCallbacks(self->timChDef, NULL, NULL);
+    timerChConfigCallbacks(self->timChRec, NULL, NULL);
     ATOMIC_AND(&self->flags, ~(TIMEROUT_RUNNING | TIMEROUT_RESTART));
     if(self->flags & TIMEROUT_RELEASEMODE_INPUT) {
-        timerChConfigGPIO(self->timChDef, (self->flags & TIMEROUT_IDLE_HI) ? IOCFG_IPU : IOCFG_IPD);
+        timerChConfigGPIO(self->timChRec, (self->flags & TIMEROUT_IDLE_HI) ? IOCFG_IPU : IOCFG_IPD);
     } else {
-        if(self->flags & TIMEROUT_IDLE_HI)  // TODO - move this to IO driver
-            digitalHi(self->timChDef->gpio, self->timChDef->pin);
-        else
-            digitalLo(self->timChDef->gpio, self->timChDef->pin);
-        timerChConfigGPIO(self->timChDef, Mode_Out_PP);
+        timerChIOWrite(self->timChRec, self->flags & TIMEROUT_IDLE_HI);
+        timerChConfigGPIO(self->timChRec, Mode_Out_PP);
     }
 }
 
@@ -62,10 +59,12 @@ void timerOut_Restart(timerOutputRec_t* self)
     self->qhead = self->qheadUnc = self->qtail = 0;
     self->qtailWake = ~0;
 
-    timerChConfigOC(self->timChDef, true, !(self->flags & TIMEROUT_IDLE_HI));
-    timerChConfigGPIO(self->timChDef, IOCFG_AF_PP);
-    timerChConfigCallbacks(self->timChDef, &self->compareCb, NULL);
+    timerChConfigOC(self->timChRec, true, !(self->flags & TIMEROUT_IDLE_HI));
+    timerChConfigGPIO(self->timChRec, IOCFG_AF_PP);
+    timerChConfigCallbacks(self->timChRec, &self->compareCb, NULL);
 }
+
+#include "timer_impl.h" // TODO
 
 // this handler can't be interrupted by any timer code
 void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
@@ -76,13 +75,13 @@ void timerOut_timerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
     if(self->flags & TIMEROUT_RUNNING) {
         if(self->flags & TIMEROUT_RESTART) {   // data was added too late, start new pulse train
             self->flags &= ~TIMEROUT_RESTART;
-            TIM_SelectOCxM_NoDisable(self->tim, self->timChDef->channel, TIM_OCMode_Toggle);
+            TIM_SelectOCxM_NoDisable(self->tim, self->timChRec->channel, TIM_OCMode_Toggle);
             *self->timCCR = self->tim->CNT + 2;   // not sure what happens when CNT is written into CCR. This should work fine (we have at least 72 ticks to spare)
         } else if(self->qtail != self->qhead) {   // got something to send
             *self->timCCR += self->queue[self->qtail];
             self->qtail = (self->qtail + 1) % TIMEROUT_QUEUE_LEN;
             if(self->qtail == self->qhead) { // last interval, disable polarity change
-                TIM_SelectOCxM_NoDisable(self->tim, self->timChDef->channel, TIM_OCMode_Timing);
+                TIM_SelectOCxM_NoDisable(self->tim, self->timChRec->channel, TIM_OCMode_Timing);
             }
             if(self->qtail == self->qtailWake)  // user wants to be woken up
                 callbackTrigger(self->callback);
@@ -146,9 +145,9 @@ void timerOut_QCommit(timerOutputRec_t *self)
             self->qhead = self->qheadUnc;  // commit prepared data
         } else {
             *self->timCCR = self->tim->CNT - 1;   // make sure there is no compare event soon
-            timerChClearCCFlag(self->timChDef);      // clear timer ISR flag if there was compare match before updating CCR
+            timerChClearCCFlag(self->timChRec);      // clear timer ISR flag if there was compare match before updating CCR
             self->flags |= TIMEROUT_RUNNING;
-            TIM_SelectOCxM_NoDisable(self->tim, self->timChDef->channel, TIM_OCMode_Toggle);
+            TIM_SelectOCxM_NoDisable(self->tim, self->timChRec->channel, TIM_OCMode_Toggle);  // TODO - wrap in timer code
             *self->timCCR = self->tim->CNT + 2;     // not sure what happens when CNT is written into CCR. This should work fine (we have at least 72 ticks to spare)
             // this will work fine as long as timer interrupt priority is highest in system
             // but we can miss compare if higher priority IRQ is served between reading CNT and writing CCR

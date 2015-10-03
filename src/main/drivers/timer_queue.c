@@ -40,6 +40,7 @@ struct {
 #if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
     volatile timCCR_t *timCCR;
     timerCCHandlerRec_t compareCb;
+    timerChRec_t* timChRec;
 #endif
     callbackRec_t callback;
 } timerQueue;
@@ -63,13 +64,12 @@ void timerQueue_Init(void)
     timerQueue.heapLen = 0;
     timerQueue.isrHead = timerQueue.isrTail = 0;
 #if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
-    const timerChDef_t * timChDef = &timerQueueChannelDef;
-    timerQueue.timCCR = timerChCCR(timChDef);
-    timerQueue.timCNT = timerChCNT(timChDef);
-    timerChInit(timChDef, OWNER_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER, (uint16_t)0x10000, TIMERQUEUE_TIMER_FREQ);
-    timerChConfigOC(timChDef, false, false);
+    timerQueue.timChRec = timerChInit(&timerQueueChDef, OWNER_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER, (uint16_t)0x10000, TIMERQUEUE_TIMER_FREQ);
+    timerQueue.timCCR = timerChCCR(timerQueue.timChRec);
+    timerQueue.timCNT = timerChCNT(timerQueue.timChRec);
+    timerChConfigOC(timerQueue.timChRec, false, false);
     timerCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
-    timerChConfigCallbacks(timChDef, &timerQueue.compareCb, NULL);
+    timerChConfigCallbacks(timerQueue.timChRec, &timerQueue.compareCb, NULL);
 #elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
     timerQueue.timCNT = &(TIME_TIMER)->tim->CNT;
     NVIC_SetPriority (SysTick_IRQn, NVIC_PRIO_SYSTICK >> (8 - __NVIC_PRIO_BITS));  /* set Priority for Systick Interrupt */
@@ -90,7 +90,7 @@ static inline int16_t tq_cmp_val(uint16_t a, uint16_t b)
     return a - b;
 }
 
-static inline int16_t tq_cmp(const timerQueueRec_t *a, timerQueueRec_t *b)
+static inline int16_t tq_cmp(const timerQueueRec_t *a, const timerQueueRec_t *b)
 {
     return tq_cmp_val(a->time, b->time);
 }
@@ -251,15 +251,15 @@ check_again:
     // replan timer
 #if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
     if(timerQueue.heapLen) {
-        timerChClearCCFlag(&timerQueueChannelDef);   // honour compare match flag from here if interrupt is enabled later
+        timerChClearCCFlag(timerQueue.timChRec);   // honour compare match flag from here if interrupt is enabled later
         *timerQueue.timCCR = timerQueue.heap[0]->time;
         if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT) < 0) {
             // it is possible that we filled CCR too late. Run callbacks again immediately
             goto check_again;
         }
-        timerChITConfig(&timerQueueChannelDef, ENABLE);
+        timerChITConfig(timerQueue.timChRec, ENABLE);
     } else {
-        timerChITConfig(&timerQueueChannelDef, DISABLE);
+        timerChITConfig(timerQueue.timChRec, DISABLE);
     }
 #elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
     if(timerQueue.heapLen) {

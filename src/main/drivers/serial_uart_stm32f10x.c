@@ -62,13 +62,13 @@ static const uartHwDef_t uartPort1Def = {
     .txDMAChannelId = DMAId1c4,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
     .rcc = RCC_APB2(USART1),
-    .rxCh = USART1_RX_IO,
-    .txCh = USART1_TX_IO,
+    .rxCh = DEFIO_REC(USART1_RX_IO),
+    .txCh = DEFIO_REC(USART1_TX_IO),
 #ifdef USART1_RX_IO_REMAP
-    .rxChRemap = USART1_RX_IO_REMAP,
+    .rxChRemap = DEFIO_REC(USART1_RX_IO_REMAP),
 #endif
 #ifdef USART1_TX_IO_REMAP
-    .txChRemap = USART1_TX_IO_REMAP,
+    .txChRemap = DEFIO_REC(USART1_TX_IO_REMAP),
 #endif
     .remap = GPIO_Remap_USART1,
 };
@@ -88,8 +88,8 @@ static const uartHwDef_t uartPort2Def = {
     .IRQn = USART2_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART2,
     .rcc = RCC_APB1(USART2),
-    .rxCh = USART2_RX_IO,
-    .txCh = USART2_TX_IO,
+    .rxCh = DEFIO_REC(USART2_RX_IO),
+    .txCh = DEFIO_REC(USART2_TX_IO),
 #ifdef USART2_RX_PIN_REMAP
     .rxChRemap = USART2_RX_PIN_REMAP,
 #endif
@@ -114,8 +114,8 @@ static const uartHwDef_t uartPort3Def = {
     .IRQn = USART3_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART3,
     .rcc = RCC_APB1(USART3),
-    .rxCh = USART3_RX_IO,
-    .txCh = USART3_TX_IO,
+    .rxCh = DEFIO_REC(USART3_RX_IO),
+    .txCh = DEFIO_REC(USART3_TX_IO),
 #ifdef USART3_RX_PIN_REMAP
     .rxChRemap = USART3_RX_PIN_REMAP,
 #endif
@@ -140,7 +140,7 @@ void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
 }
 
 void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
-    const ioDef_t *tx, *rx, *rxi, *txi;
+    ioRec_t *tx, *rx, *rxi, *txi;
     if(config->mode & MODE_U_REMAP) {
         rx = self->hwDef->rxChRemap;
         tx = self->hwDef->txChRemap;

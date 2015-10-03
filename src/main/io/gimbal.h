@@ -24,6 +24,6 @@ typedef enum {
 
 #define GIMBAL_MODE_MAX (GIMBAL_MODE_MIXTILT)
 
-typedef struct gimbalConfig_s {
+struct gimbalConfig_s {
     uint8_t mode;
-} gimbalConfig_t;
+};

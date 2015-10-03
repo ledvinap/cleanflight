@@ -162,7 +162,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_$(FLASH_SIZE)k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
-TARGET_FLAGS = -D$(TARGET) -pedantic
+TARGET_FLAGS = -D$(TARGET) # -pedantic
 DEVICE_FLAGS = -DSTM32F10X_HD -DSTM32F10X
 
 DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
@@ -187,7 +187,7 @@ INCLUDE_DIRS	:= $(INCLUDE_DIRS) \
 LD_SCRIPT	= $(LINKER_DIR)/stm32_flash_f103_128k.ld
 
 ARCH_FLAGS	= -mthumb -mcpu=cortex-m3
-TARGET_FLAGS	= -D$(TARGET) -pedantic
+TARGET_FLAGS	= -D$(TARGET) # -pedantic
 DEVICE_FLAGS	= -DSTM32F10X_MD -DSTM32F10X
 
 DEVICE_STDPERIPH_SRC = $(USBPERIPH_SRC) $(STDPERIPH_SRC)
@@ -231,7 +231,7 @@ endif
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_$(FLASH_SIZE)k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
-TARGET_FLAGS = -D$(TARGET) -pedantic
+TARGET_FLAGS = -D$(TARGET) # -pedantic
 DEVICE_FLAGS = -DSTM32F10X_MD -DSTM32F10X
 
 endif
@@ -280,7 +280,6 @@ COMMON_SRC	 = build_config.c \
 		   drivers/dma.c \
 		   drivers/exti.c \
 		   drivers/io.c \
-		   drivers/io_def.c \
 		   drivers/pin_debug.c \
 		   drivers/rcc.c \
 		   drivers/serial.c \

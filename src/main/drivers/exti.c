@@ -6,6 +6,7 @@
 
 
 #include "drivers/nvic.h"
+#include "drivers/io_impl.h"
 
 #include "exti.h"
 
@@ -28,8 +29,11 @@ static uint8_t extiIRQn[] = {
 void EXTIInit(void)
 {
     // TODO - stm32F303
+
+#ifdef STM32F10X
     // enable AFIO for EXTI support
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+#endif
 #ifdef STM32F303xC
     /* Enable SYSCFG clock otherwise the EXTI irq handlers are not called */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
@@ -42,18 +46,18 @@ void EXTIHandlerInit(extiCallbackRec_t *self, extiHandlerCallback *fn)
     self->fn = fn;
 }
 
-void EXTIConfig(const ioDef_t* ioDef, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger)
+void EXTIConfig(ioRec_t* ioRec, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger)
 {
     int chIdx;
-    chIdx = IO_GPIOPinIdx(ioDef);
+    chIdx = IO_GPIOPinIdx(ioRec);
     if(chIdx < 0)
         return;
     extiChannelRec_t *rec = &extiChannelRecs[chIdx];
     rec->handler = cb;
 
-    gpioExtiLineConfig(IO_GPIOPortSource(ioDef), IO_GPIOPinSource(ioDef));
+    gpioExtiLineConfig(IO_EXTI_PortSourceGPIO(ioRec), IO_EXTI_PinSource(ioRec));
 
-    uint32_t extiLine = IO_EXTILine(ioDef);
+    uint32_t extiLine = IO_EXTI_Line(ioRec);
 
     EXTI_ClearITPendingBit(extiLine);
 
@@ -72,10 +76,10 @@ void EXTIConfig(const ioDef_t* ioDef, extiCallbackRec_t *cb, int irqPriority, EX
     NVIC_Init(&NVIC_InitStructure);
 }
 
-void EXTIEnable(const ioDef_t* ioDef, bool enable)
+void EXTIEnable(ioRec_t* ioRec, bool enable)
 {
 #if defined(STM32F10X)
-    uint32_t extiLine = IO_EXTILine(ioDef);
+    uint32_t extiLine = IO_EXTI_Line(ioRec);
     if(!extiLine)
         return;
     if(enable)
@@ -83,7 +87,7 @@ void EXTIEnable(const ioDef_t* ioDef, bool enable)
     else
         EXTI->IMR &= ~extiLine;
 #elif defined(STM32F30X)
-    int extiLine = IO_EXTILine(ioDef);
+    int extiLine = IO_EXTILine(ioRec);
     if(extiLine < 0)
         return;
     // assume extiLine < 32 (walid for all EXTI pins)

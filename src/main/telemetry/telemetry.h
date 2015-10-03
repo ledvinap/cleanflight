@@ -47,7 +47,7 @@ typedef struct telemetryConfig_s {
     uint8_t hottAlarmSoundInterval;
 } telemetryConfig_t;
 
-struct rxConfig_s;
+typedef struct rxConfig_s rxConfig_t;
 
 void telemetryInit(void);
 

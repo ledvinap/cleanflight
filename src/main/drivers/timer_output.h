@@ -19,7 +19,7 @@ typedef struct timerOutputRec_s {
     unsigned qtail;
     unsigned qtailWake;                         // queue index used to wake caller (compared after fetch in irq)
     uint16_t flags;
-    const timerChDef_t* timChDef;
+    timerChRec_t* timChRec;
     TIM_TypeDef *tim;
     volatile timCCR_t* timCCR;
     callbackRec_t *callback;

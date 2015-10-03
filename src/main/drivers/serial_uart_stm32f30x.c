@@ -49,20 +49,20 @@
 //#define USE_USART3_TX_DMA
 
 #ifndef UART1_TX_IO
-#define UART1_TX_IO        &IO_PA9
-#define UART1_RX_IO        &IO_PA10
+#define UART1_TX_IO        PA9
+#define UART1_RX_IO        PA10
 #define UART1_GPIO_AF      GPIO_AF_7
 #endif
 
 #ifndef UART2_TX_IO
-#define UART2_TX_IO        &IO_PD5
-#define UART2_RX_IO        &IO_PD6
+#define UART2_TX_IO        PD5
+#define UART2_RX_IO        PD6
 #define UART2_GPIO_AF      GPIO_AF_7
 #endif
 
 #ifndef UART3_TX_IO
-#define UART3_TX_IO        &IO_PB10
-#define UART3_RX_IO        &IO_PB11
+#define UART3_TX_IO        PB10
+#define UART3_RX_IO        PB11
 #define UART3_GPIO_AF      GPIO_AF_7
 #endif
 
@@ -84,13 +84,13 @@ static const uartHwDef_t uartPort1Def = {
     .txDMAChannelId = DMAId1c4,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
     .rcc = RCC_APB2(USART1),
-    .rxCh = UART1_RX_IO,
-    .txCh = UART1_TX_IO,
+    .rxCh = DEFIO_REC(UART1_RX_IO),
+    .txCh = DEFIO_REC(UART1_TX_IO),
 #ifdef UART1_RX_IO_REMAP
-    .rxChRemap = UART1_RX_IO_REMAP,
+    .rxChRemap = DEFIO_REC(UART1_RX_IO_REMAP),
 #endif
 #ifdef UART1_TX_IO_REMAP
-    .txChRemap = UART1_TX_IO_REMAP,
+    .txChRemap = DEFIO_REC(UART1_TX_IO_REMAP),
 #endif
     .afConfig = UART1_GPIO_AF,
 };
@@ -114,13 +114,13 @@ static const uartHwDef_t uartPort2Def = {
     .txDMAChannelId = DMAId1c7,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
     .rcc = RCC_APB1(USART2),
-    .rxCh = UART2_RX_IO,
-    .txCh = UART2_TX_IO,
+    .rxCh = DEFIO_REC(UART2_RX_IO),
+    .txCh = DEFIO_REC(UART2_TX_IO),
 #ifdef UART2_RX_IO_REMAP
-    .rxChRemap = UART2_RX_IO_REMAP,
+    .rxChRemap = DEFIO_REC(UART2_RX_IO_REMAP),
 #endif
 #ifdef UART2_TX_IO_REMAP
-    .txChRemap = UART2_TX_IO_REMAP,
+    .txChRemap = DEFIO_REC(UART2_TX_IO_REMAP),
 #endif
     .afConfig = UART2_GPIO_AF,
 };
@@ -144,13 +144,13 @@ static const uartHwDef_t uartPort3Def = {
     .txDMAChannelId = DMAId1c2,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
     .rcc = RCC_APB1(USART3),
-    .rxCh = UART3_RX_IO,
-    .txCh = UART3_TX_IO,
+    .rxCh = DEFIO_REC(UART3_RX_IO),
+    .txCh = DEFIO_REC(UART3_TX_IO),
 #ifdef UART3_RX_IO_REMAP
-    .rxChRemap = UART3_RX_IO_REMAP,
+    .rxChRemap = DEFIO_REC(UART3_RX_IO_REMAP),
 #endif
 #ifdef UART3_TX_IO_REMAP
-    .txChRemap = UART3_TX_IO_REMAP,
+    .txChRemap = DEFIO_REC(UART3_TX_IO_REMAP),
 #endif
     .afConfig = UART3_GPIO_AF,
 };
@@ -172,7 +172,7 @@ void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
 }
 
 void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
-    const ioDef_t *tx, *rx, *rxi, *txi;
+    ioRec_t *tx, *rx, *rxi, *txi;
     uint8_t af;
     // allow remap only if remap pins are defined
     if(config->mode & MODE_U_REMAP && self->hwDef->rxChRemap && self->hwDef->txChRemap) {

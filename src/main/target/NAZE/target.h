@@ -33,8 +33,8 @@
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
-#define BARO_XCLR_IO   &IO_PC13
-#define BARO_EOC_IO    &IO_PC14
+#define BARO_XCLR_IO   PC13
+#define BARO_EOC_IO    PC14
 
 #define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_GPIO GPIOB
@@ -138,8 +138,8 @@
 #endif
 
 // USART3 only on NAZE32_SP - Flex Port
-#define USART3_RX_IO &IO_PB11
-#define USART3_TX_IO &IO_PB10
+#define USART3_RX_IO PB11
+#define USART3_TX_IO PB10
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)

@@ -64,7 +64,7 @@ typedef struct {
 
     uint8_t missedEvents;
 
-    const timerChDef_t *timChDef;
+    timerChRec_t *timChRec;
     timerCCHandlerRec_t edgeCb;
     timerOvrHandlerRec_t overflowCb;
 } pwmInputPort_t;
@@ -249,12 +249,12 @@ static void pwmOverflowCallback(timerOvrHandlerRec_t* cbRec, uint16_t capture)
 static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, uint16_t capture)
 {
     pwmInputPort_t *pwmInputPort = container_of(cbRec, pwmInputPort_t, edgeCb);
-    const timerChDef_t *timChDef = pwmInputPort->timChDef;
+    timerChRec_t *timChRec = pwmInputPort->timChRec;
 
     if (pwmInputPort->state == 0) {
         pwmInputPort->rise = capture;
         pwmInputPort->state = 1;
-        timerChICPolarity(timChDef, false);
+        timerChICPolarity(timChRec, false);
     } else {
         pwmInputPort->fall = capture;
 
@@ -264,7 +264,7 @@ static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, uint16_t capture)
 
         // switch state
         pwmInputPort->state = 0;
-        timerChICPolarity(timChDef, true);
+        timerChICPolarity(timChRec, true);
         pwmInputPort->missedEvents = 0;
     }
 }
@@ -277,22 +277,25 @@ void pwmInConfig(const timerChDef_t *timChDef, uint8_t channel)
     self->missedEvents = 0;
     self->channel = channel;
     self->mode = INPUT_MODE_PWM;
-    self->timChDef = timChDef;
 
-    timerChInit(timChDef, OWNER_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
-    timerChConfigGPIO(timChDef, IOCFG_IPD);
-    timerChConfigIC(timChDef, true, INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX);
+
+    timerChRec_t *timChRec;
+    timChRec = timerChInit(timChDef, OWNER_PWMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
+    self->timChRec = timChRec;
+
+    timerChConfigGPIO(timChRec, IOCFG_IPD);
+    timerChConfigIC(timChRec, true, INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX);
 
     timerCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
     timerOvrHandlerInit(&self->overflowCb, pwmOverflowCallback);
-    timerChConfigCallbacks(timChDef, &self->edgeCb, &self->overflowCb);
+    timerChConfigCallbacks(timChRec, &self->edgeCb, &self->overflowCb);
 }
 
 #define FIRST_PWM_PORT 0
 
 void ppmAvoidPWMTimerClash(const timerChDef_t *timChDef, TIM_TypeDef *sharedPwmTimer)
 {
-    if (timChDef->tim == sharedPwmTimer) {
+    if (timerChDef_TIM(timChDef) == sharedPwmTimer) {
         ppmCountShift = 3;  // Divide by 8 if the timer is running at 8 MHz
     }
 }
@@ -304,15 +307,17 @@ void ppmInConfig(const timerChDef_t *timChDef)
     pwmInputPort_t *self = &pwmInputPorts[FIRST_PWM_PORT];
 
     self->mode = INPUT_MODE_PPM;
-    self->timChDef = timChDef;
 
-    timerChInit(timChDef, OWNER_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
-    timerChConfigGPIO(timChDef, IOCFG_IPD);
-    timerChConfigIC(timChDef, true, 0);
+    timerChRec_t *timChRec;
+    timChRec = timerChInit(timChDef, OWNER_PPMINPUT, RESOURCE_INPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER, 0, PWM_TIMER_HZ);
+    self->timChRec = timChRec;
+
+    timerChConfigGPIO(timChRec, IOCFG_IPD);
+    timerChConfigIC(timChRec, true, 0);
 
     timerCCHandlerInit(&self->edgeCb, ppmEdgeCallback);
     timerOvrHandlerInit(&self->overflowCb, ppmOverflowCallback);
-    timerChConfigCallbacks(timChDef, &self->edgeCb, &self->overflowCb);
+    timerChConfigCallbacks(timChRec, &self->edgeCb, &self->overflowCb);
 }
 
 uint16_t ppmRead(uint8_t channel)

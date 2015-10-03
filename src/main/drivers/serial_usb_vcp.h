@@ -21,9 +21,9 @@
 
 serialPort_t *usbVcpOpen(void);
 
-struct usbVcpPort_s;
-extern struct usbVcpPort_s vcpPort;  // linking with CDC is 1:1 now, so export this
-int vcpGetTxData(struct usbVcpPort_s *self, uint8_t* *dataPtr);
-void vcpAckTxData(struct usbVcpPort_s *self, int txLen);
-int vcpGetRxDataBuffer(struct usbVcpPort_s *self, uint8_t* *dataPtr);
-void vcpAckRxData(struct usbVcpPort_s *self, int len);
+typedef struct usbVcpPort_s usbVcpPort_t;
+extern usbVcpPort_t vcpPort;  // linking with CDC is 1:1 now, so export this
+int vcpGetTxData(usbVcpPort_t *self, uint8_t* *dataPtr);
+void vcpAckTxData(usbVcpPort_t *self, int txLen);
+int vcpGetRxDataBuffer(usbVcpPort_t *self, uint8_t* *dataPtr);
+void vcpAckRxData(usbVcpPort_t *self, int len);

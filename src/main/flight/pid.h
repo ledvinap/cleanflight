@@ -47,6 +47,7 @@ typedef enum {
 
 #define IS_PID_CONTROLLER_FP_BASED(pidController) (pidController == 2)
 
+typedef struct pidProfile_s pidProfile_t;
 typedef struct pidProfile_s {
     uint8_t pidController;                  // 0 = multiwii original, 1 = rewrite from http://www.multiwii.com/forum/viewtopic.php?f=8&t=3671, 1, 2 = Luggi09s new baseflight pid
 
@@ -76,11 +77,10 @@ void pidSetController(pidControllerType_e type);
 void pidResetErrorAngle(void);
 void pidResetErrorGyro(void);
 
-struct pidProfile_s;
-struct controlRateConfig_s;
-union rollAndPitchTrims_u;
-struct rxConfig_s;
+typedef struct controlRateConfig_s controlRateConfig_t;
+typedef union rollAndPitchTrims_u rollAndPitchTrims_t;
+typedef struct rxConfig_s rxConfig_t;
 
-typedef void (pidControllerFunc)(struct pidProfile_s *pidProfile, struct controlRateConfig_s *controlRateConfig,
-        uint16_t max_angle_inclination, union rollAndPitchTrims_u *angleTrim, struct rxConfig_s *rxConfig);            // pid controller function prototype
+typedef void (pidControllerFunc)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
 extern pidControllerFunc *pid_controller;

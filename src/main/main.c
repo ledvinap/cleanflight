@@ -162,7 +162,8 @@ void init(void)
 #endif
 
     systemInit();
-
+    // initialize IO / load IO definitions into RAM (needed for all IO operations)
+    IOInitGlobal();
     // timer must be initialized before any channel is allocated
     // delay functions are dependent on timer
     timerInit();

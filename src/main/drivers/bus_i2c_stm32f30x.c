@@ -33,37 +33,37 @@
 
 typedef struct i2cHwDef_s {
     I2C_TypeDef *i2cDev;
-    const ioDef_t *sclIO, *sdaIO;
+    ioRec_t *sclIO, *sdaIO;
     uint32_t rccI2CCLKConfig;
     rccPeriphTag_t rcc;
     uint8_t afConfig;
 } i2cHwDef_t;
 
 #ifndef I2C1_SCL_IO
-# define I2C1_SCL_IO &IO_PB6
-# define I2C1_SDA_IO &IO_PB7
+# define I2C1_SCL_IO PB6
+# define I2C1_SDA_IO PB7
 # define I2C1_AF GPIO_AF_4
 #endif
 
 struct i2cHwDef_s i2c1Def = {
     .i2cDev = I2C1,
-    .sclIO = I2C1_SCL_IO,
-    .sdaIO = I2C1_SDA_IO,
+    .sclIO = DEFIO_REC(I2C1_SCL_IO),
+    .sdaIO = DEFIO_REC(I2C1_SDA_IO),
     .rccI2CCLKConfig = RCC_I2C1CLK_SYSCLK,
     .rcc = RCC_APB1(I2C1),
     .afConfig = I2C1_AF,
 };
 
 #ifndef I2C2_SCL_IO
-# define I2C2_SCL_IO &IO_PF6
-# define I2C2_SDA_IO &IO_PA10
+# define I2C2_SCL_IO PF6
+# define I2C2_SDA_IO PA10
 # define I2C2_AF GPIO_AF_4
 #endif
 
 struct i2cHwDef_s i2c2Def = {
     .i2cDev = I2C2,
-    .sclIO = I2C2_SCL_IO,   // this pin is available only on TQFP100 package
-    .sdaIO = I2C2_SDA_IO,
+    .sclIO = DEFIO_REC(I2C2_SCL_IO),   // this pin is available only on TQFP100 package
+    .sdaIO = DEFIO_REC(I2C2_SDA_IO),
     .rccI2CCLKConfig = RCC_I2C2CLK_SYSCLK,
     .rcc = RCC_APB1(I2C2),
     .afConfig = I2C2_AF,

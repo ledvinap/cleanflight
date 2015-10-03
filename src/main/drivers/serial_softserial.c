@@ -35,7 +35,7 @@
 #include "callback.h"
 #include "pin_debug.h"
 #include "timer.h"
-
+#include "timer_impl.h"
 
 #include "pwm_mapping.h"
 
@@ -61,10 +61,10 @@
 typedef struct softSerial_s {
     serialPort_t     port;
 
-    const timerChDef_t *rxTimChDef;
+//    timerChDef_t     *rxTimChDef;
     uint8_t rxBuffer[SOFTSERIAL_BUFFER_SIZE];
 
-    const timerChDef_t *txTimChDef;
+//    timerChDef_t     *txTimChDef;
     uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
 
     uint32_t         bitTime;                             // length of bit time in timer ticks, 24.8 fixed point in ticks
@@ -125,14 +125,14 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
     if(mode == 0)   // prevent reconfiguration with empty config
         return;
 
-    self->rxTimChDef = timerChannelMap[config->rxPin];
-    self->txTimChDef = timerChannelMap[config->txPin];
+    const timerChDef_t *rxTimChDef = &timerChannelMap[config->rxPin];
+    const timerChDef_t *txTimChDef = &timerChannelMap[config->txPin];
 
     // fix mode if caller got it wrong
-    if((mode & MODE_RXTX) == MODE_RXTX && self->txTimChDef == self->rxTimChDef)
+    if((mode & MODE_RXTX) == MODE_RXTX && txTimChDef == rxTimChDef)
         mode |= MODE_SINGLEWIRE;
     if(mode & MODE_SINGLEWIRE) {
-        self->rxTimChDef = self->txTimChDef;  // use TX pin only in singlewire mode (TX is used for singlewire on USART)
+        rxTimChDef = txTimChDef;  // use TX pin only in singlewire mode (TX is used for singlewire on USART)
         mode |= MODE_HALFDUPLEX;
     }
     if(mode & MODE_HALFDUPLEX) {
@@ -142,17 +142,17 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
     // collision with self
     if(mode & MODE_S_DUALTIMER
        && !(mode & MODE_HALFDUPLEX)
-       && timerChRecDual(self->rxTimChDef) == timerChRec(self->txTimChDef))
+       && timerChRecDual(timerChDef_TimChRec(rxTimChDef)) == timerChDef_TimChRec(txTimChDef))
         mode &= ~MODE_S_DUALTIMER;
 
     // channel is already allocated // TODO!! RESOURCE_TIMER_DUAL
     if(mode & MODE_S_DUALTIMER
-       && timerChGetUsedResources(self->rxTimChDef) & RESOURCE_TIMER_DUAL)
+       && timerChDef_GetResources(rxTimChDef) & RESOURCE_TIMER_DUAL)
         mode &= ~MODE_S_DUALTIMER;
 
     // halfduplex on channel pair
     if(mode & MODE_HALFDUPLEX
-       && timerChRecDual(self->rxTimChDef) == timerChRec(self->txTimChDef) )
+       && timerChRecDual(timerChDef_TimChRec(rxTimChDef)) == timerChDef_TimChRec(txTimChDef) )
         mode |= MODE_S_DUALTIMER;     // we have two channels, so use them
 
     // we do not check if direct pins/timer channels are free now..
@@ -179,7 +179,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
     if(mode & MODE_TX) {
         callbackRegister(&self->txCallback, softSerialTxCallback);
         timerOut_Config(&self->txTimerCh,
-                        self->txTimChDef, (mode & MODE_SINGLEWIRE) ? OWNER_SOFTSERIAL_RXTX : OWNER_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
+                        txTimChDef, (mode & MODE_SINGLEWIRE) ? OWNER_SOFTSERIAL_RXTX : OWNER_SOFTSERIAL_TX, NVIC_PRIO_TIMER,
                         &self->txCallback,
                         ((mode & MODE_INVERTED) ? 0 : TIMEROUT_IDLE_HI)
                         | ((mode & MODE_SINGLEWIRE) ? TIMEROUT_RELEASEMODE_INPUT : 0)
@@ -195,7 +195,7 @@ void softSerialConfigure(serialPort_t *serial, const serialPortMode_t *config)
         callbackRegister(&self->rxCallback, softSerialRxCallback);
         timerQueue_Config(&self->rxTimerQ, softSerialRxTimeoutEvent);
         timerIn_Config(&self->rxTimerCh,
-                       self->rxTimChDef,  (mode & MODE_SINGLEWIRE) ? OWNER_SOFTSERIAL_RXTX : OWNER_SOFTSERIAL_RX, NVIC_PRIO_TIMER,
+                       rxTimChDef,  (mode & MODE_SINGLEWIRE) ? OWNER_SOFTSERIAL_RXTX : OWNER_SOFTSERIAL_RX, NVIC_PRIO_TIMER,
                        &self->rxCallback, &self->rxTimerQ,
                        ((mode & MODE_INVERTED) ? TIMERIN_RISING : 0)
                        | ((mode & MODE_S_DUALTIMER) ? TIMERIN_QUEUE_DUALTIMER : TIMERIN_POLARITY_TOGGLE)

@@ -183,9 +183,9 @@ typedef struct servoParam_t {
     uint32_t reversedSources;               // the direction of servo movement for each input source of the servo mixer, bit set=inverted
 } __attribute__ ((__packed__)) servoParam_t;
 
-struct gimbalConfig_s;
-struct escAndServoConfig_s;
-struct rxConfig_s;
+typedef struct gimbalConfig_s gimbalConfig_t;
+typedef struct escAndServoConfig_s escAndServoConfig_t;
+typedef struct rxConfig_s rxConfig_t;
 
 extern int16_t servo[MAX_SUPPORTED_SERVOS];
 bool isMixerUsingServos(void);
@@ -199,13 +199,13 @@ extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
-        struct gimbalConfig_s *gimbalConfigToUse,
+        gimbalConfig_t *gimbalConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
-		struct escAndServoConfig_s *escAndServoConfigToUse,
+        escAndServoConfig_t *escAndServoConfigToUse,
         mixerConfig_t *mixerConfigToUse,
         airplaneConfig_t *airplaneConfigToUse,
-		struct rxConfig_s *rxConfigToUse);
+        rxConfig_t *rxConfigToUse);
 
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);

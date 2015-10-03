@@ -92,14 +92,17 @@
 
 #define USE_ADC
 
+#define CURRENT_METER_ADC_IO        PB1
 #define CURRENT_METER_ADC_GPIO      GPIOB
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
 
+#define VBAT_ADC_IO                 PA0
 #define VBAT_ADC_GPIO               GPIOA
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
 #define VBAT_ADC_CHANNEL            ADC_Channel_0
 
+#define RSSI_ADC_IO                 PA1
 #define RSSI_ADC_GPIO               GPIOA
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
 #define RSSI_ADC_CHANNEL            ADC_Channel_1

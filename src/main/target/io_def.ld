@@ -1,0 +1,4 @@
+/*
+script to collect used resources into continuous space and define symbols around it.
+
+*/

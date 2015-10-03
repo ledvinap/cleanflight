@@ -61,13 +61,13 @@ SECTIONS
     KEEP (*(.fini))
 
     . = ALIGN(4);      /* start must be aligned */
-    __tab_gpio_start = .;
-    *(SORT(.tab.gpio.*))
-    __tab_gpio_end = .;
+    _tab_io_def_start = .;
+    KEEP (*(SORT(.tab.io.def.*)))
+    _tab_io_def_end = .;
 
-    __tab_timer_start = .;
-    *(SORT(.tab.timer.*))
-    __tab_timer_end = .;
+    _tab_timer_def_start = .;
+    KEEP (*(SORT(.tab.timer.def.*)))
+    _tab_timer_def_end = .;
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbol at end of code */
@@ -126,6 +126,16 @@ SECTIONS
     __bss_start__ = _sbss;
     *(.bss)
     *(.bss*)
+
+    /* place peripheral rec sections here (so that they are not initialized but zeroed on start */
+    . = ALIGN(4);
+    _tab_io_rec_start = .;
+    KEEP (*(SORT(.tab.io.rec.*)))
+    _tab_io_rec_end = .;
+    _tab_timer_rec_start = .;
+    KEEP (*(SORT(.tab.timer.rec.*)))
+    _tab_timer_rec_end = .;
+
     *(COMMON)
 
     . = ALIGN(4);

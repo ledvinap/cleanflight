@@ -5,27 +5,24 @@
 #include "drivers/gpio.h"
 #include "drivers/resource.h"
 
-#ifdef STM32F10X
-# include "drivers/io_stm32f10x.h"
-#endif
+// IO pin identification
+typedef struct ioRec_s ioRec_t;   // opaque type to represent IO pin
+typedef uint8_t ioTag_t;          // packet tag to specify IO pin
 
-#ifdef STM32F303xC
-# include "drivers/io_stm32f30x.h"
-#endif
+// all available pins may be referenced using pinid (IO_PA1, IO_PB10, IO_NONE)
+// preprocessor is used to convert it to requested C data
+// compile-time error is generated if requexted pin is not available
 
-typedef struct ioDef_s {
-    GPIO_TypeDef *gpio;
-    uint32_t pin;
-    struct ioRec_s *rec;
-} ioDef_t;
+// expand pinid to to ioTag_t
+#define IO_TAG(pinid) DEFIO_TAG(pinid)
+// expand pinid to ioRec_t* (possibly NULL)
+#define IO_REC(pinid) DEFIO_REC(pinid)
 
-typedef struct ioRec_s {
-    resourceOwner_t owner;
-    resourceType_t resourcesUsed; // TODO!
-} ioRec_t;
+// pin config handling
+// pin config is packed into ioConfig_t to decrease memory requirements
+// IOCFG_x macros are defined for common combinations (and are CPU independent)
 
-typedef uint8_t ioConfig_t;
-
+typedef uint8_t ioConfig_t;  // packed IO configuration
 #if defined(STM32F10X)
 
 // mode is using bits 6-2
@@ -38,9 +35,9 @@ typedef uint8_t ioConfig_t;
 #elif defined(STM32F303xC)
 
 // define it here to be compatible with STM32F10X
-#define GPIO_Speed_10MHz GPIO_Speed_Level_1  // Fast Speed:10MHz
-#define GPIO_Speed_2MHz  GPIO_Speed_Level_2  // Medium Speed:2MHz (same as zero)
-#define GPIO_Speed_50MHz GPIO_Speed_Level_3  // High Speed:50MHz
+# define GPIO_Speed_10MHz GPIO_Speed_Level_1  // Fast Speed:10MHz
+# define GPIO_Speed_2MHz  GPIO_Speed_Level_2  // Medium Speed:2MHz (same as zero)
+# define GPIO_Speed_50MHz GPIO_Speed_Level_3  // High Speed:50MHz
 
 # define IO_CONFIG(mode, speed, otype, pupd) ((mode) | ((speed) << 2) | ((otype) << 4) | ((pupd) << 5))
 
@@ -50,20 +47,25 @@ typedef uint8_t ioConfig_t;
 
 #endif
 
-int IO_GPIOPortIdx(const ioDef_t *io);
-int IO_GPIOPortSource(const ioDef_t *io);
-int IO_GPIOPinIdx(const ioDef_t *io);
-int IO_GPIOPinSource(const ioDef_t *io);
-uint32_t IO_EXTILine(const ioDef_t *io);
+// declare available IO pins. Available pins are specified per target
+#include "io_def.h"
+#include "target_io.h"
 
-bool IODigitalRead(const ioDef_t *io);
-void IODigitalWrite(const ioDef_t *io, bool value);
+// emit `extern ioRec_t ` for all supported pins
+DEFIO_IO_DECLARE();
 
-void IOInit(const ioDef_t *io, resourceOwner_t owner, resourceType_t resources);
-void IORelease(const ioDef_t *io);
-resourceOwner_t IOGetOwner(const ioDef_t *io);
+bool IODigitalRead(ioRec_t *io);
+void IODigitalWrite(ioRec_t *io, bool value);
 
-void IOConfigGPIO(const ioDef_t *io, ioConfig_t cfg);
+void IOInit(ioRec_t *io, resourceOwner_t owner, resourceType_t resources);
+void IORelease(ioRec_t *io);
+resourceOwner_t IOGetOwner(ioRec_t *io);
+resourceType_t IOGetResources(ioRec_t *io);
+ioRec_t* IOGetByTag(ioTag_t tag);
+
+void IOConfigGPIO(ioRec_t *io, ioConfig_t cfg);
 #if defined(STM32F303xC)
-void IOConfigGPIOAF(const ioDef_t *io, ioConfig_t cfg, uint8_t af);
+void IOConfigGPIOAF(ioRec_t *io, ioConfig_t cfg, uint8_t af);
 #endif
+
+void IOInitGlobal(void);

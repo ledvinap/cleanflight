@@ -1,15 +1,15 @@
  #pragma once
 
-struct timerQueueRec_s;
-typedef void timerQueueCallbackFn(struct timerQueueRec_s *self);
+typedef struct timerQueueRec_s timerQueueRec_t;
+typedef void timerQueueCallbackFn(timerQueueRec_t *self);
 
-typedef struct timerQueueRec_s {
+struct timerQueueRec_s {
     uint16_t time;                     // time to call callback. Entries are ordered by this field in priority heap
     uint16_t timeISR;                  // we can't use time directly, it will break heap property
     uint8_t queuePos;                  // position in timerQueue heap (1 based), 0 if not queued 
     uint8_t inIsrQueue;                // use separate byte for flag modified at TIMER priority
     timerQueueCallbackFn *callbackFn;
-} timerQueueRec_t;
+};
 
 void timerQueue_Init(void);
 void timerQueue_Config(timerQueueRec_t *self, timerQueueCallbackFn *callbackFn);

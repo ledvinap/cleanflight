@@ -36,8 +36,7 @@ typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function poi
 
 typedef struct {
     volatile timCCR_t *ccr;
-//    TIM_TypeDef *tim;
-    const timerChDef_t *timChDef;
+    timerChRec_t *timChRec;
     uint16_t period;
     pwmWriteFuncPtr pwmWritePtr;
 } pwmOutputPort_t;
@@ -52,53 +51,17 @@ static pwmOutputPort_t *servos[MAX_PWM_SERVOS];
 
 static uint8_t allocatedOutputPortCount = 0;
 
-static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value)
-{
-    TIM_OCInitTypeDef  TIM_OCInitStructure;
-
-    TIM_OCStructInit(&TIM_OCInitStructure);
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Disable;
-    TIM_OCInitStructure.TIM_Pulse = value;
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
-    TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
-
-    switch (channel) {
-        case TIM_Channel_1:
-            TIM_OC1Init(tim, &TIM_OCInitStructure);
-            TIM_OC1PreloadConfig(tim, TIM_OCPreload_Enable);
-            break;
-        case TIM_Channel_2:
-            TIM_OC2Init(tim, &TIM_OCInitStructure);
-            TIM_OC2PreloadConfig(tim, TIM_OCPreload_Enable);
-            break;
-        case TIM_Channel_3:
-            TIM_OC3Init(tim, &TIM_OCInitStructure);
-            TIM_OC3PreloadConfig(tim, TIM_OCPreload_Enable);
-            break;
-        case TIM_Channel_4:
-            TIM_OC4Init(tim, &TIM_OCInitStructure);
-            TIM_OC4PreloadConfig(tim, TIM_OCPreload_Enable);
-            break;
-    }
-}
-
 static pwmOutputPort_t *pwmOutConfig(const timerChDef_t *timChDef, resourceOwner_t owner, int hz, uint16_t period, uint16_t value)
 {
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
-    timerChInit(timChDef, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER_PWMOUT, period, hz);
-    timerChConfigGPIO(timChDef, IOCFG_AF_PP);
+    timerChRec_t *timChRec = timerChInit(timChDef, owner, RESOURCE_OUTPUT | RESOURCE_TIMER, NVIC_PRIO_TIMER_PWMOUT, period, hz);
+    timerChConfigGPIO(timChRec, IOCFG_AF_PP);
+    timerChConfigOCPwm(timChRec, value);
 
-    pwmOCConfig(timChDef->tim, timChDef->channel, value);
-    if (timChDef->timerDef->outputsNeedEnable)
-        TIM_CtrlPWMOutputs(timChDef->tim, ENABLE);
-    TIM_Cmd(timChDef->tim, ENABLE);
-
-    p->ccr = timerChCCR(timChDef);
+    p->ccr = timerChCCR(timChRec);
     p->period = period;
-    p->timChDef = timChDef;
+    p->timChRec = timChRec;
 
     return p;
 }
@@ -129,17 +92,20 @@ void pwmShutdownPulsesForAllMotors(uint8_t motorCount)
     }
 }
 
+// TODO - timer internals should be opaque
+#include "timer_impl.h"
+
 void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
 {
     uint8_t index;
-    const timerDef_t *lastTimerPtr = NULL;
+    timerRec_t *lastTimerPtr = NULL;
 
     for(index = 0; index < motorCount; index++) {
         // Force the timer to overflow if it's the first motor to output, or if we change timers
-        if(motors[index]->timChDef->timerDef != lastTimerPtr) {
-            lastTimerPtr = motors[index]->timChDef->timerDef;
+        if(motors[index]->timChRec->timRec != lastTimerPtr) {
+            lastTimerPtr = motors[index]->timChRec->timRec;
 
-            timerForceOverflow(motors[index]->timChDef->timerDef);
+            timerForceOverflow(motors[index]->timChRec->timRec);
         }
 
         // Set the compare register to 0, which stops the output pulsing if the timer overflows before the main loop completes again.

@@ -32,8 +32,8 @@ typedef struct uartHwDef_s {
     uint8_t IRQPrio;
     DMAChannelID rxDMAChannelId, txDMAChannelId;
     uint8_t IRQPrio_rxDMA, IRQPrio_txDMA;
-    rccPeriphTag_t rcc; 
-    const ioDef_t *rxCh, *txCh, *rxChRemap, *txChRemap;
+    rccPeriphTag_t rcc;
+    ioRec_t *rxCh, *txCh, *rxChRemap, *txChRemap;
     uint8_t afConfig, afConfigRemap;
     uint32_t remap;
 } uartHwDef_t;

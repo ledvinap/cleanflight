@@ -56,14 +56,16 @@
 #define USE_USART3 // Servo out - 10/RX (PB11) 11/TX (PB10)
 #define SERIAL_PORT_COUNT 4
 
-#define UART1_TX_IO         &IO_PB6
-#define UART1_RX_IO         &IO_PB7
+#define UART1_TX_IO         PB6
+#define UART1_RX_IO         PB7
 #define UART1_GPIO_AF       GPIO_AF_7
 
-#define UART2_TX_IO         &IO_PA2 // PA2 - Clashes with PWM6 input.
-#define UART2_RX_IO         &IO_PA3
+#define UART2_TX_IO         PA2         // PA2 - Clashes with PWM6 input.
+#define UART2_RX_IO         PA3
 #define UART2_GPIO_AF       GPIO_AF_7
 
+#define UART3_TX_IO         PB10
+#define UART3_RX_IO         PB11
 #define UART3_TX_PIN        GPIO_Pin_10 // PB10 (AF7)
 #define UART3_RX_PIN        GPIO_Pin_11 // PB11 (AF7)
 #define UART3_GPIO_AF       GPIO_AF_7
@@ -76,8 +78,8 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2) // SDA (PA10/AF4), SCL (PA9/AF4)
 
-#define I2C2_SCL_IO          &IO_PA9
-#define I2C2_SDA_IO          &IO_PA10
+#define I2C2_SCL_IO          PA9
+#define I2C2_SDA_IO          PA10
 #define I2C2_AF              GPIO_AF_4
 
 #define USE_ADC
@@ -86,10 +88,12 @@
 #define ADC_DMA_CHANNEL             DMA2_Channel1
 #define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA2
 
+#define VBAT_ADC_IO                 PA4
 #define VBAT_ADC_GPIO               GPIOA
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
 #define VBAT_ADC_CHANNEL            ADC_Channel_1
 
+#define CURRENT_METER_ADC_IO        PA7
 #define CURRENT_METER_ADC_GPIO      GPIOA
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_7
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_4
@@ -109,6 +113,7 @@
 #define LED_STRIP_TIMER TIM16
 
 #define USE_LED_STRIP_ON_DMA1_CHANNEL3
+#define WS2811_IO                       PA6
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
 #define WS2811_GPIO_AF                  GPIO_AF_1

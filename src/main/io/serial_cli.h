@@ -20,8 +20,8 @@
 
 extern uint8_t cliMode;
 
-struct serialConfig_s;
-void cliInit(struct serialConfig_s *serialConfig);
+typedef struct serialConfig_s serialConfig_t;
+void cliInit(serialConfig_t *serialConfig);
 void cliEnter(serialPort_t *serialPort);
 void cliProcess(void);
 bool cliIsActiveOnPort(serialPort_t *serialPort);

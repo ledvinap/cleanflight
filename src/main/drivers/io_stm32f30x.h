@@ -1,5 +1,5 @@
 #include "io_def.h"
-
+#error obsolete
 // this file will be included twice when defining io data
 // emit definitions only in phase 2 (or when IO_DEF_DEFINE is udefined)
 

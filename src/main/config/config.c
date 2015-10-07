@@ -898,11 +898,12 @@ void writeEEPROM(void)
     // write it
     FLASH_Unlock();
     while (attemptsRemaining--) {
-#ifdef STM32F303
+#ifdef STM32F303xC
         FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPERR);
-#endif
-#ifdef STM32F10X
+#elif STM32F10X
         FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+#else
+# warning "Unknown CPU"
 #endif
         for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
             if (wordOffset % FLASH_PAGE_SIZE == 0) {

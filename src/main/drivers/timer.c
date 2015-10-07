@@ -98,7 +98,7 @@ void timerConfigure(timerRec_t *timRec, uint8_t irqPriority, int period, int fre
 
     // "The counter clock frequency (CK_CNT) is equal to f CK_PSC / (PSC[15:0] + 1)." - STM32F10x Reference Manual 14.4.11
     // Thus for 1Mhz: 72000000 / 1000000 = 72, 72 - 1 = 71 = TIM_Prescaler
-    TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / frequency) - 1;
+   TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / frequency) - 1;
 
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -441,6 +441,8 @@ void timerChConfigOC(timerChRec_t *timChRec, bool outEnable, bool activeHigh)
         TIM_ClearOC4Ref(tim, TIM_OCClear_Disable);
         break;
     }
+    if (outEnable && timChRec->timRec->def->outputsNeedEnable)
+        TIM_CtrlPWMOutputs(tim, ENABLE);
 }
 
 void timerChConfigOCPwm(timerChRec_t *timChRec, uint16_t value)
@@ -612,6 +614,13 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     }
 #endif
 }
+
+
+struct timerRec_all timerRecs;
+#include "timer_def_stm32f30x.h"
+// define and initialize timerDefs[] and timerRecPtrs
+#include "timer_c_generated.inc"
+
 #if 1
 // handler for shared interrupts when both timers need to check status bits
 #define _TIM_IRQ_HANDLER2(name, i, j)                                   \
@@ -644,33 +653,29 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
     } struct dummy
 #endif
 
-#ifndef USED_TIMERS
-# error "USED_TIMERS must be defined"
-#endif
-
-#if USED_TIMERS & TIM_N(1)
+#if TIMER_USED_BITS & BIT(1)
 _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
 # if defined(STM32F10X)
 _TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);       // timer can't be shared
 # endif
 # if defined(STM32F303xC)
-#  if USED_TIMERS & TIM_N(16)
+#  if TIMER_USED_BITS & BIT(16)
 _TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
 #  else
 _TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 1);       // timer16 is not used
 #  endif
 # endif
 #endif
-#if USED_TIMERS & TIM_N(2)
+#if TIMER_USED_BITS & BIT(2)
 _TIM_IRQ_HANDLER(TIM2_IRQHandler, 2);
 #endif
-#if USED_TIMERS & TIM_N(3)
+#if TIMER_USED_BITS & BIT(3)
 _TIM_IRQ_HANDLER(TIM3_IRQHandler, 3);
 #endif
-#if USED_TIMERS & TIM_N(4)
+#if TIMER_USED_BITS & BIT(4)
 _TIM_IRQ_HANDLER(TIM4_IRQHandler, 4);
 #endif
-#if USED_TIMERS & TIM_N(8)
+#if TIMER_USED_BITS & BIT(8)
 _TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
 # if defined(STM32F10X_XL)
 _TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);
@@ -678,115 +683,15 @@ _TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);
 _TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, 8);
 # endif
 #endif
-#if USED_TIMERS & TIM_N(15)
+#if TIMER_USED_BITS & BIT(15)
 _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
 #endif
-#if defined(STM32F303xC) && ((USED_TIMERS & (TIM_N(1)|TIM_N(16))) == (TIM_N(16)))
+#if defined(STM32F303xC) && ((TIMER_USED_BITS & (BIT(1)|BIT(16))) == (BIT(16)))
 _TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16);    // only timer16 is used, not timer1
 #endif
-#if USED_TIMERS & TIM_N(17)
+#if TIMER_USED_BITS & BIT(17)
 _TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17);
 #endif
-
-
-// timer def data
-#if TARGET_TIMER_TIM1 > 0
-DEF_TIMER_DEFINE(1, TIM1_CC_IRQn,             TIM1_UP_TIM16_IRQn,      true,  RCC_APB2(TIM1), TARGET_TIMER_TIM1);
-#endif
-#if TARGET_TIMER_TIM2 > 0
-DEF_TIMER_DEFINE(2, TIM2_IRQn,                TIM2_IRQn,               false, RCC_APB1(TIM2), TARGET_TIMER_TIM2);
-#endif
-#if TARGET_TIMER_TIM3 > 0
-DEF_TIMER_DEFINE(3, TIM3_IRQn,                TIM3_IRQn,               false, RCC_APB1(TIM3), TARGET_TIMER_TIM3);
-#endif
-#if TARGET_TIMER_TIM4 > 0
-# if defined(STM32F303xC)
-DEF_TIMER_DEFINE(4, TIM4_IRQn,                TIM4_IRQn,               false, RCC_APB1(TIM4), TARGET_TIMER_TIM4);
-# else
-# warning "TIM4 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM6 > 0
-# if defined(STM32F303xC)
-DEF_TIMER_DEFINE(6, TIM6_DAC_IRQn,            TIM6_DAC_IRQn,           false, RCC_APB1(TIM6), TARGET_TIMER_TIM6);
-# else
-# warning "TIM6 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM7 > 0
-# if defined(STM32F303xC)
-DEF_TIMER_DEFINE(7, TIM7_IRQn,                TIM7_IRQn,               false, RCC_APB1(TIM7), TARGET_TIMER_TIM7);
-# else
-# warning "TIM7 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM8 > 0
-# if defined(STM32F303xC)
-DEF_TIMER_DEFINE(8, TIM8_CC_IRQn,             TIM8_UP_IRQn,            true,  RCC_APB2(TIM8), TARGET_TIMER_TIM8);
-# else
-# warning "TIM8 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM15 > 0
-DEF_TIMER_DEFINE(15, TIM1_BRK_TIM15_IRQn,     TIM1_BRK_TIM15_IRQn,     true,  RCC_APB2(TIM15), TARGET_TIMER_TIM15);
-#endif
-#if TARGET_TIMER_TIM16 > 0
-DEF_TIMER_DEFINE(16, TIM1_UP_TIM16_IRQn,      TIM1_UP_TIM16_IRQn,      true,  RCC_APB2(TIM16), TARGET_TIMER_TIM16);
-#endif
-#if TARGET_TIMER_TIM17 > 0
-DEF_TIMER_DEFINE(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn, true,  RCC_APB2(TIM17), TARGET_TIMER_TIM17);
-#endif
-
-timerRec_t * const timerRecPtrs[] = {
-#if TARGET_TIMER_TIM1 > 0
-    DEFIO_TIMER_REC(1),
-#endif
-#if TARGET_TIMER_TIM2 > 0
-    DEFIO_TIMER_REC(2),
-#endif
-#if TARGET_TIMER_TIM3 > 0
-DEFIO_TIMER_REC(3),
-#endif
-#if TARGET_TIMER_TIM4 > 0
-# if defined(STM32F303xC)
-DEFIO_TIMER_REC(4),
-# else
-# warning "TIM4 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM6 > 0
-# if defined(STM32F303xC)
-DEFIO_TIMER_REC(6),
-# else
-# warning "TIM6 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM7 > 0
-# if defined(STM32F303xC)
-DEFIO_TIMER_REC(7),
-# else
-# warning "TIM7 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM8 > 0
-# if defined(STM32F303xC)
-DEFIO_TIMER_REC(8),
-# else
-# warning "TIM8 is not supported on current TARGET"
-# endif
-#endif
-#if TARGET_TIMER_TIM15 > 0
-DEFIO_TIMER_REC(15),
-#endif
-#if TARGET_TIMER_TIM16 > 0
-DEFIO_TIMER_REC(16),
-#endif
-#if TARGET_TIMER_TIM17 > 0
-DEFIO_TIMER_REC(17),
-#endif
-};
-
-extern const timerDef_t _tab_timer_def_start[];
 
 void timerInit(void)
 {
@@ -794,10 +699,10 @@ void timerInit(void)
     for(unsigned i = 0; timerRecPtrs[i]; i++) {
         timerRec_t *timRec = timerRecPtrs[i];
         memset(timRec, 0, sizeof(*timRec));
-        timRec->tim = _tab_timer_def_start[i].tim;
+        timRec->tim = timerDefs[i].tim;
         timRec->priority = 0xff;
-        timRec->channels = _tab_timer_def_start[i].channels;
-        timRec->def = &_tab_timer_def_start[i];
+        timRec->channels = timerDefs[i].channels;
+        timRec->def = &timerDefs[i];
         for(unsigned j = 0; j < timRec->channels; j++) {
             timerChRec_t *timChRec = &timRec->channel[j];
             memset(timChRec, 0, sizeof(*timChRec));

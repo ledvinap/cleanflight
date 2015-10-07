@@ -4,19 +4,20 @@
 #include "gpio.h"
 #include "io.h"
 
-typedef struct ioDef_s ioDef_t;
-struct ioDef_s {
+typedef struct ioDef_s {
     ioTag_t tag;
-};
+} ioDef_t;
 
-struct ioRec_s {
+typedef struct ioRec_s {
     GPIO_TypeDef *gpio;
     uint16_t pin;
     resourceOwner_t owner;
     resourceType_t resourcesUsed; // TODO!
-};
+} ioRec_t;
 
 #define DEFIO_IO_REC_INITIALIZER {NULL, 0, 0, 0}
+
+extern ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
 
 int IO_GPIOPortIdx(ioRec_t *io);
 int IO_GPIOPinIdx(ioRec_t *io);

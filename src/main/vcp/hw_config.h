@@ -32,7 +32,7 @@
 /* Includes ------------------------------------------------------------------*/
 //#include "platform_config.h"
 #include "usb_type.h"
-#ifdef STM32F303
+#ifdef STM32F303xC
 #include "stm32f30x.h"
 #endif
 

@@ -51,9 +51,6 @@ typedef uint8_t ioConfig_t;  // packed IO configuration
 #include "io_def.h"
 #include "target_io.h"
 
-// emit `extern ioRec_t ` for all supported pins
-DEFIO_IO_DECLARE();
-
 bool IODigitalRead(ioRec_t *io);
 void IODigitalWrite(ioRec_t *io, bool value);
 

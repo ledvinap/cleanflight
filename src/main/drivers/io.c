@@ -109,6 +109,20 @@ void IODigitalWrite(ioRec_t *io, bool value)
         digitalLo(io->gpio, io->pin);
 }
 
+void IODigitalHi(ioRec_t *io)
+{
+    if(!io)
+        return;
+    digitalHi(io->gpio, io->pin);
+}
+
+void IODigitalLo(ioRec_t *io)
+{
+    if(!io)
+        return;
+    digitalLo(io->gpio, io->pin);
+}
+
 // claim IO pin, set owner and resources
 void IOInit(ioRec_t *io, resourceOwner_t owner, resourceType_t resources)
 {
@@ -190,18 +204,13 @@ void IOConfigGPIOAF(ioRec_t *io, ioConfig_t cfg, uint8_t af)
 }
 #endif
 
-// IO subsystem initialization
-// emit ioRec_t
-DEFIO_IO_DEFINE();
-// generate mask for used port pins
-DEFIO_IO_DEFINE_MASK();
+static const uint16_t ioDefMask[] = {DEFIO_PORT_USED_LIST};
+ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
 
-
-extern const ioDef_t _tab_io_def_start, _tab_io_def_end;
-extern ioRec_t _tab_io_rec_start, _tab_io_rec_end;
 // initialize all ioRec_t structures from ROM
+// currently only bitmask is used, this may change in future
 void IOInitGlobal(void) {
-    ioRec_t *io = &_tab_io_rec_start;
+    ioRec_t *io = ioRecs;
 
     for(unsigned port = 0; port < ARRAYLEN(ioDefMask); port++)
         for(unsigned pin = 0; pin < sizeof(ioDefMask[0]) * 8; pin++)
@@ -210,15 +219,13 @@ void IOInitGlobal(void) {
                 io->pin = 1 << pin;
                 io++;
             }
-    if(io != &_tab_io_rec_end)
-    {}; // TODO - abort
 }
 
 ioRec_t* IOGetByTag(ioTag_t tag)
 {
-    for(ioRec_t *io = &_tab_io_rec_start; io < &_tab_io_rec_end; io++)
-        if(IO_GPIOPortIdx(io) == DEFIO_IO_TAG_GPIOID(tag)
-           && IO_GPIOPinIdx(io) == DEFIO_IO_TAG_PIN(tag))
-            return io;
+    for(unsigned i = 0; i < DEFIO_IO_USED_COUNT; i++)
+        if(IO_GPIOPortIdx(ioRecs + i) == DEFIO_TAG_GPIOID(tag)
+           && IO_GPIOPinIdx(ioRecs + i) == DEFIO_TAG_PIN(tag))
+            return ioRecs + i;
     return NULL;
 }

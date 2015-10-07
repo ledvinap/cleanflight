@@ -24,6 +24,7 @@
 #include "build_config.h"
 
 #include "drivers/io.h"
+#include "drivers/io_impl.h"
 #include "drivers/rcc.h"
 #include "system.h"
 

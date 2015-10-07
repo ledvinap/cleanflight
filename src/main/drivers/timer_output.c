@@ -35,10 +35,6 @@ void timerOut_Config(timerOutputRec_t* self, const timerChDef_t* timChDef, resou
     self->callback = callback;
     self->flags = flags;
     timerCCHandlerInit(&self->compareCb, timerOut_timerCompareEvent);
-    // Enable PWM for advanced timers here, it is not cleared during release
-#warning "TODO - enable in timer code"
-    //if (timChDef->timerDef->outputsNeedEnable)
-    //        TIM_CtrlPWMOutputs(self->timChDef->tim, ENABLE);
     timerOut_Restart(self);
 }
 

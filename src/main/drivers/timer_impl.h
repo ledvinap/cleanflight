@@ -19,7 +19,9 @@
 
 #include "common/utils.h"
 #include "io.h"
+#include "timer.h"
 
+// timer channel definition
 struct timerChDef_s {
     unsigned timerIdx : 5;               // index of timer
     unsigned channelIdx : 3;             // channel number (1-4 only)
@@ -29,52 +31,47 @@ struct timerChDef_s {
 #endif
 };
 
+// timer definition
 struct timerDef_s {
-    TIM_TypeDef *tim;
-    uint8_t irqCC, irqUP;
-    uint8_t channels;        // number of channels allocated for this timer
-    bool outputsNeedEnable;  // advanced timers
-    rccPeriphTag_t rcc;      // RCC bit to enable this timer (IO RCC is handled in IO)
+    TIM_TypeDef *tim;                    // TIMx
+    uint8_t irqCC, irqUP;                // CompareCapture and Update IRQn
+    uint8_t channels;                    // number of channels allocated for this timer
+    bool outputsNeedEnable;              // advanced timers
+    rccPeriphTag_t rcc;                  // RCC bit to enable this timer (IO RCC is handled in IO)
 };
 
 // record for timer channel
 // initialized from DEF, unique for timer/channel combination
 struct timerChRec_s {
-    timerRec_t *timRec;                  // timer rec
-    TIM_TypeDef *tim;                    // timer peripheral, cache
-    ioRec_t *ioRec;                      // io pin for this timer
+    timerRec_t *timRec;                       // timer rec
+    TIM_TypeDef *tim;                         // timer peripheral, cache
+    ioRec_t *ioRec;                           // io pin for this timer
 #ifdef STM32F303xC
-    uint8_t pinAF;                       // pin Alternate Function multiplexer for this timer (TODO - init only?)
+    uint8_t pinAF;                            // pin Alternate Function multiplexer for GPIO pin
 #endif
-    uint8_t channel;                     // TIM_Channel_x, only 8 bits are used
-    timerCCHandlerRec_t *edgeCallback;
-    timerOvrHandlerRec_t *overflowCallback;
+    uint8_t channel;                          // TIM_Channel_x, only 8 bits are used
+    timerCCHandlerRec_t *edgeCallback;        // invoked on CC
+    timerOvrHandlerRec_t *overflowCallback;   // only used to build Update callback list
     resourceOwner_t owner;
 };
-
-#ifdef STM32F303xC
-# define DEFIO_TIMERCH_REC_INITIALIZER {0,0,0,0,0,0,0,0}
-#else
-# define DEFIO_TIMERCH_REC_INITIALIZER {0,0,0,0,0,0,0}
-#endif
 
 // data specific for timer
 struct timerRec_s {
     TIM_TypeDef *tim;                               // timer peripheral, cache
-    timerOvrHandlerRec_t *overflowCallbackActive;   // NULL-terminated linkded list of active overflow callbacks
-    uint32_t runningTime;                           // accumulated time on last overflow
-    uint16_t forcedTimerOverflowSkipped;            // time skipped on last forced overflow
+    timerOvrHandlerRec_t *overflowCallbackActive;   // NULL-terminated linkded list of active overflow callbacks (rebuild from channels)
+    uint32_t runningTime;                           // accumulated ticks on last overflow. Must be enabled to work
+    uint16_t forcedTimerOverflowSkipped;            // amount of ticks skipped when forcing overflow
     uint8_t priority;
     uint8_t runningTimeEnabled;
     uint8_t channels;                               // number of allocated channels
-    const timerDef_t* def;                          // constant part to avoid caching everrything
+    const timerDef_t* def;                          // constant part to avoid caching everything
     // channels are last - only space up to last used channel is allocated
     struct timerChRec_s channel[];
 };
 
-#define DEFIO_TIMER_REC_INITIALIZER {0,0,0,0,0,0,0,0}
-
+// pointer to timers used on target
 extern timerRec_t * const timerRecPtrs[];
+// PWM channels defined for channel
 extern const timerChDef_t timerChannelMap[];
-
-void timerInitTarget(void);
+// channel used for timer queue (target specific. May be undefined if systick is used instead)
+extern const timerChDef_t timerQueueChDef;

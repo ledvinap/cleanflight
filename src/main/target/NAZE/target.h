@@ -201,5 +201,3 @@
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5
 #endif
-
-#define USED_TIMERS         (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4))

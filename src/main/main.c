@@ -143,7 +143,7 @@ void init(void)
 
     systemState |= SYSTEM_STATE_CONFIG_LOADED;
 
-#ifdef STM32F303
+#ifdef STM32F303xC
     // start fpu
     SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
 #endif

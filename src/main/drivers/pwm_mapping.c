@@ -26,6 +26,9 @@
 #include "timer.h"
 #include "timer_impl.h"
 
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
+
 #include "config/config_master.h"
 
 #include "drivers/serial_softserial.h"

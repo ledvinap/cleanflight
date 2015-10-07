@@ -311,7 +311,7 @@ void uartIrqHandler(uartPort_t *self)
 {
 #if defined(STM32F10X)
     uint16_t flags = self->USARTx->SR & self->USARTx->CR1;
-#elif defined(STM32F303)
+#elif defined(STM32F303xC)
     uint32_t flags = self->USARTx->ISR;
 #else
 # error "Unknown CPU"

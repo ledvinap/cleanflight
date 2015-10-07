@@ -2401,25 +2401,18 @@ const char * const ownerNames[] = {
 
 #include "drivers/io_impl.h"
 #include "drivers/timer_impl.h"
-
-extern ioRec_t _tab_io_rec_start[];
-extern ioRec_t _tab_io_rec_end[];
-extern timerRec_t _tab_timer_rec_start[];
-extern timerRec_t _tab_timer_rec_end[];
+#include "drivers/timer_def.h"
 
 static void cliResources(char *cmdline)
 {
     UNUSED(cmdline);
     printf("IO:\r\n");
-    ioRec_t *io;
-    for(io = _tab_io_rec_start; io < _tab_io_rec_end; io++) {
-        printf("%c%02d: %19s %02x\r\n", IO_GPIOPortIdx(io)+'A', IO_GPIOPinIdx(io), ownerNames[io->owner], io->resourcesUsed);
-    }
+    for(unsigned i = 0; i < DEFIO_IO_USED_COUNT; i++)
+        printf("%c%02d: %19s %02x\r\n", IO_GPIOPortIdx(ioRecs + i)+'A', IO_GPIOPinIdx(ioRecs + i), ownerNames[ioRecs[i].owner], ioRecs[i].resourcesUsed);
     printf("TIMER:\r\n");
-#warning "TODO - memory layout changed"
-    timerRec_t *tim;
-    for(tim = _tab_timer_rec_start; tim < _tab_timer_rec_end; tim++) {
-        printf("%d : time: %d prio: 0x%02x\r\n", tim-_tab_timer_rec_start, tim->runningTime, tim->priority);
+    for(unsigned i = 0; i < TIMER_USED_COUNT; i++) {
+        timerRec_t *tim = timerRecPtrs[i];
+        printf("%d : time: %d prio: 0x%02x\r\n", i, tim->runningTime, tim->priority);
         for(int i = 0; i < tim->channels; i++)
             printf(" - %d: %08x %08x %19s\r\n", i, tim->channel[i].edgeCallback, tim->channel[i].overflowCallback, ownerNames[tim->channel[i].owner]);
     }

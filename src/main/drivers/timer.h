@@ -17,16 +17,11 @@
 
 #pragma once
 
-#include "gpio.h"
-
-#include "callback.h"
 #include "resource.h"
 #include "rcc.h"
 #include "io.h"
 
-#define TIM_N(i) (1 << (i))
-
-#if defined(STM32F303)
+#if defined(STM32F303xC)
 typedef uint32_t timCCR_t;
 typedef uint32_t timCCER_t;
 typedef uint32_t timSR_t;
@@ -45,61 +40,51 @@ typedef uint32_t timCNT_t;
 # error "Unknown CPU defined"
 #endif
 
-// use different types from capture and overflow - multiple overflow handlers are implemented as linked list
-struct timerCCHandlerRec_s;
-struct timerOvrHandlerRec_s;
-typedef void timerCCHandlerCallback(struct timerCCHandlerRec_s* self, uint16_t capture);
-typedef void timerOvrHandlerCallback(struct timerOvrHandlerRec_s* self, uint16_t capture);
-
+// overflow and capture handlers. Caller is responsible for memory allocation
+// different types used for capture and overflow - multiple overflow handlers are implemented as linked list
+typedef struct timerCCHandlerRec_s timerCCHandlerRec_t;
+typedef struct timerOvrHandlerRec_s timerOvrHandlerRec_t;
+typedef void timerCCHandlerCallback(timerCCHandlerRec_t *self, uint16_t capture);
+typedef void timerOvrHandlerCallback(timerOvrHandlerRec_t *self, uint16_t capture);
 typedef struct timerCCHandlerRec_s {
     timerCCHandlerCallback* fn;
 } timerCCHandlerRec_t;
-
 typedef struct timerOvrHandlerRec_s {
     timerOvrHandlerCallback* fn;
     struct timerOvrHandlerRec_s* next;
 } timerOvrHandlerRec_t;
 
-typedef struct timerCCHandlerRec_s timerCCHandlerRec_t;
-typedef struct timerOvrHandlerRec_s timerOvrHandlerRec_t;
-typedef void timerCCHandlerCallback(timerCCHandlerRec_t* self, uint16_t capture);
-typedef void timerOvrHandlerCallback(timerOvrHandlerRec_t* self, uint16_t capture);
-
+// structures used to precify timer and timerChannel
+// only pointer should be used in general code (so opaque decolaration is ok)
+// include "timer_impl.h" if you really need it's internals
 typedef struct timerRec_s timerRec_t;
-typedef struct timerDef_s timerDef_t;
-typedef struct ioDef_s ioDef_t;
 typedef struct timerChRec_s timerChRec_t;
+// timer channel definition
 typedef struct timerChDef_s timerChDef_t;
 
-// declared here, defined in target
-extern const timerChDef_t timerQueueChDef;
 
-// define available timers
-#if defined(STM32F10X)
-# include "drivers/iodef_timer_stm32f10x.h"
-#elif defined(STM32F303xC)
-# include "drivers/iodef_timer_stm32f30x.h"
-#else
-# warning "Unsupported target type"
-#endif
-
-
-
-void timerChConfigIC(timerChRec_t *timCh, bool polarityRising, unsigned inputFilterSamples);
-void timerChConfigICDual(timerChRec_t *timCh, bool polarityRising, unsigned inputFilterSamples);
-void timerChICPolarity(timerChRec_t *timCh, bool polarityRising);
-
+// TIMx access functions
 volatile timCCR_t* timerChCCR(timerChRec_t *timCh);
 volatile timCCR_t* timerChCCRLo(timerChRec_t *timCh);
 volatile timCCR_t* timerChCCRHi(timerChRec_t *timCh);
 volatile timCNT_t* timerChCNT(timerChRec_t *timCh);
 TIM_TypeDef* timerChTIM(timerChRec_t *timCh);
 
+
+// configure channel in input mode
+void timerChConfigIC(timerChRec_t *timCh, bool polarityRising, unsigned inputFilterSamples);
+void timerChConfigICDual(timerChRec_t *timCh, bool polarityRising, unsigned inputFilterSamples);
+// fast function to set input polarity
+void timerChICPolarity(timerChRec_t *timCh, bool polarityRising);
+
+// configure channel in output compare mode
 void timerChConfigOCPwm(timerChRec_t *timCh, uint16_t value);
 void timerChConfigOC(timerChRec_t *timCh, bool outEnable, bool stateHigh);
 
+// set underlying GPIO configuration
 void timerChConfigGPIO(timerChRec_t *timCh, ioConfig_t cfg);
 
+// channel interrupt handling
 void timerCCHandlerInit(timerCCHandlerRec_t *self, timerCCHandlerCallback *fn);
 void timerOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *fn);
 void timerChConfigCallbacks(timerChRec_t *timCh, timerCCHandlerRec_t *edgeCallback, timerOvrHandlerRec_t *overflowCallback);
@@ -107,18 +92,26 @@ void timerChConfigCallbacksDual(timerChRec_t *timCh, timerCCHandlerRec_t *edgeCa
 void timerChITConfigDualLo(timerChRec_t *timCh, FunctionalState newState);
 void timerChITConfig(timerChRec_t *timCh, FunctionalState newState);
 void timerChClearCCFlag(timerChRec_t *timCh);
+void timerChForceOverflow(timerChRec_t *timRec);
+// write to IO
 void timerChIOWrite(timerChRec_t *timCh, bool value);
-
-timerChRec_t* timerChInit(const timerChDef_t *def, resourceOwner_t owner, resourceType_t resources, int irqPriority, uint16_t period, int timerFrequency);
-void timerChRelease(timerChRec_t* timCh);
-
+// get resources used by IO
 resourceType_t timerChGetResources(timerChRec_t *timCh);
+// return second timerCh from pair (1-2, 3-4)
 timerChRec_t* timerChRecDual(timerChRec_t *timCh);
 
-void timerInit(void);
-void timerStart(void);
-void timerForceOverflow(timerRec_t *timRec);
+// channel initialization. Allocates specified channel and does basic configuration
+// timer is sconfigured started in this function if necessary
+timerChRec_t* timerChInit(const timerChDef_t *def, resourceOwner_t owner, resourceType_t resources, int irqPriority, uint16_t period, int timerFrequency);
+// release channel. TODO - unimplemented
+void timerChRelease(timerChRec_t* timCh);
 
+// init timer subsystem
+void timerInit(void);
+// start timers after initialization. Not implemented now, timers are started immediately when channel is configured
+void timerStart(void);
+
+// functions to query timerChDef, used in CF initialization phase to resolve conflicts
 TIM_TypeDef* timerChDef_TIM(const timerChDef_t* timChDef);
 ioRec_t* timerChDef_IO(const timerChDef_t* timChDef);
 resourceType_t timerChDef_GetResources(const timerChDef_t* timChDef);

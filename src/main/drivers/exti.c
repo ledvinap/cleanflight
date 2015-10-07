@@ -86,7 +86,7 @@ void EXTIEnable(ioRec_t* ioRec, bool enable)
         EXTI->IMR |= extiLine;
     else
         EXTI->IMR &= ~extiLine;
-#elif defined(STM32F30X)
+#elif defined(STM32F303xC)
     int extiLine = IO_EXTILine(ioRec);
     if(extiLine < 0)
         return;

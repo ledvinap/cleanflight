@@ -36,6 +36,7 @@
 #include "nvic.h"
 
 #include "drivers/io.h"
+#include "drivers/io_impl.h"
 
 #include "serial.h"
 #include "serial_uart.h"

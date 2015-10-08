@@ -41,13 +41,9 @@
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/navigation.h"
-#include "flight/autotune.h"
 #include "flight/filter.h"
 
 #include "config/runtime_config.h"
-
-#define RCconstPI   0.159154943092f         // 0.5f / M_PI;
-#define MAIN_CUT_HZ 12.0f                   // (default 12Hz, Range 1-50Hz)
 
 extern uint16_t cycleTime;
 extern uint8_t motorCount;
@@ -95,20 +91,13 @@ const angle_index_t rcAliasToAngleIndexMap[] = { AI_ROLL, AI_PITCH };
 
 static filterStatePt1_t PTermState[3], DTermState[3];
 
-#ifdef AUTOTUNE
-bool shouldAutotune(void)
-{
-    return ARMING_FLAG(ARMED) && FLIGHT_MODE(AUTOTUNE_MODE);
-}
-#endif
-
 static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
         uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 {
     float RateError, errorAngle, AngleRate, gyroRate;
     float ITerm,PTerm,DTerm;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
-    static float lastGyroRate[3];
+    static float lastError[3];
     static float delta1[3], delta2[3];
     float delta, deltaSum;
     float dT;
@@ -157,7 +146,6 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
                     +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]) / 10.0f; // 16 bits is ok here
 #endif
 
-
             if (FLIGHT_MODE(ANGLE_MODE)) {
                 // it's the ANGLE mode - control is angle based, so control loop is needed
                 AngleRate = errorAngle * pidProfile->A_level;
@@ -186,16 +174,17 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         if (pidProfile->pterm_cut_hz) {
             PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
         }
-        // -----calculate I component. Note that PIDweight is divided by 10, because it is simplified formule from the previous multiply by 10
-        errorGyroIf[axis] = constrainf(errorGyroIf[axis] + RateError * dT * pidProfile->I_f[axis] * PIDweight[axis] / 10, -250.0f, 250.0f);
+
+        // -----calculate I component.
+        errorGyroIf[axis] = constrainf(errorGyroIf[axis] + RateError * dT * pidProfile->I_f[axis] * 10, -250.0f, 250.0f);
 
         // limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
         // I coefficient (I8) moved before integration to make limiting independent from PID settings
         ITerm = errorGyroIf[axis];
 
         //-----calculate D-term
-        delta = gyroRate - lastGyroRate[axis];  // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
-        lastGyroRate[axis] = gyroRate;
+        delta = RateError - lastError[axis];
+        lastError[axis] = RateError;
 
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
@@ -213,12 +202,12 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
-        axisPID[axis] = constrain(lrintf(PTerm + ITerm - DTerm), -1000, 1000);
+        axisPID[axis] = constrain(lrintf(PTerm + ITerm + DTerm), -1000, 1000);
 
 #ifdef BLACKBOX
         axisPID_P[axis] = PTerm;
         axisPID_I[axis] = ITerm;
-        axisPID_D[axis] = -DTerm;
+        axisPID_D[axis] = DTerm;
 #endif
     }
 }
@@ -387,7 +376,8 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
 
-        axisPID[axis] =  PTerm + ITerm - DTerm;
+        axisPID[axis] = PTerm + ITerm - DTerm;
+
 #ifdef BLACKBOX
         axisPID_P[axis] = PTerm;
         axisPID_I[axis] = ITerm;
@@ -552,7 +542,11 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     uint8_t axis;
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
-    MainDptCut = RCconstPI / constrain(pidProfile->dterm_cut_hz, 1, 50);       // maincuthz (default 0 (disabled), Range 1-50Hz)
+    if (pidProfile->dterm_cut_hz) {
+        MainDptCut = RCconstPI / constrain(pidProfile->dterm_cut_hz, 1, 50);   // dterm_cut_hz (default 0, Range 1-50Hz)
+    } else {
+        MainDptCut = RCconstPI / 12.0f;                                        // default is 12Hz to maintain initial behavior of PID5
+    }
     FLOATcycleTime  = (float)constrain(cycleTime, 1, 100000);                  // 1us - 100ms
     ACCDeltaTimeINS = FLOATcycleTime * 0.000001f;                              // ACCDeltaTimeINS is in seconds now
     RCfactor = ACCDeltaTimeINS / (MainDptCut + ACCDeltaTimeINS);               // used for pt1 element
@@ -564,7 +558,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     for (axis = 0; axis < 2; axis++) {
         int32_t tmp = (int32_t)((float)gyroADC[axis] * 0.3125f);              // Multiwii masks out the last 2 bits, this has the same idea
         gyroADCQuant = (float)tmp * 3.2f;                                     // but delivers more accuracy and also reduces jittery flight
-        rcCommandAxis = (float)rcCommand[axis];                                // Calculate common values for pid controllers
+        rcCommandAxis = (float)rcCommand[axis];                               // Calculate common values for pid controllers
         if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
 #ifdef GPS
             error = constrain(2.0f * rcCommandAxis + GPS_angle[axis], -((int) max_angle_inclination), +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
@@ -626,7 +620,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     Mwii3msTimescale = (int32_t)FLOATcycleTime & (int32_t)~3;                  // Filter last 2 bit jitter
     Mwii3msTimescale /= 3000.0f;
 
-    if (OLD_YAW) { // [0/1] 0 = multiwii 2.3 yaw, 1 = older yaw. hardcoded for now
+    if (pidProfile->pid5_oldyw) { // [0/1] 0 = multiwii 2.3 yaw, 1 = older yaw
         PTerm = ((int32_t)pidProfile->P8[FD_YAW] * (100 - (int32_t)controlRateConfig->rates[FD_YAW] * (int32_t)ABS(rcCommand[FD_YAW]) / 500)) / 100;
         int32_t tmp = lrintf(gyroADC[FD_YAW] * 0.25f);
         PTerm = rcCommand[FD_YAW] - tmp * PTerm / 80;

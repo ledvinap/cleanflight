@@ -96,9 +96,9 @@ enum {
 };
 
 /* VBAT monitoring interval (in microseconds) */
-#define VBATINTERVAL (1 * 3500)       
+#define VBATINTERVAL (1 * 3500)
 /* IBat monitoring interval (in microseconds) */
-#define IBATINTERVAL (1 * 3500)       
+#define IBATINTERVAL (1 * 3500)
 
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
@@ -113,6 +113,8 @@ int16_t telemTemperature1;      // gyro sensor temperature
 static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
+
+static bool isRXDataNew;
 
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)
 {
@@ -261,7 +263,7 @@ void annexCode(void)
 
         if (ibatTimeSinceLastServiced >= IBATINTERVAL) {
             ibatLastServiced = currentTime;
-            updateCurrentMeter((ibatTimeSinceLastServiced / 1000), &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
+            updateCurrentMeter(ibatTimeSinceLastServiced, &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
         }
     }
 
@@ -684,6 +686,41 @@ void processRx(void)
 
 }
 
+void filterRc(void){
+    static int16_t lastCommand[4] = { 0, 0, 0, 0 };
+    static int16_t deltaRC[4] = { 0, 0, 0, 0 };
+    static int16_t factor, rcInterpolationFactor;
+    static filterStatePt1_t filteredCycleTimeState;
+    uint16_t rxRefreshRate, filteredCycleTime;
+
+    // Set RC refresh rate for sampling and channels to filter
+   	initRxRefreshRate(&rxRefreshRate);
+
+    filteredCycleTime = filterApplyPt1(cycleTime, &filteredCycleTimeState, 1);
+    rcInterpolationFactor = rxRefreshRate / filteredCycleTime + 1;
+
+    if (isRXDataNew) {
+        for (int channel=0; channel < 4; channel++) {
+        	deltaRC[channel] = rcData[channel] -  (lastCommand[channel] - deltaRC[channel] * factor / rcInterpolationFactor);
+            lastCommand[channel] = rcData[channel];
+        }
+
+        isRXDataNew = false;
+        factor = rcInterpolationFactor - 1;
+    } else {
+        factor--;
+    }
+
+    // Interpolate steps of rcData
+    if (factor > 0) {
+        for (int channel=0; channel < 4; channel++) {
+            rcData[channel] = lastCommand[channel] - deltaRC[channel] * factor/rcInterpolationFactor;
+         }
+    } else {
+        factor = 0;
+    }
+}
+
 void loop(void)
 {
 #if defined(BARO) || defined(SONAR)
@@ -694,6 +731,7 @@ void loop(void)
 
     if (shouldProcessRx(currentTime)) {
         processRx();
+        isRXDataNew = true;
 
 #ifdef BARO
         // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
@@ -772,8 +810,11 @@ void loop(void)
             }
         }
 
-        annexCode();
+        if (masterConfig.rxConfig.rcSmoothing) {
+            filterRc();
+        }
 
+        annexCode();
 #if defined(BARO) || defined(SONAR)
         haveProcessedAnnexCodeOnce = true;
 #endif

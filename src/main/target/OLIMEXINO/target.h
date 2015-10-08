@@ -109,10 +109,6 @@
 
 #define TELEMETRY
 #define SERIAL_RX
-#define AUTOTUNE
-
-#define USABLE_TIMER_CHANNEL_COUNT (14 + 1)   // must be in sync with NAZE, see target_io.h and target_timer.h
-
 #define BLACKBOX
 #define USE_SERVOS
 #define USE_CLI

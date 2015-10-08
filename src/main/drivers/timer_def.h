@@ -76,7 +76,7 @@
 // emit TIMER definition record
 // TODO - user timer type instead of outputs enable
 #define DEF_TIMER_DEFINE_II(tim_,channels_, iCC_, iUP_, outEna_, rcc_) { \
-        .tim = DEFIO_TIMER_TIM(tim_),                                   \
+        .tim = DEF_TIMER_TIM(tim_),                                   \
         .irqCC = iCC_,                                                  \
         .irqUP = iUP_,                                                  \
         .channels = channels_,                                          \

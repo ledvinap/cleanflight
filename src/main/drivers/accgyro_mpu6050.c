@@ -170,19 +170,9 @@ extern uint8_t mpuLowPassFilter;
 #define MPU6050_SMPLRT_DIV      0       // 8000Hz
 
 static void mpu6050AccInit(void);
-static bool mpu6050AccRead(int16_t *accData);
-static void mpu6050GyroInit(void);
-static bool mpu6050GyroRead(int16_t *gyroADC);
+static void mpu6050GyroInit(uint16_t lpf);
 
 void mpu6050FifoEnable(void);
-
-
-typedef enum {
-    MPU_6050_HALF_RESOLUTION,
-    MPU_6050_FULL_RESOLUTION
-} mpu6050Resolution_e;
-
-static mpu6050Resolution_e mpuAccelTrim;
 
 static const mpu6050Config_t *mpu6050Config = NULL;
 
@@ -228,7 +218,7 @@ void mpu6050GpioInit(void) {
     mpu6050GpioInitDone = true;
 }
 
-static bool mpu6050AccDetect(acc_t *acc)
+bool mpu6050AccDetect(acc_t *acc)
 {
     if (mpuDetectionResult.sensor != MPU_60x0) {
         return false;

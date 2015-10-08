@@ -92,7 +92,7 @@ void timerChConfigCallbacksDual(timerChRec_t *timCh, timerCCHandlerRec_t *edgeCa
 void timerChITConfigDualLo(timerChRec_t *timCh, FunctionalState newState);
 void timerChITConfig(timerChRec_t *timCh, FunctionalState newState);
 void timerChClearCCFlag(timerChRec_t *timCh);
-void timerChForceOverflow(timerChRec_t *timRec);
+void timerChForceOverflow(timerChRec_t *timCh);
 // write to IO
 void timerChIOWrite(timerChRec_t *timCh, bool value);
 // get resources used by IO
@@ -110,6 +110,8 @@ void timerChRelease(timerChRec_t* timCh);
 void timerInit(void);
 // start timers after initialization. Not implemented now, timers are started immediately when channel is configured
 void timerStart(void);
+
+void timerForceOverflow(timerRec_t *timRec);
 
 // functions to query timerChDef, used in CF initialization phase to resolve conflicts
 TIM_TypeDef* timerChDef_TIM(const timerChDef_t* timChDef);

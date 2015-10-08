@@ -105,7 +105,7 @@ void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
         if(motors[index]->timChRec->timRec != lastTimerPtr) {
             lastTimerPtr = motors[index]->timChRec->timRec;
 
-            timerForceOverflow(motors[index]->timChRec->timRec);
+            timerForceOverflow(lastTimerPtr);
         }
 
         // Set the compare register to 0, which stops the output pulsing if the timer overflows before the main loop completes again.

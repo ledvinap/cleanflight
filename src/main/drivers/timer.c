@@ -617,7 +617,6 @@ static void timIRQHandler(TIM_TypeDef *tim, timerRec_t *timRec)
 
 
 struct timerRec_all timerRecs;
-#include "timer_def_stm32f30x.h"
 // define and initialize timerDefs[] and timerRecPtrs
 #include "timer_c_generated.inc"
 
@@ -627,8 +626,8 @@ struct timerRec_all timerRecs;
     void name(void)                                                     \
     {                                                                   \
         pinDbgHi(DBP_TIMER);                                            \
-        timIRQHandler(DEFIO_TIMER_TIM(i), DEFIO_TIMER_REC(i)); \
-        timIRQHandler(DEFIO_TIMER_TIM(j), DEFIO_TIMER_REC(j)); \
+        timIRQHandler(DEF_TIMER_TIM(i), DEF_TIMER_REC(i)); \
+        timIRQHandler(DEF_TIMER_TIM(j), DEF_TIMER_REC(j)); \
         pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 
@@ -636,7 +635,7 @@ struct timerRec_all timerRecs;
     void name(void)                                                     \
     {                                                                   \
         pinDbgHi(DBP_TIMER);                                            \
-        timIRQHandler(DEFIO_TIMER_TIM(i), DEFIO_TIMER_REC(i)); \
+        timIRQHandler(DEF_TIMER_TIM(i), DEF_TIMER_REC(i)); \
         pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 #else
@@ -769,6 +768,11 @@ void timerForceOverflow(timerRec_t *timRec)
             tim->EGR |= TIM_EGR_UG;
         }
     }
+}
+
+void timerChForceOverflow(timerChRec_t *timChRec)
+{
+    timerForceOverflow(timChRec->timRec);
 }
 
 // using TIM to keep track of tiome (instead of systick)

@@ -22,27 +22,27 @@
 #include "timer.h"
 
 // timer channel definition
-struct timerChDef_s {
+typedef struct timerChDef_s {
     unsigned timerIdx : 5;               // index of timer
     unsigned channelIdx : 3;             // channel number (1-4 only)
     ioTag_t ioTag;                       // IO pin TAG (packed GPIO/PIN)
 #ifdef STM32F303xC
     unsigned pinAf : 4;                  // alternate function
 #endif
-};
+} timerChDef_t;
 
 // timer definition
-struct timerDef_s {
+typedef struct timerDef_s {
     TIM_TypeDef *tim;                    // TIMx
     uint8_t irqCC, irqUP;                // CompareCapture and Update IRQn
     uint8_t channels;                    // number of channels allocated for this timer
     bool outputsNeedEnable;              // advanced timers
     rccPeriphTag_t rcc;                  // RCC bit to enable this timer (IO RCC is handled in IO)
-};
+} timerDef_t;
 
 // record for timer channel
 // initialized from DEF, unique for timer/channel combination
-struct timerChRec_s {
+typedef struct timerChRec_s {
     timerRec_t *timRec;                       // timer rec
     TIM_TypeDef *tim;                         // timer peripheral, cache
     ioRec_t *ioRec;                           // io pin for this timer
@@ -53,10 +53,10 @@ struct timerChRec_s {
     timerCCHandlerRec_t *edgeCallback;        // invoked on CC
     timerOvrHandlerRec_t *overflowCallback;   // only used to build Update callback list
     resourceOwner_t owner;
-};
+} timerChRec_t;
 
 // data specific for timer
-struct timerRec_s {
+typedef struct timerRec_s {
     TIM_TypeDef *tim;                               // timer peripheral, cache
     timerOvrHandlerRec_t *overflowCallbackActive;   // NULL-terminated linkded list of active overflow callbacks (rebuild from channels)
     uint32_t runningTime;                           // accumulated ticks on last overflow. Must be enabled to work
@@ -67,7 +67,7 @@ struct timerRec_s {
     const timerDef_t* def;                          // constant part to avoid caching everything
     // channels are last - only space up to last used channel is allocated
     struct timerChRec_s channel[];
-};
+} timerRec_t;
 
 // pointer to timers used on target
 extern timerRec_t * const timerRecPtrs[];

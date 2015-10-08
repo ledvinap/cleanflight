@@ -280,7 +280,7 @@ void annexCode(void)
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
-        if (IS_RC_MODE_ACTIVE(BOXAUTOTUNE)) {
+        if (IS_RC_MODE_ACTIVE(BOXGTUNE)) {
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
 

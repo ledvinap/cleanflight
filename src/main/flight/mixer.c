@@ -509,12 +509,12 @@ void mixerLoadMix(int index, motorMixer_t *customMixers)
 
 #else
 
-void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMotorMixers, servoMixer_t *initialCustomServoMixers)
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers)
 {
     UNUSED(initialCustomServoMixers);
     currentMixerMode = mixerMode;
 
-    customMixers = initialCustomMotorMixers;
+    customMixers = initialCustomMixers;
 }
 
 void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration)

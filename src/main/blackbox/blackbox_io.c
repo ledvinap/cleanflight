@@ -504,30 +504,31 @@ bool blackboxDeviceFlush(void)
 bool blackboxDeviceOpen(void)
 {
     /*
-     * We want to write headers at about 7200 bytes per second to give the OpenLog a good chance to save to
-     * disk. If about looptime microseconds elapse between our writes, this is the budget of how many bytes
-     * we should transmit with each write.
+     * We want to write at about 7200 bytes per second to give the OpenLog a good chance to save to disk. If
+     * about looptime microseconds elapse between our writes, this is the budget of how many bytes we should
+     * transmit with each write.
      *
      * 9 / 1250 = 7200 / 1000000
      */
     blackboxWriteChunkSize = MIN(MAX((masterConfig.loopTime * 9) / 1250, 4), 255);
 
     switch (masterConfig.blackbox_device) {
-        case BLACKBOX_DEVICE_SERIAL: {
-            serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+        case BLACKBOX_DEVICE_SERIAL:
+            {
+                serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
 
-            if (!portConfig) {
-                return false;
+                if (!portConfig) {
+                    return false;
+                }
+
+                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
+                baudRate_e baudRateIndex = portConfig->blackbox_baudrateIndex;
+
+                blackboxPortConfig.baudRate = baudRates[baudRateIndex];
+
+                blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, &blackboxPortConfig);
+                return blackboxPort != NULL;
             }
-
-            blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
-            baudRate_e baudRateIndex = portConfig->blackbox_baudrateIndex;
-
-            blackboxPortConfig.baudRate = baudRates[baudRateIndex];
-
-            blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, &blackboxPortConfig);
-            return blackboxPort != NULL;
-        }
             break;
 #ifdef USE_FLASHFS
         case BLACKBOX_DEVICE_FLASH:

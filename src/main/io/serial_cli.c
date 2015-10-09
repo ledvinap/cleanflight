@@ -205,7 +205,7 @@ static const char * const sensorHardwareNames[4][11] = {
 typedef struct {
     const char *name;
 #ifndef SKIP_CLI_COMMAND_HELP
-   const char *description;
+    const char *description;
     const char *args;
 #endif
     void (*func)(char *cmdline);
@@ -1345,7 +1345,7 @@ static void cliFlashErase(char *cmdline)
     printf("Done.\r\n");
 }
 
-#ifdef USE_FLASH_TOOLS
+# ifdef USE_FLASH_TOOLS
 
 static void cliFlashWrite(char *cmdline)
 {

@@ -144,7 +144,7 @@ bool ak8975Read(int16_t *magData)
     }
 #endif
 
-    ack = ack & i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_STATUS2, 1, &status);
+    ack = ack && i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_STATUS2, 1, &status);
     if (!ack || status & (BIT_STATUS2_REG_DATA_ERROR | BIT_STATUS2_REG_MAG_SENSOR_OVERFLOW) ) {
         // something went wrong, next conversion needs to be started
         i2cWrite(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_REG_CNTL, 0x01); // start reading again

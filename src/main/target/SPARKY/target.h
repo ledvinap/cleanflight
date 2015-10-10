@@ -19,12 +19,6 @@
 
 #define TARGET_BOARD_IDENTIFIER "SPKY" // SParKY
 
-#define LED0_GPIO   GPIOB
-#define LED0_PIN    Pin_4  // Blue (Rev 1 & 2) - PB4
-#define LED0_PERIPHERAL RCC_AHBPeriph_GPIOB
-#define LED1_GPIO   GPIOB
-#define LED1_PIN    Pin_5  // Green (Rev 1) / Red (Rev 2) - PB5
-#define LED1_PERIPHERAL RCC_AHBPeriph_GPIOB
 
 // MPU 9150 INT connected to PA15, pulled up to VCC by 10K Resistor, contains MPU6050 and AK8975 in single component.
 #define GYRO
@@ -47,6 +41,8 @@
 
 #define LED0
 #define LED1
+#define LED0_IO     PB4
+#define LED1_IO     PB5
 
 //#define USE_EXTI
 
@@ -145,7 +141,6 @@
 
 #define SPEKTRUM_BIND
 // USART2, PA3
-#define BIND_PORT GPIOA
-#define BIND_PIN Pin_3
+#define BIND_IO PA3
 
 #define USABLE_IO_CHANNEL_COUNT (11)

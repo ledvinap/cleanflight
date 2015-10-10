@@ -19,6 +19,8 @@ typedef enum {
     OWNER_SERIAL_RXTX,
     OWNER_PINDEBUG,
     OWNER_TIMER,
+    OWNER_STATUSLED,
+    OWNER_SYSTEM,
 } resourceOwner_t;
 
 
@@ -31,5 +33,6 @@ typedef enum {
     RESOURCE_TIMER = 1 << 2,
     RESOURCE_TIMER_DUAL = 1 << 3, // channel used in dual-capture, other channel will be allocated too
     RESOURCE_USART = 1 << 4,
-    RESOURCE_ADC = 1 << 5
+    RESOURCE_ADC = 1 << 5,
+    RESOURCE_EXTI = 1 << 6,
 } resourceType_t;

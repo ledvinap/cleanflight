@@ -23,56 +23,60 @@
 
 #include "common/utils.h"
 
-#include "gpio.h"
+#include "io.h"
+#include "io_impl.h"
 
 #include "light_led.h"
+
+#ifndef LED0_IO
+# define LED0_IO NONE
+#endif
+#ifndef LED1_IO
+# define LED1_IO NONE
+#endif
+#ifndef LED2_IO
+# define LED2_IO NONE
+#endif
+
+static ioRec_t *leds[] = {
+    IO_REC(LED0_IO),
+    IO_REC(LED1_IO),
+    IO_REC(LED2_IO),
+};
+
+uint8_t ledPolarity = 0
+#ifdef LED0_INVERTED
+    | BIT(0)
+#endif
+#ifdef LED1_INVERTED
+    | BIT(1)
+#endif
+#ifdef LED2_INVERTED
+    | BIT(2)
+#endif
+    ;
 
 void ledInit(void)
 {
     uint32_t i;
 
-    struct {
-        GPIO_TypeDef *gpio;
-        gpio_config_t cfg;
-    } gpio_setup[] = {
-#ifdef LED0
-        {
-            .gpio = LED0_GPIO,
-            .cfg = { LED0_PIN, Mode_Out_PP, Speed_2MHz }
-        },
-#endif
-#ifdef LED1
-        {
-            .gpio = LED1_GPIO,
-            .cfg = { LED1_PIN, Mode_Out_PP, Speed_2MHz }
-        },
-#endif
-#ifdef LED2
-        {
-        	.gpio = LED2_GPIO,
-        	.cfg = { LED2_PIN, Mode_Out_PP, Speed_2MHz }
-        }
-#endif
-    };
-
-    uint8_t gpio_count = ARRAYLEN(gpio_setup);
-
-#ifdef LED0
-    RCC_AHBPeriphClockCmd(LED0_PERIPHERAL, ENABLE);
-#endif
-#ifdef LED1
-    RCC_AHBPeriphClockCmd(LED1_PERIPHERAL, ENABLE);
-#endif
-#ifdef LED2
-    RCC_AHBPeriphClockCmd(LED2_PERIPHERAL, ENABLE);
-#endif
-
     LED0_OFF;
     LED1_OFF;
     LED2_OFF;
 
-    for (i = 0; i < gpio_count; i++) {
-        gpioInit(gpio_setup[i].gpio, &gpio_setup[i].cfg);
+    for (i = 0; i < ARRAYLEN(leds); i++) {
+        IOInit(leds[i], OWNER_STATUSLED, RESOURCE_OUTPUT);
+        IOConfigGPIO(leds[i], IOCFG_PP);
     }
 }
 
+void ledToggle(int led)
+{
+    IOToggle(leds[led]);
+}
+
+void ledSet(int led, bool on)
+{
+    bool inverted = (1 << led) & ledPolarity;
+    IOWrite(leds[led], on ? inverted : !inverted);
+}

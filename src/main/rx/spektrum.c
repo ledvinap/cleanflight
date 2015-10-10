@@ -22,7 +22,8 @@
 #include "platform.h"
 #include "debug.h"
 
-#include "drivers/gpio.h"
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
 #include "drivers/system.h"
 
 #include "drivers/light_led.h"
@@ -198,15 +199,11 @@ void spektrumBind(rxConfig_t *rxConfig)
 
     LED1_ON;
 
-    gpio_config_t cfg = {
-        BIND_PIN,
-        Mode_Out_OD,
-        Speed_2MHz
-    };
-    gpioInit(BIND_PORT, &cfg);
-
+    ioRec_t *bindIO = IO_REC(BIND_IO);
+    IOInit(bindIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
+    IOConfigGPIO(bindIO, IOCFG_OUT_OD);
     // RX line, set high
-    digitalHi(BIND_PORT, BIND_PIN);
+    IOHi(bindIO);
 
     // Bind window is around 20-140ms after powerup
     delay(60);
@@ -217,13 +214,13 @@ void spektrumBind(rxConfig_t *rxConfig)
         LED0_OFF;
         LED2_OFF;
         // RX line, drive low for 120us
-        digitalLo(BIND_PORT, BIND_PIN);
+        IOLo(bindIO);
         delayMicroseconds(120);
 
         LED0_ON;
         LED2_ON;
         // RX line, drive high for 120us
-        digitalHi(BIND_PORT, BIND_PIN);
+        IOHi(bindIO);
         delayMicroseconds(120);
 
     }

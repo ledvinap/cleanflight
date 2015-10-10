@@ -199,7 +199,7 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
                             : IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz,  GPIO_OType_OD, GPIO_PuPd_UP)),
                        af);
         if(!(self->port.mode & MODE_INVERTED))
-            IODigitalWrite(tx, true);   // OpenDrain output should be inactive
+            IOWrite(tx, true);   // OpenDrain output should be inactive
         // TODO - maybe allow remap
     } else {
         IOInit(tx, OWNER_SERIAL_TX, RESOURCE_USART);

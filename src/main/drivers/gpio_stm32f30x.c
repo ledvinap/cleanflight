@@ -21,7 +21,7 @@
 #include "platform.h"
 
 #include "build_config.h"
-
+#if 0
 #include "gpio.h"
 
 #define MODE_OFFSET 0
@@ -74,3 +74,4 @@ void gpioExtiLineConfig(uint8_t portsrc, uint8_t pinsrc)
 {
     SYSCFG_EXTILineConfig(portsrc, pinsrc);
 }
+#endif

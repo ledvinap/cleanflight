@@ -91,36 +91,44 @@ uint32_t IO_EXTI_Line(ioRec_t *io)
 #endif
 }
 
-bool IODigitalRead(ioRec_t *io)
+bool IORead(ioRec_t *io)
 {
     if(!io)
         return false;
 
-    return digitalIn(io->gpio, io->pin);
+    return !!(io->gpio->IDR & io->pin);
 }
 
-void IODigitalWrite(ioRec_t *io, bool value)
+void IOWrite(ioRec_t *io, bool hi)
 {
     if(!io)
         return;
-    if(value)
-        digitalHi(io->gpio, io->pin);
-    else
-        digitalLo(io->gpio, io->pin);
+    io->gpio->BSRR = io->pin << (hi ? 0 : 16);
 }
 
-void IODigitalHi(ioRec_t *io)
+void IOHi(ioRec_t *io)
 {
     if(!io)
         return;
-    digitalHi(io->gpio, io->pin);
+    io->gpio->BSRR = io->pin;
 }
 
-void IODigitalLo(ioRec_t *io)
+void IOLo(ioRec_t *io)
 {
     if(!io)
         return;
-    digitalLo(io->gpio, io->pin);
+    io->gpio->BRR = io->pin;
+}
+
+void IOToggle(ioRec_t *io)
+{
+    if(!io)
+        return;
+    // check pin state and use BSRR accordinly to avoid race condition
+    uint16_t mask = io->pin;
+    if(io->gpio->IDR & mask)
+        mask <<= 16;   // bit set, more to reset index
+    io->gpio->BSRR = mask;
 }
 
 // claim IO pin, set owner and resources

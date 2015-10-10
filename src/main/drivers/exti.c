@@ -4,7 +4,6 @@
 
 #include "platform.h"
 
-
 #include "drivers/nvic.h"
 #include "drivers/io_impl.h"
 

@@ -53,7 +53,8 @@ void enableGPIOPowerUsageAndNoiseReductions(void)
         RCC_AHBPeriph_GPIOF,
         ENABLE
     );
-
+#warning "Initialize all pins"
+#if 0
     gpio_config_t gpio;
 
     gpio.mode = Mode_AIN;
@@ -67,6 +68,7 @@ void enableGPIOPowerUsageAndNoiseReductions(void)
     gpioInit(GPIOD, &gpio);
     gpioInit(GPIOE, &gpio);
     gpioInit(GPIOF, &gpio);
+#endif
 }
 
 bool isMPUSoftReset(void)

@@ -128,8 +128,7 @@
 
 #define SPEKTRUM_BIND
 // USART3, PB11 (Flexport)
-#define BIND_PORT  GPIOB
-#define BIND_PIN   Pin_11
+#define BIND_IO    PB11
 
 #define USABLE_TIMER_CHANNEL_COUNT (12 + 1)
 

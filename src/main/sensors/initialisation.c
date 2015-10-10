@@ -84,32 +84,18 @@ extern acc_t acc;
 uint8_t detectedSensors[MAX_SENSORS_TO_DETECT] = { GYRO_NONE, ACC_NONE, BARO_NONE, MAG_NONE };
 
 
-const extiConfig_t *selectMPUIntExtiConfig(void)
+ioRec_t *selectMPUIntExtiConfig(void)
 {
 #ifdef NAZE
-    // MPU_INT output on rev4 PB13
-    static const mpu6050Config_t nazeRev4MPU6050Config = {
-        .intIO = DEFIO_REC(PB13)
-    };
-    // MPU_INT output on rev5 hardware PC13
-    static const mpu6050Config_t nazeRev5MPU6050Config = {
-        .intIO = DEFIO_REC(PC13)
-    };
-
     if (hardwareRevision < NAZE32_REV5) {
-        return &nazeRev4MPUIntExtiConfig;
+        return DEFIO_REC(PB13); // MPU_INT output on rev4 PB13
     } else {
-        return &nazeRev5MPUIntExtiConfig;
+        return DEFIO_REC(PC13); // MPU_INT output on rev5 hardware PC13
     }
 #endif
-
 #ifdef SPRACINGF3
-    static const mpu6050Config_t spRacingF3MPU6050Config = {
-        .intIO = IO_C13,
-    };
-    return &spRacingF3MPUIntExtiConfig;
+    return DEFIO_REC(PC13);
 #endif
-
     return NULL;
 }
 
@@ -574,9 +560,9 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
 
 #if defined(USE_GYRO_MPU6050) || defined(USE_GYRO_MPU3050) || defined(USE_GYRO_MPU6500) || defined(USE_GYRO_SPI_MPU6500) || defined(USE_GYRO_SPI_MPU6000) || defined(USE_ACC_MPU6050)
 
-    const extiConfig_t *extiConfig = selectMPUIntExtiConfig();
+    ioRec_t * mpuIntIO = selectMPUIntExtiConfig();
 
-    mpuDetectionResult_t *mpuDetectionResult = detectMpu(extiConfig);
+    mpuDetectionResult_t *mpuDetectionResult = detectMpu(mpuIntIO);
     UNUSED(mpuDetectionResult);
 #endif
 

@@ -46,7 +46,7 @@ void timerOut_Release(timerOutputRec_t* self)
         timerChConfigGPIO(self->timChRec, (self->flags & TIMEROUT_IDLE_HI) ? IOCFG_IPU : IOCFG_IPD);
     } else {
         timerChIOWrite(self->timChRec, self->flags & TIMEROUT_IDLE_HI);
-        timerChConfigGPIO(self->timChRec, Mode_Out_PP);
+        timerChConfigGPIO(self->timChRec, IOCFG_PP);
     }
 }
 

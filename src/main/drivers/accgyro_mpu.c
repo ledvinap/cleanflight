@@ -32,6 +32,7 @@
 #include "gpio.h"
 #include "exti.h"
 #include "bus_i2c.h"
+#include "drivers/io.h"
 
 #include "sensor.h"
 #include "accgyro.h"
@@ -57,7 +58,7 @@ static bool detectSPISensorsAndUpdateDetectionResult(void);
 mpuDetectionResult_t mpuDetectionResult;
 
 mpuConfiguration_t mpuConfiguration;
-static const extiConfig_t *mpuIntExtiConfig = NULL;
+static ioRec_t *mpuIntIO = NULL;
 
 #define MPU_ADDRESS             0x68
 
@@ -75,12 +76,12 @@ static const extiConfig_t *mpuIntExtiConfig = NULL;
 
 #define MPU_INQUIRY_MASK   0x7E
 
-mpuDetectionResult_t *detectMpu(const extiConfig_t *configToUse)
+mpuDetectionResult_t *detectMpu(ioRec_t* intIO)
 {
     memset(&mpuDetectionResult, 0, sizeof(mpuDetectionResult));
     memset(&mpuConfiguration, 0, sizeof(mpuConfiguration));
 
-    mpuIntExtiConfig = configToUse;
+    mpuIntIO = intIO;
 
     bool ack;
     uint8_t sig;
@@ -191,13 +192,11 @@ static void mpu6050FindRevision(void)
     }
 }
 
-void MPU_DATA_READY_EXTI_Handler(void)
-{
-    if (EXTI_GetITStatus(mpuIntExtiConfig->exti_line) == RESET) {
-        return;
-    }
+extiCallbackRec_t mpuIntCallbackRec;
 
-    EXTI_ClearITPendingBit(mpuIntExtiConfig->exti_line);
+void mpuIntExtiHandler(extiCallbackRec_t *cb)
+{
+    UNUSED(cb);
 
 #ifdef DEBUG_MPU_DATA_READY_INTERRUPT
     // Measure the delta in micro seconds between calls to the interrupt handler
@@ -214,84 +213,26 @@ void MPU_DATA_READY_EXTI_Handler(void)
 #endif
 }
 
-void configureMPUDataReadyInterruptHandling(void)
-{
-#ifdef USE_MPU_DATA_READY_SIGNAL
-
-#ifdef STM32F10X
-    // enable AFIO for EXTI support
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-#endif
-
-#ifdef STM32F303xC
-    /* Enable SYSCFG clock otherwise the EXTI irq handlers are not called */
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-#endif
-
-#ifdef STM32F10X
-    gpioExtiLineConfig(mpuIntExtiConfig->exti_port_source, mpuIntExtiConfig->exti_pin_source);
-#endif
-
-#ifdef STM32F303xC
-    gpioExtiLineConfig(mpuIntExtiConfig->exti_port_source, mpuIntExtiConfig->exti_pin_source);
-#endif
-
-#ifdef ENSURE_MPU_DATA_READY_IS_LOW
-    uint8_t status = GPIO_ReadInputDataBit(mpuIntExtiConfig->gpioPort, mpuIntExtiConfig->gpioPin);
-    if (status) {
-        return;
-    }
-#endif
-
-    registerExti15_10_CallbackHandler(MPU_DATA_READY_EXTI_Handler);
-
-    EXTI_ClearITPendingBit(mpuIntExtiConfig->exti_line);
-
-    EXTI_InitTypeDef EXTIInit;
-    EXTIInit.EXTI_Line = mpuIntExtiConfig->exti_line;
-    EXTIInit.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTIInit.EXTI_Trigger = EXTI_Trigger_Rising;
-    EXTIInit.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTIInit);
-
-    NVIC_InitTypeDef NVIC_InitStructure;
-
-    NVIC_InitStructure.NVIC_IRQChannel = mpuIntExtiConfig->exti_irqn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_MPU_DATA_READY);
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_MPU_DATA_READY);
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-#endif
-}
-
 void mpuIntExtiInit(void)
 {
-    gpio_config_t gpio;
-
     static bool mpuExtiInitDone = false;
 
-    if (mpuExtiInitDone || !mpuIntExtiConfig) {
+    if (mpuExtiInitDone || !mpuIntIO) {
         return;
     }
 
-#ifdef STM32F303
-        if (mpuIntExtiConfig->gpioAHBPeripherals) {
-            RCC_AHBPeriphClockCmd(mpuIntExtiConfig->gpioAHBPeripherals, ENABLE);
-        }
+
+    IOInit(mpuIntIO, OWNER_SYSTEM, RESOURCE_INPUT | RESOURCE_EXTI);
+    IOConfigGPIO(mpuIntIO, IOCFG_IN_FLOATING);   // TODO - maybe pullup / pulldown ?
+#ifdef USE_MPU_DATA_READY_SIGNAL
+# ifdef ENSURE_MPU_DATA_READY_IS_LOW
+    if (IORead(mpuIntIO))
+        return;
+# endif
+    EXTIHandlerInit(&mpuIntCallbackRec, mpuIntExtiHandler);
+    EXTIConfig(mpuIntIO, &mpuIntCallbackRec, NVIC_PRIO_MPU_DATA_READY, EXTI_Trigger_Rising);
+    EXTIEnable(mpuIntIO, true);
 #endif
-#ifdef STM32F10X
-        if (mpuIntExtiConfig->gpioAPB2Peripherals) {
-            RCC_APB2PeriphClockCmd(mpuIntExtiConfig->gpioAPB2Peripherals, ENABLE);
-        }
-#endif
-
-    gpio.pin = mpuIntExtiConfig->gpioPin;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_IN_FLOATING;
-    gpioInit(mpuIntExtiConfig->gpioPort, &gpio);
-
-    configureMPUDataReadyInterruptHandling();
-
     mpuExtiInitDone = true;
 }
 

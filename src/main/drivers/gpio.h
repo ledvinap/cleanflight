@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "platform.h"
-
+#if 0
 #if defined(STM32F10X)
 
 typedef enum
@@ -121,3 +121,4 @@ static inline uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i) {return p->IDR & i
 void gpioInit(GPIO_TypeDef *gpio, gpio_config_t *config);
 void gpioExtiLineConfig(uint8_t portsrc, uint8_t pinsrc);
 void gpioPinRemapConfig(uint32_t remap, bool enable);
+#endif

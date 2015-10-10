@@ -31,16 +31,8 @@
 
 #ifdef BEEPER
 
-void (*systemBeepPtr)(bool onoff) = NULL;
-
-static void beepNormal(bool onoff)
-{
-    if (onoff) {
-        digitalLo(BEEP_GPIO, BEEP_PIN);
-    } else {
-        digitalHi(BEEP_GPIO, BEEP_PIN);
-    }
-}
+static ioRec_t * beeperIO;
+static bool beeperInverted;
 
 static void beepInverted(bool onoff)
 {
@@ -57,20 +49,29 @@ void systemBeep(bool onoff)
 #ifndef BEEPER
     UNUSED(onoff);
 #else
-    systemBeepPtr(onoff);
+    IOWrite(beeperIO, beeperInverted ? onoff : !onoff);
 #endif
 }
 
-void beeperInit(beeperConfig_t *config)
+void systemBeepToggle(void)
+{
+#ifdef BEEPER
+    IOToggle(beeperIO);
+#endif
+}
+
+void beeperInit(const beeperConfig_t *config)
 {
 #ifndef BEEPER
     UNUSED(config);
 #else
-    initBeeperHardware(config);
-    if (config->isInverted)
-        systemBeepPtr = beepInverted;
-    else
-        systemBeepPtr = beepNormal;
-    BEEP_OFF;
+    beeperIO = IOGetByTag(config->ioTag);
+    beeperInverted = config->isInverted;
+
+    if(beeperIO) {
+        IOInit(beeperIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
+        ConfigGPIO(beeperIO, IOCFG_OUT_PP);
+    }
+    systemBeep(false);
 #endif
 }

@@ -31,7 +31,8 @@
 
 typedef struct beeperConfig_s {
     ioTag_t ioTag;
-    bool isInverted;
+    unsigned isInverted:1;
+    unsigned isOD:1;
 } beeperConfig_t;
 
 void systemBeep(bool on);

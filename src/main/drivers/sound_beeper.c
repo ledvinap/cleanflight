@@ -34,14 +34,6 @@
 static ioRec_t * beeperIO;
 static bool beeperInverted;
 
-static void beepInverted(bool onoff)
-{
-    if (onoff) {
-        digitalHi(BEEP_GPIO, BEEP_PIN);
-    } else {
-        digitalLo(BEEP_GPIO, BEEP_PIN);
-    }
-}
 #endif
 
 void systemBeep(bool onoff)
@@ -70,7 +62,7 @@ void beeperInit(const beeperConfig_t *config)
 
     if(beeperIO) {
         IOInit(beeperIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
-        ConfigGPIO(beeperIO, IOCFG_OUT_PP);
+        ConfigGPIO(beeperIO, config->isOD ? IOCFG_OUT_OD : IOCFG_OUT_PP);
     }
     systemBeep(false);
 #endif

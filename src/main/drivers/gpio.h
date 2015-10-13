@@ -16,11 +16,11 @@
  */
 
 #pragma once
-
+#if 0
 #include <stdint.h>
 #include <stdbool.h>
 #include "platform.h"
-#if 0
+
 #if defined(STM32F10X)
 
 typedef enum

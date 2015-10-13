@@ -38,9 +38,8 @@
 #define PWM_BRUSHED_TIMER_HZ 8000000
 
 typedef struct sonarGPIOConfig_s {
-    GPIO_TypeDef *gpio;
-    uint16_t triggerPin;
-    uint16_t echoPin;
+    IOTag_t triggerIOTag;
+    IOTag_t echoIOTag;
 } sonarGPIOConfig_t;
 
 typedef struct drv_pwm_config_t {

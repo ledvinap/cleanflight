@@ -56,7 +56,7 @@ struct i2cHwDef_s i2c1Def = {
 };
 
 #ifndef I2C2_SCL_IO
-# define I2C2_SCL_IO PF6
+# define I2C2_SCL_IO PA9
 # define I2C2_SDA_IO PA10
 # define I2C2_AF GPIO_AF_4
 #endif

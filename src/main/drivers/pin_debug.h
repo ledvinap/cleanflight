@@ -24,8 +24,6 @@
 
 #ifdef PINDEBUG
 
-#include "gpio.h"
-
 // these pins are currently defined for AfroMini32 (reduced NAZE)
 // change used pins to any available. It will be probably problem-dependent
 // check code that uses pin for normal function, use pinDebugIsPinUsed() to skip pin inicialization and use
@@ -39,17 +37,17 @@
 
 static inline void pinDbgHi(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 {
-    if(enable) digitalHi(gpio, pin);
+    if(enable) GPIO_SetBits(gpio, pin);
 }
 
 static inline void pinDbgLo(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 {
-    if(enable) digitalLo(gpio, pin);
+    if(enable) GPIO_ResetBits(gpio, pin);
 }
 
 static inline void pinDbgToggle(bool enable, GPIO_TypeDef *gpio, uint16_t pin)
 {
-    if(enable) digitalToggle(gpio, pin);
+    if(enable) GPIO_WriteBit(gpio, pin, !GPIO_ReadOutputDataBit(gpio, pin));
 }
 
 void pinDebugInit(void);

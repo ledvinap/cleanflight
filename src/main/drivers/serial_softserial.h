@@ -43,3 +43,5 @@ void softSerialConfigure(serialPort_t *instance, const serialPortMode_t* config)
 void softSerialGetConfig(serialPort_t *instance, serialPortMode_t* config);
 void softSerialUpdateState(serialPort_t *instance, portState_t keepMask, portState_t setMask);
 
+int softSerialRxBytesWaiting(serialPort_t *instance);
+int softSerialTxBytesFree(serialPort_t *instance);

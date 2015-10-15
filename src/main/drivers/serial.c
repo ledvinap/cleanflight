@@ -35,21 +35,26 @@ void serialWrite(serialPort_t *instance, uint8_t ch)
     instance->vTable->write(instance, ch);
 }
 
-int serialTotalBytesWaiting(serialPort_t *instance)
-{
-    return instance->vTable->totalBytesWaiting(instance);
-}
-
 int serialRead(serialPort_t *instance)
 {
     return instance->vTable->read(instance);
 }
 
-
 bool isSerialTransmitBufferEmpty(serialPort_t *instance)
 {
     return instance->vTable->isTransmitBufferEmpty(instance);
 }
+
+int serialRxBytesWaiting(serialPort_t *instance)
+{
+    return instance->vTable->rxBytesWaiting(instance);
+}
+
+int serialTxBytesFree(serialPort_t *instance)
+{
+    return instance->vTable->txBytesFree(instance);
+}
+
 
 void serialRelease(serialPort_t *instance)
 {
@@ -76,3 +81,30 @@ void serialSetDirection(serialPort_t *instance, portState_t state)
     serialUpdateState(instance, ~STATE_RXTX, state);
 }
 
+// generic functions if serialPort_t contains all necessary data
+
+bool isSerialTransmitBufferEmpty_Generic(serialPort_t *instance)
+{
+    return instance->txBufferHead == instance->txBufferTail;
+}
+
+int serialTxBytesFree_Generic(serialPort_t *instance)
+{
+    if ((instance->mode & MODE_TX) == 0) {
+        return 0;
+    }
+
+    int bytesUsed = (instance->txBufferHead - instance->txBufferTail);
+    if(bytesUsed < 0)
+        bytesUsed += instance->txBufferSize;
+
+    return (instance->txBufferSize - 1) - bytesUsed;
+}
+
+int serialRxBytesWaiting_Generic(serialPort_t *instance)
+{
+    int ret = instance->rxBufferHead - instance->rxBufferTail;
+    if(ret < 0)
+        ret += instance->rxBufferSize;
+    return ret;
+}

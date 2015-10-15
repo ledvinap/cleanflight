@@ -129,8 +129,8 @@ STATIC_UNIT_TESTED void bmp085_calculate(int32_t *pressure, int32_t *temperature
 void bmp085Disable(const bmp085Config_t *config)
 {
     if(config && config->xclrIO) {
-        IOConfigGPIO(config->xclrIO, Mode_Out_PP);
-        IODigitalWrite(config->xclrIO, false);   // disable baro
+        IOConfigGPIO(config->xclrIO, IOCFG_OUT_PP);
+        IOLo(config->xclrIO);   // disable baro
     }
 }
 
@@ -142,8 +142,8 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
     if (bmp085InitDone)
         return true;
     if (config && config->xclrIO) {
-        IOConfigGPIO(config->xclrIO, Mode_Out_PP);
-        IODigitalWrite(config->xclrIO, true);   // enable baro
+        IOConfigGPIO(config->xclrIO, IOCFG_OUT_PP);
+        IOHi(config->xclrIO);   // enable baro
     }
 #if defined(BARO_EOC_GPIO)
     if (config && config->eocIO) {
@@ -186,7 +186,7 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
     }
 #endif
     if (config && config->xclrIO) {
-        IODigitalWrite(config->xclrIO, false);   // disable baro
+        IOLo(config->xclrIO);   // disable baro
     }
     return false;
 }
@@ -343,7 +343,7 @@ bool bmp085TestEOCConnected(const bmp085Config_t *config)
         delayMicroseconds(UT_DELAY * 2); // wait twice as long as normal, just to be sure
 
         // conversion should have finished now so check if EOC is high
-        uint8_t status = IODigitalRead(config->eocIO);
+        uint8_t status = IORead(config->eocIO);
         if (status) {
             return true;
         }

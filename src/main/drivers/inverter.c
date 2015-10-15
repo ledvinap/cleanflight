@@ -22,24 +22,23 @@
 
 #ifdef INVERTER
 
-#include "gpio.h"
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
 
 #include "inverter.h"
 
+static ioRec_t *pin = NULL;
+
 void initInverter(void)
 {
-    struct {
-        GPIO_TypeDef *gpio;
-        gpio_config_t cfg;
-    } gpio_setup = {
-        .gpio = INVERTER_GPIO,
-        // configure for Push-Pull
-        .cfg = { INVERTER_PIN, Mode_Out_PP, Speed_2MHz } 
-    };
+    pin = IO_REC(INVERTER_IO);
+    IOInit(pin, OWNER_SYSTEM, RESOURCE_OUTPUT);
+    IOConfigGPIO(pin, IOCFG_OUT_PP);
+}
 
-    RCC_APB2PeriphClockCmd(INVERTER_PERIPHERAL, ENABLE);
-
-    gpioInit(gpio_setup.gpio, &gpio_setup.cfg);
+void inverterSet(bool on)
+{
+    IOWrite(pin, on);
 }
 
 #endif

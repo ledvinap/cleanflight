@@ -53,9 +53,13 @@ void EXTIConfig(ioRec_t* ioRec, extiCallbackRec_t *cb, int irqPriority, EXTITrig
         return;
     extiChannelRec_t *rec = &extiChannelRecs[chIdx];
     rec->handler = cb;
-
-    gpioExtiLineConfig(IO_EXTI_PortSourceGPIO(ioRec), IO_EXTI_PinSource(ioRec));
-
+#if defined(STM32F10X)
+    GPIO_EXTILineConfig(IO_GPIO_PortSource(ioRec), IO_GPIO_PinSource(ioRec));
+#elif defined(STM32F303xC)
+    SYSCFG_EXTILineConfig(IO_EXTI_PortSourceGPIO(ioRec), IO_EXTI_PinSource(ioRec));
+#else
+# warning "Unknown CPU"
+#endif
     uint32_t extiLine = IO_EXTI_Line(ioRec);
 
     EXTI_ClearITPendingBit(extiLine);

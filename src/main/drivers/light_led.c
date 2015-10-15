@@ -66,7 +66,7 @@ void ledInit(void)
 
     for (i = 0; i < ARRAYLEN(leds); i++) {
         IOInit(leds[i], OWNER_STATUSLED, RESOURCE_OUTPUT);
-        IOConfigGPIO(leds[i], IOCFG_PP);
+        IOConfigGPIO(leds[i], IOCFG_OUT_PP);
     }
 }
 

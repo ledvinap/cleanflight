@@ -43,3 +43,7 @@ const timerChDef_t timerChannelMap[] = {
 const timerChDef_t timerQueueChDef =
     DEF_TIMCH(NONE,  2,  2, 0); // PWM10 - PA1  - *TIM2_CH2, TIM15_CH1N
 
+int timerChannelMap_Count(void)
+{
+    return ARRAYLEN(timerChannelMap);
+}

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "io.h"
+
 #define MAX_PWM_MOTORS  12
 #define MAX_PWM_SERVOS  8
 
@@ -28,7 +30,6 @@
 #error Invalid motor/servo/port configuration
 #endif
 
-
 #define PULSE_1MS   (1000)      // 1ms pulse width
 
 #define MAX_INPUTS  8
@@ -38,11 +39,11 @@
 #define PWM_BRUSHED_TIMER_HZ 8000000
 
 typedef struct sonarGPIOConfig_s {
-    IOTag_t triggerIOTag;
-    IOTag_t echoIOTag;
+    ioTag_t triggerIOTag;
+    ioTag_t echoIOTag;
 } sonarGPIOConfig_t;
 
-typedef struct drv_pwm_config_t {
+typedef struct drv_pwm_config_s {
     bool useParallelPWM;
     bool usePPM;
     bool useSerialRx;

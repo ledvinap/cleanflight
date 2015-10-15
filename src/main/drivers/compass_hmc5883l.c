@@ -171,7 +171,7 @@ void hmc5883lInit(void)
     bool bret = true;           // Error indicator
 
     if(hmc5883Config)
-        IOConfigGPIO(hmc5883Config->intIO, Mode_IN_FLOATING); 
+        IOConfigGPIO(hmc5883Config->intIO, IOCFG_IN_FLOATING); 
 
     delay(50);
     i2cWrite(MAG_ADDRESS, HMC58X3_R_CONFA, 0x010 + HMC_POS_BIAS);   // Reg A DOR = 0x010 + MS1, MS0 set to pos bias

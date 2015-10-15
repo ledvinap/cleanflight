@@ -60,6 +60,7 @@
 #include "drivers/gpio.h"
 #include "drivers/system.h"
 #include "drivers/io.h"
+#include "drivers/io_impl.h"
 
 #include "config/runtime_config.h"
 
@@ -402,8 +403,8 @@ static void detectBaro(baroSensor_e baroHardwareToUse)
 
 #if defined(BARO_XCLR_IO) && defined(BARO_EOC_IO)
     static const bmp085Config_t defaultBMP085Config = {
-        .xclrIO = BARO_XCLR_IO,
-        .eocIO = BARO_EOC_IO,
+        .xclrIO = IO_REC(BARO_XCLR_IO),
+        .eocIO = IO_REC(BARO_EOC_IO),
     };
     bmp085Config = &defaultBMP085Config;
 #endif

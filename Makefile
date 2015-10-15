@@ -20,9 +20,6 @@ TARGET		?= NAZE
 # Compile-time options
 OPTIONS		?= ACCGYRO_FIFO NEWACCGYRO # PINDEBUG
 
-# compile for OpenPilot BootLoader support
-OPBL ?=no
-
 # Debugger optons, must be empty or GDB
 DEBUG ?= GDB
 
@@ -40,9 +37,6 @@ RAM_SIZE ?=
 FORKNAME			 = cleanflight
 
 VALID_TARGETS	 = ALIENWIIF1 ALIENWIIF3 CC3D CHEBUZZF3 CJMCU COLIBRI_RACE EUSTM32F103RC NAZE NAZE32PRO OLIMEXINO PORT103R RMDO SPARKY SPRACINGF3 STM32F3DISCOVERY 
-
-# Valid targets for OP BootLoader support
-OPBL_VALID_TARGETS = CC3D
 
 # Configure default memory sizes for the targets
 ifeq ($(FLASH_SIZE),)
@@ -368,7 +362,7 @@ NAZE_SRC = startup_stm32f10x_md_gcc.S \
 		   drivers/flash_m25p16.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
-		   drivers/light_led_stm32f10x.c \
+		   drivers/light_led.c \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f10x.c \
 		   drivers/exti.c \
@@ -379,7 +373,7 @@ NAZE_SRC = startup_stm32f10x_md_gcc.S \
 		   drivers/serial_softserial.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f10x.c \
-		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/sound_beeper.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
@@ -412,7 +406,7 @@ EUSTM32F103RC_SRC = startup_stm32f10x_hd_gcc.S \
 		   drivers/flash_m25p16.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
-		   drivers/light_led_stm32f10x.c \
+		   drivers/light_led.c \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f10x.c \
 		   drivers/pwm_mapping.c \
@@ -423,7 +417,7 @@ EUSTM32F103RC_SRC = startup_stm32f10x_hd_gcc.S \
 		   drivers/serial_uart_stm32f10x.c \
 		   drivers/exti.c \
 		   drivers/sonar_hcsr04.c \
-		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/sound_beeper.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
@@ -442,7 +436,7 @@ CRAZYFLIE_SRC	=	startup_stm32f10x_md_gcc.S \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
-		   drivers/light_led_stm32f10x.c \
+		   drivers/light_led.c \
 		   drivers/pwm_mapping.c \
 		   drivers/pwm_output.c \
 		   drivers/pwm_rx.c \
@@ -472,7 +466,7 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/bus_spi.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
-		   drivers/light_led_stm32f10x.c \
+		   drivers/light_led.c \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f10x.c \
 		   drivers/pwm_mapping.c \
@@ -483,22 +477,12 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/serial_uart_stm32f10x.c \
 		   drivers/exti.c \
 		   drivers/sonar_hcsr04.c \
-		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/sound_beeper.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
-
-ifeq ($(OPBL),yes)
-ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
-TARGET_FLAGS := -DOPBL $(TARGET_FLAGS)
-LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_$(FLASH_SIZE)k_opbl.ld
-.DEFAULT_GOAL := binary
-else
-$(error OPBL specified with a unsupported target)
-endif
-endif
 
 CJMCU_SRC = \
 		   startup_stm32f10x_md_gcc.S \
@@ -509,13 +493,13 @@ CJMCU_SRC = \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
-		   drivers/light_led_stm32f10x.c \
+		   drivers/light_led.c \
 		   drivers/pwm_mapping.c \
 		   drivers/pwm_output.c \
 		   drivers/pwm_rx.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f10x.c \
-		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/sound_beeper.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
@@ -541,7 +525,7 @@ CC3D_SRC = \
 		   drivers/flash_m25p16.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
-		   drivers/light_led_stm32f10x.c \
+		   drivers/light_led.c \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f10x.c \
 		   drivers/pwm_mapping.c \
@@ -551,7 +535,7 @@ CC3D_SRC = \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f10x.c \
 		   drivers/sonar_hcsr04.c \
-		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/sound_beeper.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
@@ -567,7 +551,7 @@ STM32F30x_COMMON_SRC = \
 		   drivers/bus_i2c_stm32f30x.c \
 		   drivers/bus_spi.c \
 		   drivers/gpio_stm32f30x.c \
-		   drivers/light_led_stm32f30x.c \
+		   drivers/light_led.c \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f30x.c \
 		   drivers/pwm_mapping.c \
@@ -575,7 +559,7 @@ STM32F30x_COMMON_SRC = \
 		   drivers/pwm_rx.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f30x.c \
-		   drivers/sound_beeper_stm32f30x.c \
+		   drivers/sound_beeper.c \
 		   drivers/system_stm32f30x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f30x.c
@@ -687,7 +671,7 @@ SIZE		 = arm-none-eabi-size
 
 ifeq ($(DEBUG),GDB)
 OPTIMIZE	 = -Os
-LTO_FLAGS	 = $(OPTIMIZE) # -flto -fuse-linker-plugin
+LTO_FLAGS	 = $(OPTIMIZE) -flto -fuse-linker-plugin
 else
 OPTIMIZE	 = -Os
 LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)

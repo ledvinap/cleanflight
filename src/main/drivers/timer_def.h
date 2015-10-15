@@ -47,10 +47,10 @@
 // defined for all available timers, target_timer.h select actually used timers
 // each tuple is (CC_IRQn, UP_IRQn, outputEnable, RRC)
 #if defined(STM32F10X)
-# define DEF_TIMER_INFO_TIM1  (TIM1_CC_IRQn, TIM1_UP_IRQn,       true,  RCC_APB2(TIM1));
-# define DEF_TIMER_INFO_TIM2  (TIM2_IRQn,    TIM2_IRQn,          false, RCC_APB1(TIM2));
-# define DEF_TIMER_INFO_TIM3  (TIM3_IRQn,    TIM3_IRQn,          false, RCC_APB1(TIM2));
-# define DEF_TIMER_INFO_TIM4  (TIM4_IRQn,    TIM4_IRQn,          false, RCC_APB1(TIM4));
+# define DEF_TIMER_INFO_TIM1  (TIM1_CC_IRQn, TIM1_UP_IRQn,       true,  RCC_APB2(TIM1))
+# define DEF_TIMER_INFO_TIM2  (TIM2_IRQn,    TIM2_IRQn,          false, RCC_APB1(TIM2))
+# define DEF_TIMER_INFO_TIM3  (TIM3_IRQn,    TIM3_IRQn,          false, RCC_APB1(TIM2))
+# define DEF_TIMER_INFO_TIM4  (TIM4_IRQn,    TIM4_IRQn,          false, RCC_APB1(TIM4))
 // TODO - TIM6, TIM7
 # if defined(STM32F10X_XL)
 #  define DEF_TIMER_INFO_TIM8 (TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn, true,  RCC_APB2(TIM8));
@@ -76,7 +76,7 @@
 // emit TIMER definition record
 // TODO - user timer type instead of outputs enable
 #define DEF_TIMER_DEFINE_II(tim_,channels_, iCC_, iUP_, outEna_, rcc_) { \
-        .tim = DEF_TIMER_TIM(tim_),                                   \
+        .tim = DEF_TIMER_TIM(tim_),                                     \
         .irqCC = iCC_,                                                  \
         .irqUP = iUP_,                                                  \
         .channels = channels_,                                          \

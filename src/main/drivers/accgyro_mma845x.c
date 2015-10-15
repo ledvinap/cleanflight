@@ -21,7 +21,8 @@
 #include "platform.h"
 
 #include "system.h"
-#include "gpio.h"
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
 #include "bus_i2c.h"
 
 #include "sensor.h"
@@ -95,21 +96,15 @@ bool mma8452Detect(acc_t *acc)
     return true;
 }
 
-static inline void mma8451ConfigureInterrupt(void)
+static void mma8451ConfigureInterrupt(void)
 {
 #ifdef NAZE
     // PA5 - ACC_INT2 output on NAZE rev3/4 hardware
     // NAZE rev.5 hardware has PA5 (ADC1_IN5) on breakout pad on bottom of board
     // OLIMEXINO - The PA5 pin is wired up to LED1, if you need to use an mma8452 on an Olimexino use a different pin and provide support in code.
-
-    gpio_config_t gpio;
-
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-
-    gpio.pin = Pin_5;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_IN_FLOATING;
-    gpioInit(GPIOA, &gpio);
+    ioRec_t *intIO = IO_REC(PA5);
+    IOInit(intIO, OWNER_SYSTEM, RESOURCE_INPUT);
+    IOConfigGPIO(intIO, IOCFG_IN_FLOATING);
 #endif
 
     i2cWrite(MMA8452_ADDRESS, MMA8452_CTRL_REG3, MMA8452_CTRL_REG3_IPOL); // Interrupt polarity (active HIGH)

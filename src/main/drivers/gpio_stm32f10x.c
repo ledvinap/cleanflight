@@ -21,7 +21,7 @@
 #include "platform.h"
 
 #include "gpio.h"
-
+#if 0
 void gpioInit(GPIO_TypeDef *gpio, gpio_config_t *config)
 {
     uint32_t pinpos;
@@ -53,7 +53,7 @@ void gpioInit(GPIO_TypeDef *gpio, gpio_config_t *config)
         }
     }
 }
-
+#endif
 void gpioExtiLineConfig(uint8_t portsrc, uint8_t pinsrc)
 {
     uint32_t tmp = 0x00;

@@ -351,14 +351,17 @@ const clivalue_t valueTable[] = {
     { "small_angle",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.small_angle, 0, 180 },
 
     { "fixedwing_althold_dir",      VAR_INT8   | MASTER_VALUE,  &masterConfig.airplaneConfig.fixedwing_althold_dir, -1, 1 },
-
-#ifdef USE_SOFTSERIAL1
+#if 0
+#if  USE_SOFTSERIAL1
     { "softserial_1_txpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][0], 0, USABLE_IO_CHANNEL_COUNT },
     { "softserial_1_rxpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL1][1], 0, USABLE_IO_CHANNEL_COUNT },
 #endif
 #ifdef USE_SOFTSERIAL2
     { "softserial_2_txpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][0], 0, USABLE_IO_CHANNEL_COUNT },
     { "softserial_2_rxpin",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.softserial_pins[SOFTSERIAL2][1], 0, USABLE_IO_CHANNEL_COUNT },
+#endif
+#else
+# warning TODO
 #endif
     { "reboot_character",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.reboot_character, 48, 126 },
 
@@ -1692,12 +1695,12 @@ static void cliPassthrough(char *cmdline)
     LED1_OFF;
 
     while(1) {
-        if (serialTotalBytesWaiting(passthroughPort)) {
+        if (serialRxBytesWaiting(passthroughPort)) {
             LED0_ON;
             serialWrite(cliPort, serialRead(passthroughPort));
             LED0_OFF;
         }
-        if (serialTotalBytesWaiting(cliPort)) {
+        if (serialRxBytesWaiting(cliPort)) {
             LED1_ON;
             serialWrite(passthroughPort, serialRead(cliPort));
             LED1_OFF;
@@ -2439,7 +2442,7 @@ void cliProcess(void)
         return;
     }
 
-    while (serialTotalBytesWaiting(cliPort)) {
+    while (serialRxBytesWaiting(cliPort)) {
         uint8_t c = serialRead(cliPort);
         if (c == '\t' || c == '?') {
             // do tab completion

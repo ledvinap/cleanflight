@@ -175,9 +175,9 @@ void initSpi2(void)
     GPIO_PinAFConfig(SPI2_GPIO, SPI2_SCK_PIN_SOURCE, GPIO_AF_5);
     GPIO_PinAFConfig(SPI2_GPIO, SPI2_MISO_PIN_SOURCE, GPIO_AF_5);
     GPIO_PinAFConfig(SPI2_GPIO, SPI2_MOSI_PIN_SOURCE, GPIO_AF_5);
-#ifdef SPI2_NSS_PIN_SOURCE
+# ifdef SPI2_NSS_PIN_SOURCE
     GPIO_PinAFConfig(SPI2_GPIO, SPI2_NSS_PIN_SOURCE, GPIO_AF_5);
-#endif
+# endif
 
     GPIO_InitStructure.GPIO_Pin = SPI2_SCK_PIN | SPI2_MISO_PIN | SPI2_MOSI_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -186,7 +186,7 @@ void initSpi2(void)
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(SPI2_GPIO, &GPIO_InitStructure);
 
-#ifdef SPI2_NSS_PIN
+# ifdef SPI2_NSS_PIN
     GPIO_InitStructure.GPIO_Pin = SPI2_NSS_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -194,29 +194,27 @@ void initSpi2(void)
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 
     GPIO_Init(SPI2_GPIO, &GPIO_InitStructure);
-#endif
-
+# endif
 #endif
 
 #ifdef STM32F10X
-    gpio_config_t gpio;
+    GPIO_InitTypeDef GPIO_InitStructure;
 
     // MOSI + SCK as output
-    gpio.mode = Mode_AF_PP;
-    gpio.pin = SPI2_SCK_PIN | SPI2_MOSI_PIN;
-    gpio.speed = Speed_50MHz;
-    gpioInit(SPI2_GPIO, &gpio);
+    GPIO_InitStructure.GPIO_Pin = SPI2_SCK_PIN | SPI2_MOSI_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(SPI2_GPIO, &GPIO_InitStructure);
     // MISO as input
-    gpio.pin = SPI2_MISO_PIN;
-    gpio.mode = Mode_IN_FLOATING;
-    gpioInit(SPI2_GPIO, &gpio);
-
-#ifdef SPI2_NSS_PIN
+    GPIO_InitStructure.GPIO_Pin = SPI2_MISO_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_Init(SPI2_GPIO, &GPIO_InitStructure);
+# ifdef SPI2_NSS_PIN
     // NSS as gpio slave select
-    gpio.pin = SPI2_NSS_PIN;
-    gpio.mode = Mode_Out_PP;
-    gpioInit(SPI2_GPIO, &gpio);
-#endif
+    GPIO_InitStructure.GPIO_Pin = SPI2_NSS_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_Init(SPI2_GPIO, &GPIO_InitStructure);
+# endif
 #endif
 
     // Init SPI2 hardware
@@ -241,8 +239,6 @@ void initSpi2(void)
 
     // Drive NSS high to disable connected SPI device.
     GPIO_SetBits(SPI2_GPIO, SPI2_NSS_PIN);
-
-
 }
 #endif
 

@@ -59,6 +59,11 @@ int IO_EXTI_PortSourceGPIO(ioRec_t *io)
     return IO_GPIOPortIdx(io);
 }
 
+int IO_GPIO_PortSource(ioRec_t *io)
+{
+    return IO_GPIOPortIdx(io);
+}
+
 // zero based pin index
 int IO_GPIOPinIdx(ioRec_t *io)
 {

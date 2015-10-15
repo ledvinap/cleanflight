@@ -40,6 +40,7 @@
 #include "pwm_mapping.h"
 
 #include "serial.h"
+#include "serial_impl.h"
 #include "serial_softserial.h"
 
 #define SYM_DATA_BITS        8
@@ -464,14 +465,6 @@ void softSerialWrite(serialPort_t *instance, uint8_t ch)
     }
 }
 
-int softSerialTotalBytesWaiting(serialPort_t *instance)
-{
-    int ret = instance->rxBufferHead - instance->rxBufferTail;
-    if(ret < 0)
-        ret += instance->rxBufferSize;
-    return ret;
-}
-
 int softSerialRead(serialPort_t *instance)
 {
     softSerial_t *self = container_of(instance, softSerial_t, port);
@@ -485,9 +478,10 @@ int softSerialRead(serialPort_t *instance)
 }
 
 const struct serialPortVTable softSerialVTable = {
-    .isTransmitBufferEmpty = isSoftSerialTransmitBufferEmpty,
+    .isTransmitBufferEmpty = isSerialTransmitBufferEmpty_Generic,
+    .txBytesFree = serialTxBytesFree_Generic,
     .write = softSerialWrite,
-    .totalBytesWaiting = softSerialTotalBytesWaiting,
+    .rxBytesWaiting = serialRxBytesWaiting_Generic,
     .read = softSerialRead,
 
     .release = softSerialRelease,

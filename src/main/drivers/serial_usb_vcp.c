@@ -33,6 +33,7 @@
 #include "drivers/nvic.h"
 
 #include "serial.h"
+#include "serial_impl.h"
 #include "serial_usb_vcp.h"
 
 
@@ -73,10 +74,6 @@ void usbVcpGetConfig(serialPort_t *instance, serialPortMode_t* config)
     config->rxCallback = self->port.rxCallback;
 }
 
-bool isUsbVcpTransmitBufferEmpty(serialPort_t *instance)
-{
-    return instance->txBufferHead == instance->txBufferTail;
-}
 
 void usbVcpWrite(serialPort_t *instance, uint8_t ch)
 {
@@ -96,14 +93,6 @@ void usbVcpWrite(serialPort_t *instance, uint8_t ch)
             USBCDC_TryTx();
         }
     }
-}
-
-int usbVcpTotalBytesWaiting(serialPort_t *instance)
-{
-    int ret = instance->rxBufferHead - instance->rxBufferTail;
-    if(ret < 0)
-        ret += instance->rxBufferSize;
-    return ret;
 }
 
 int usbVcpRead(serialPort_t *instance)
@@ -195,9 +184,10 @@ void vcpAckRxData(usbVcpPort_t *self, int len)
 }
 
 const struct serialPortVTable usbVcpVTable = {
-    .isTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,
+    .isTransmitBufferEmpty = isSerialTransmitBufferEmpty_Generic,
+    .txBytesFree = serialTxBytesFree_Generic,
     .write = usbVcpWrite,
-    .totalBytesWaiting = usbVcpTotalBytesWaiting,
+    .rxBytesWaiting = serialRxBytesWaiting_Generic,
     .read = usbVcpRead,
 
     .release = usbVcpRelease,

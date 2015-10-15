@@ -22,23 +22,15 @@
 
 #define BOARD_HAS_VOLTAGE_DIVIDER
 
-#define LED0_GPIO   GPIOB
-#define LED0_PIN    Pin_3 // PB3 (LED)
-#define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
-#define LED1_GPIO   GPIOB
-#define LED1_PIN    Pin_4 // PB4 (LED)
-#define LED1_PERIPHERAL RCC_APB2Periph_GPIOB
+#define LED0_IO        PB3
+#define LED1_IO        PB4
 
-#define BEEP_GPIO   GPIOA
-#define BEEP_PIN    Pin_12 // PA12 (Beeper)
-#define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
+#define BEEP_IO        PA12
 
 #define BARO_XCLR_IO   PC13
 #define BARO_EOC_IO    PC14
 
-#define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
-#define INVERTER_GPIO GPIOB
-#define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
+#define INVERTER_IO    PB2           // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_USART USART2
 
 // SPI2
@@ -65,12 +57,9 @@
 #define MPU6500_CS_PIN                   NAZE_SPI_CS_PIN
 #define MPU6500_SPI_INSTANCE             NAZE_SPI_INSTANCE
 
-
 #define USE_FLASHFS
 
 #define USE_FLASH_M25P16
-
-#define EXTI15_10_CALLBACK_HANDLER_COUNT 3 // MPU data ready, MAG data ready, BMP085 EOC
 
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
@@ -83,7 +72,6 @@
 #define USE_GYRO_MPU6050
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
-
 
 #define GYRO_MPU3050_ALIGN CW0_DEG
 #define GYRO_MPU6050_ALIGN CW0_DEG
@@ -114,7 +102,7 @@
 #define MAG_HMC5883_ALIGN CW180_DEG
 
 #define SONAR
-#define USE_EXTI                // needed for sonar driver
+#define USE_EXTI
 #define BEEPER
 #define LED0
 #define LED1
@@ -185,13 +173,10 @@
 
 //#define SPEKTRUM_BIND
 // USART2, PA3
-#define BIND_PORT  GPIOA
-#define BIND_PIN   Pin_3
-
-#define USABLE_IO_CHANNEL_COUNT (16+2)
+#define BIND_IO   PA3
 
 #define TIME_USE_TIMER    // base timming on some timer instead of systick
-#define TIME_TIMER &TIMER_TIM2
+#define TIME_TIMER 2
 
 // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
 #ifdef ALIENWII32
@@ -199,8 +184,5 @@
 #define TARGET_BOARD_IDENTIFIER "AWF1" // AlienWii32 F1.
 #undef BOARD_HAS_VOLTAGE_DIVIDER
 #define HARDWARE_BIND_PLUG
-
-// Hardware bind plug at PB5 (Pin 41)
-#define BINDPLUG_PORT  GPIOB
-#define BINDPLUG_PIN   Pin_5
+#define BINDPLUG_IO  PB5               // Hardware bind plug at PB5 (Pin 41)
 #endif

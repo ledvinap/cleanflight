@@ -25,8 +25,9 @@
 #include "common/maths.h"
 
 #include "system.h"
-#include "exti.h"
-#include "gpio.h"
+#include "drivers/exti.h"
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
 
 #include "sensor.h"
 #include "accgyro.h"
@@ -72,13 +73,11 @@ void mpu6500GyroInit(uint16_t lpf)
 #ifdef NAZE
     // FIXME target specific code in driver code.
 
-    gpio_config_t gpio;
     // MPU_INT output on rev5 hardware (PC13). rev4 was on PB13, conflicts with SPI devices
     if (hse_value == 12000000) {
-        gpio.pin = Pin_13;
-        gpio.speed = Speed_2MHz;
-        gpio.mode = Mode_IN_FLOATING;
-        gpioInit(GPIOC, &gpio);
+        ioRec_t * intIO = IO_REC(PC13);
+        IOInit(intIO, OWNER_SYSTEM, RESOURCE_INPUT);
+        IOConfigGPIO(intIO, IOCFG_IN_FLOATING);
     }
 #endif
 

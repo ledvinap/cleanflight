@@ -3,6 +3,7 @@
 // TODO - GPIO_TypeDef include
 #include "gpio.h"
 #include "io.h"
+#include "platform.h"
 
 typedef struct ioDef_s {
     ioTag_t tag;
@@ -21,8 +22,11 @@ extern ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
 
 int IO_GPIOPortIdx(ioRec_t *io);
 int IO_GPIOPinIdx(ioRec_t *io);
-
+#if defined(STM32F10X)
 int IO_GPIO_PinSource(ioRec_t *io);
+int IO_GPIO_PortSource(ioRec_t *io);
+#elif defined(STM32F303xC)
 int IO_EXTI_PortSourceGPIO(ioRec_t *io);
 int IO_EXTI_PinSource(ioRec_t *io);
+#endif
 uint32_t IO_EXTI_Line(ioRec_t *io);

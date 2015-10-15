@@ -22,9 +22,7 @@
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
 #define LED0
 
-#define INVERTER_PIN Pin_2 // PB2 (BOOT1) used as inverter select GPIO
-#define INVERTER_GPIO GPIOB
-#define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
+#define INVERTER_IO PB2 // PB2 (BOOT1) used as inverter select GPIO
 #define INVERTER_USART USART1
 
 #define BEEP_GPIO GPIOA
@@ -117,14 +115,6 @@
 #define SONAR
 #define USE_SERVOS
 #define USE_CLI
-
-#if defined(OPBL)
-// disabled some features for OPBL build due to code size.
-#undef DISPLAY
-#undef SONAR
-#define SKIP_CLI_COMMAND_HELP
-#endif
-
 
 #define SPEKTRUM_BIND
 // USART3, PB11 (Flexport)

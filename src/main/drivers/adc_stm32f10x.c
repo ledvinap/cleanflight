@@ -53,6 +53,9 @@
 
 void adcInitHw(drv_adc_config_t *init)
 {
+#if defined(CJMCU) || defined(CC3D)
+    UNUSED(init);
+#endif
 
     memset(&adcConfig, 0, sizeof(adcConfig));
 
@@ -105,7 +108,7 @@ void adcInitHw(drv_adc_config_t *init)
 #endif
 
     // count used channels
-    int configuredAdcChannels=0;
+    int configuredAdcChannels = 0;
     for(int i = 0; i < ADC_CHANNEL_COUNT; i++)
         if(adcConfig[i].enabled)
             configuredAdcChannels++;

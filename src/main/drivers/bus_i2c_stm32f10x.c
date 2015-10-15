@@ -25,13 +25,16 @@
 
 #include "common/atomic.h"
 
-#include "gpio.h"
+#include "drivers/io.h"
+#include "drivers/nvic.h"
+#include "drivers/rcc.h"
 #include "system.h"
 
 #include "bus_i2c.h"
-#include "nvic.h"
 
 #ifndef SOFT_I2C
+
+static ioRec_t *sclIO, *sdaIO;
 
 // I2C2
 // SCL  PB10
@@ -44,19 +47,18 @@ static void i2c_er_handler(void);
 static void i2c_ev_handler(void);
 static void i2cUnstick(void);
 
-typedef struct i2cDevice_t {
+typedef struct i2cDevice_s {
     I2C_TypeDef *dev;
-    GPIO_TypeDef *gpio;
-    uint16_t scl;
-    uint16_t sda;
+    ioTag_t scl;
+    ioTag_t sda;
     uint8_t ev_irq;
     uint8_t er_irq;
-    uint32_t peripheral;
+    rccPeriphTag_t rcc;
 } i2cDevice_t;
 
 static const i2cDevice_t i2cHardwareMap[] = {
-    { I2C1, GPIOB, Pin_6, Pin_7, I2C1_EV_IRQn, I2C1_ER_IRQn, RCC_APB1Periph_I2C1 },
-    { I2C2, GPIOB, Pin_10, Pin_11, I2C2_EV_IRQn, I2C2_ER_IRQn, RCC_APB1Periph_I2C2 },
+    { I2C1, IO_TAG(PB6), IO_TAG(PB7), I2C1_EV_IRQn, I2C1_ER_IRQn, RCC_APB1(I2C1) },
+    { I2C2, IO_TAG(PB10), IO_TAG(PB11), I2C2_EV_IRQn, I2C2_ER_IRQn, RCC_APB1(I2C2) },
 };
 
 // Copy of peripheral address for IRQ routines
@@ -336,7 +338,13 @@ void i2cInit(I2CDevice index)
     // Turn on peripheral clock, save device and index
     I2Cx = i2cHardwareMap[index].dev;
     I2Cx_index = index;
-    RCC_APB1PeriphClockCmd(i2cHardwareMap[index].peripheral, ENABLE);
+    // Enable RCC
+    RCC_ClockCmd(i2cHardwareMap[index].rcc, ENABLE);
+    // claim pins
+    sclIO = IOGetByTag(i2cHardwareMap[index].scl);
+    sdaIO = IOGetByTag(i2cHardwareMap[index].sda);
+    IOInit(sclIO, OWNER_SYSTEM, RESOURCE_IO);
+    IOInit(sdaIO, OWNER_SYSTEM, RESOURCE_IO);
 
     // diable I2C interrrupts first to avoid ER handler triggering
     I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, DISABLE);
@@ -378,52 +386,43 @@ uint16_t i2cGetErrorCounter(void)
 
 static void i2cUnstick(void)
 {
-    GPIO_TypeDef *gpio;
-    gpio_config_t cfg;
-    uint16_t scl, sda;
     int i;
+    int timeout = 100;
 
-    // prepare pins
-    gpio = i2cHardwareMap[I2Cx_index].gpio;
-    scl = i2cHardwareMap[I2Cx_index].scl;
-    sda = i2cHardwareMap[I2Cx_index].sda;
+    IOHi(sclIO);
+    IOHi(sdaIO);
 
-    digitalHi(gpio, scl | sda);
-
-    cfg.pin = scl | sda;
-    cfg.speed = Speed_2MHz;
-    cfg.mode = Mode_Out_OD;
-    gpioInit(gpio, &cfg);
+    IOConfigGPIO(sclIO, IOCFG_OUT_OD);
+    IOConfigGPIO(sdaIO, IOCFG_OUT_OD);
 
     for (i = 0; i < 8; i++) {
         // Wait for any clock stretching to finish
-        while (!digitalIn(gpio, scl))
+        while (!IORead(sclIO) && timeout) {
             delayMicroseconds(10);
+            timeout--;
+        }
 
         // Pull low
-        digitalLo(gpio, scl); // Set bus low
+        IOLo(sclIO); // Set bus low
         delayMicroseconds(10);
-        // Release high again
-        digitalHi(gpio, scl); // Set bus high
+        IOHi(sclIO); // Set bus high
         delayMicroseconds(10);
     }
 
     // Generate a start then stop condition
     // SCL  PB10
     // SDA  PB11
-    digitalLo(gpio, sda); // Set bus data low
+    IOLo(sdaIO); // Set bus data low
     delayMicroseconds(10);
-    digitalLo(gpio, scl); // Set bus scl low
+    IOLo(sclIO); // Set bus scl low
     delayMicroseconds(10);
-    digitalHi(gpio, scl); // Set bus scl high
+    IOHi(sclIO); // Set bus scl high
     delayMicroseconds(10);
-    digitalHi(gpio, sda); // Set bus sda high
+    IOHi(sdaIO); // Set bus sda high
 
     // Init pins
-    cfg.pin = scl | sda;
-    cfg.speed = Speed_2MHz;
-    cfg.mode = Mode_AF_OD;
-    gpioInit(gpio, &cfg);
+    IOConfigGPIO(sclIO, IOCFG_AF_OD);
+    IOConfigGPIO(sdaIO, IOCFG_AF_OD);
 }
 
 #endif

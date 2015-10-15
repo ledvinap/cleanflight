@@ -261,10 +261,10 @@ void init(void)
     beeperConfig_t beeperConfig = {
         .ioTag = IO_TAG(BEEP_IO),
 #ifdef BEEPER_INVERTED
-        .isInverted = true
+        .isInverted = true,
         .isOD = false,
 #else
-        .isInverted = true
+        .isInverted = true,
         .isOD = true,
 #endif
     };
@@ -512,7 +512,7 @@ void processLoopback(void) {
 //            serialPrint(loopbackPort, "______________________________________________________________________\r\n");
         }
         uint8_t bytesWaiting;
-        while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {
+        while ((bytesWaiting = serialRxBytesWaiting(loopbackPort))) {
             uint8_t b = serialRead(loopbackPort);
             serialWrite(loopbackPort, b);
         };

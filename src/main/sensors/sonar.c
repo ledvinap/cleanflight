@@ -25,7 +25,8 @@
 #include "common/axis.h"
 
 #include "drivers/sonar_hcsr04.h"
-#include "drivers/gpio.h"
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
 

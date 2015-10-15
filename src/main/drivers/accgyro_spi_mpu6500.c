@@ -84,12 +84,12 @@ static void mpu6500SpiInit(void)
 #ifdef STM32F10X
     RCC_APB2PeriphClockCmd(MPU6500_CS_GPIO_CLK_PERIPHERAL, ENABLE);
 
-    gpio_config_t gpio;
+    GPIO_InitTypeDef GPIO_InitStructure;
     // CS as output
-    gpio.mode = Mode_Out_PP;
-    gpio.pin = MPU6500_CS_PIN;
-    gpio.speed = Speed_50MHz;
-    gpioInit(MPU6500_CS_GPIO, &gpio);
+    GPIO_InitStructure.GPIO_Pin = MPU6500_CS_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(MPU6500_CS_GPIO, &GPIO_InitStructure);
 #endif
 
     GPIO_SetBits(MPU6500_CS_GPIO,   MPU6500_CS_PIN);

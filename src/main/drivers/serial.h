@@ -94,9 +94,10 @@ typedef struct  {
 
 struct serialPortVTable {
     bool (*isTransmitBufferEmpty)(serialPort_t *instance);
+    int (*txBytesFree)(serialPort_t *instance);
     void (*write)(serialPort_t *instance, uint8_t ch);
 
-    int (*totalBytesWaiting)(serialPort_t *instance);
+    int (*rxBytesWaiting)(serialPort_t *instance);
     int (*read)(serialPort_t *instance);
 
     void (*release)(serialPort_t *instance);
@@ -106,14 +107,16 @@ struct serialPortVTable {
 };
 
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
+int serialTxBytesFree(serialPort_t *instance);
 void serialWrite(serialPort_t *instance, uint8_t ch);
 int serialWriteData(serialPort_t *instance, const uint8_t *data, int len);  // for backward comaptibility
 int serialWriteBlock(serialPort_t *instance, const uint8_t *data, int len);
 void serialPrint(serialPort_t *instance, const char *str);
 
-int serialTotalBytesWaiting(serialPort_t *instance);
+int serialRxBytesWaiting(serialPort_t *instance);
 int serialRead(serialPort_t *instance);
 int serialReadBlock(serialPort_t *instance, uint8_t *data, int len);
+
 // release port
 void serialRelease(serialPort_t *instance);
 // restore previous configuration

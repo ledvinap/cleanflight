@@ -38,6 +38,7 @@
 #include "timer.h"
 
 #include "serial.h"
+#include "serial_impl.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
 
@@ -354,6 +355,35 @@ bool isUartTransmitBufferEmpty(serialPort_t *serial)
         return self->port.txBufferTail == self->port.txBufferHead;
 }
 
+int uartTxBytesFree(serialPort_t *instance)
+{
+    int bytesFree = serialTxBytesFree_Generic(instance);
+
+    uartPort_t *self = container_of(instance, uartPort_t, port);
+
+    if (self->port.mode & MODE_U_DMATX) {
+        /*
+         * When we queue up a DMA request, we advance the Tx buffer tail before the transfer finishes, so we must subtract
+         * the remaining size of that in-progress transfer here instead:
+         */
+        bytesFree -= self->txDMAChannel->CNDTR;
+
+        /*
+         * If the Tx buffer is being written to very quickly, we might have advanced the head into the buffer
+         * space occupied by the current DMA transfer. In that case the "bytesUsed" total will actually end up larger
+         * than the total Tx buffer size, because we'll end up transmitting the same buffer region twice. (So we'll be
+         * transmitting a garbage mixture of old and new bytes).
+         *
+         * Be kind to callers and pretend like our buffer can only ever be 100% full.
+         */
+        if (bytesFree < 0) {
+            return 0;
+        }
+    }
+
+    return bytesFree;
+}
+
 void uartWrite(serialPort_t *serial, uint8_t ch)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
@@ -370,7 +400,7 @@ void uartWrite(serialPort_t *serial, uint8_t ch)
     }
 }
 
-int uartTotalBytesWaiting(serialPort_t *serial)
+int uartRxBytesWaiting(serialPort_t *serial)
 {
     uartPort_t *self = container_of(serial, uartPort_t, port);
     int ret;
@@ -407,8 +437,9 @@ int uartRead(serialPort_t *serial)
 
 const struct serialPortVTable uartVTable = {
     .isTransmitBufferEmpty = isUartTransmitBufferEmpty,
+    .txBytesFree = uartTxBytesFree,
     .write = uartWrite,
-    .totalBytesWaiting = uartTotalBytesWaiting,
+    .rxBytesWaiting = uartRxBytesWaiting,
     .read = uartRead,
 
     .release = uartRelease,

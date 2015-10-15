@@ -11,3 +11,8 @@
 #define USART2_RX_IO PA3
 #define USART2_TX_IO PA2
 #endif
+
+#define TARGET_IO_PORTA 0xffff  // TODO!
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+

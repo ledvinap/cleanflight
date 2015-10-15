@@ -58,7 +58,7 @@
 #define _ABS_I(x, var) _ABS_II(x, var)
 #define ABS(x) _ABS_I(x, _CHOOSE_VAR(_abs, __COUNTER__))
 
-typedef struct stdev_t
+typedef struct stdev_s
 {
     float m_oldM, m_newM, m_oldS, m_newS;
     int m_n;

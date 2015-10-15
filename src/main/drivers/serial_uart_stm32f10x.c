@@ -30,11 +30,12 @@
 #include "build_config.h"
 
 #include "system.h"
-#include "gpio.h"
+#include "drivers/io.h"
+#include "drivers/io_impl.h"
 #include "nvic.h"
 #include "dma.h"
 
-#include "target_io.h"
+#include "target_io.h"  // TODO
 
 #include "timer.h" // TODO - should be in IO.h
 
@@ -158,16 +159,16 @@ void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
     }
 
     if(self->port.mode & MODE_SINGLEWIRE) {
-        IOConfigGPIO(tx, Mode_AF_OD);
+        IOConfigGPIO(tx, IOCFG_AF_OD);
     } else {
         if (self->port.mode & MODE_TX && tx)
-            IOConfigGPIO(tx, Mode_AF_PP);   // TODO!
+            IOConfigGPIO(tx, IOCFG_AF_PP);   // TODO!
         if (self->port.mode & MODE_RX && rx)
-            IOConfigGPIO(rx, Mode_IPU);
+            IOConfigGPIO(rx, IOCFG_IPU);
         if (txi)
-             IOConfigGPIO(rxi, Mode_IPU);
+            IOConfigGPIO(rxi, IOCFG_IPU);
         if (rxi)
-             IOConfigGPIO(txi, Mode_IPU);
+            IOConfigGPIO(txi, IOCFG_IPU);
     }
 }
 

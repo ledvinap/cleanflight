@@ -29,10 +29,9 @@
 #include "nvic.h"
 
 #include "system.h"
-#include "gpio.h"
-#include "exti.h"
-#include "bus_i2c.h"
 #include "drivers/io.h"
+#include "drivers/exti.h"
+#include "bus_i2c.h"
 
 #include "sensor.h"
 #include "accgyro.h"
@@ -230,7 +229,7 @@ void mpuIntExtiInit(void)
         return;
 # endif
     EXTIHandlerInit(&mpuIntCallbackRec, mpuIntExtiHandler);
-    EXTIConfig(mpuIntIO, &mpuIntCallbackRec, NVIC_PRIO_MPU_DATA_READY, EXTI_Trigger_Rising);
+    EXTIConfig(mpuIntIO, &mpuIntCallbackRec, NVIC_PRIO_MPU_INT_EXTI, EXTI_Trigger_Rising);
     EXTIEnable(mpuIntIO, true);
 #endif
     mpuExtiInitDone = true;

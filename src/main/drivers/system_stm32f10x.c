@@ -44,7 +44,8 @@ void systemResetToBootloader(void) {
 void enableGPIOPowerUsageAndNoiseReductions(void)
 {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
-
+#warning TODO
+#if 0
     gpio_config_t gpio;
 
     gpio.mode = Mode_AIN;
@@ -52,6 +53,7 @@ void enableGPIOPowerUsageAndNoiseReductions(void)
     gpioInit(GPIOA, &gpio);
     gpioInit(GPIOB, &gpio);
     gpioInit(GPIOC, &gpio);
+#endif
 }
 
 bool isMPUSoftReset(void)

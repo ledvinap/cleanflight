@@ -542,9 +542,9 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
     if (pidProfile->dterm_cut_hz) {
-        MainDptCut =  (0.5f / M_PI) / constrain(pidProfile->dterm_cut_hz, 1, 50);   // dterm_cut_hz (default 0, Range 1-50Hz)
+        MainDptCut =  (0.5f / M_PIf) / constrain(pidProfile->dterm_cut_hz, 1, 50);   // dterm_cut_hz (default 0, Range 1-50Hz)
     } else {
-        MainDptCut = (0.5f / M_PI) / 12.0f;                                        // default is 12Hz to maintain initial behavior of PID5
+        MainDptCut = (0.5f / M_PIf) / 12.0f;                                        // default is 12Hz to maintain initial behavior of PID5
     }
     FLOATcycleTime  = (float)constrain(cycleTime, 1, 100000);                  // 1us - 100ms
     ACCDeltaTimeINS = FLOATcycleTime * 0.000001f;                              // ACCDeltaTimeINS is in seconds now

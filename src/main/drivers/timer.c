@@ -307,6 +307,11 @@ void timerChConfigGPIO(timerChRec_t *timChRec, ioConfig_t config)
     }
 }
 
+void timerChIOWrite(timerChRec_t *timCh, bool value)
+{
+    IOWrite(timCh->ioRec, value);
+}
+
 // calculate input filter value (for TIM_ICFilter)
 // TODO - we should probably setup DTS to higher value to allow reasonable input filtering
 //   - notice that prescaler[0] does use DTS for sampling - the sequence won't be monotonous anymore
@@ -399,6 +404,11 @@ volatile timCCR_t* timerChCCR(timerChRec_t *timChRec)
 volatile timCCR_t* timerChCNT(timerChRec_t *timChRec)
 {
     return &timChRec->tim->CNT;
+}
+
+TIM_TypeDef* timerChTIM(timerChRec_t *timChRec)
+{
+    return timChRec->tim;
 }
 
 // configure output compare on timer channel
@@ -713,8 +723,8 @@ void timerInit(void)
 
 #ifdef TIME_USE_TIMER
     // initialize timer used for timing functions
-    timerConfigure(TIME_TIMER, NVIC_PRIO_TIME_TIMER, 0, 1000000);
-    timerCountRunningTime(TIME_TIMER, true, NVIC_PRIO_TIME_TIMER);
+    timerConfigure(DEF_TIMER_REC(TIME_TIMER), NVIC_PRIO_TIME_TIMER, 0, 1000000);
+    timerCountRunningTime(DEF_TIMER_REC(TIME_TIMER), true, NVIC_PRIO_TIME_TIMER);
 #endif
 }
 
@@ -781,7 +791,7 @@ void timerChForceOverflow(timerChRec_t *timChRec)
 // retrun current time in microseconds
 uint32_t micros(void)
 {
-    return timerGetRunningTimeCNTfast(TIME_TIMER);
+    return timerGetRunningTimeCNTfast(DEF_TIMER_REC(TIME_TIMER));
 }
 
 // retrun current time in milliseconds

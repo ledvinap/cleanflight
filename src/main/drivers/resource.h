@@ -19,7 +19,6 @@ typedef enum {
     OWNER_SERIAL_RXTX,
     OWNER_PINDEBUG,
     OWNER_TIMER,
-    OWNER_STATUSLED,
     OWNER_SYSTEM,
 } resourceOwner_t;
 

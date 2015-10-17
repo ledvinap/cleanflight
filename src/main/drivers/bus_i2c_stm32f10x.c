@@ -34,7 +34,7 @@
 
 #ifndef SOFT_I2C
 
-static ioRec_t *sclIO, *sdaIO;
+static IO_t sclIO, sdaIO;
 
 // I2C2
 // SCL  PB10

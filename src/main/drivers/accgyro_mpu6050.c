@@ -269,13 +269,13 @@ static void mpu6050GyroInit(uint16_t lpf)
 
     ack = mpuConfiguration.write(MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
     delay(100);
-    ack = mpuConfiguration.write(MPU_RA_PWR_MGMT_1, 0x03); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
+    ack = mpuConfiguration.write(MPU_RA_PWR_MGMT_1, 0x03);      //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
     delay(15); //PLL Settling time when changing CLKSEL is max 10ms.  Use 15ms to be sure 
     if(mpuLowPassFilter == INV_FILTER_256HZ_NOLPF2
        || mpuLowPassFilter == INV_FILTER_2100HZ_NOLPF)          // keep 1khz sampling frequency if internal filter is disabled
-        ack = i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x07);  //SMPLRT_DIV    -- SMPLRT_DIV = 7  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+        ack = mpuConfiguration.write(MPU_RA_SMPLRT_DIV, 0x07);  //SMPLRT_DIV    -- SMPLRT_DIV = 7  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
     else
-        ack = i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00);
+        ack = mpuConfiguration.write(MPU_RA_SMPLRT_DIV, 0x00);
     ack = mpuConfiguration.write(MPU_RA_CONFIG, mpuLowPassFilter); //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
     ack = mpuConfiguration.write(MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
 
@@ -289,27 +289,30 @@ static void mpu6050GyroInit(uint16_t lpf)
 #ifdef USE_MPU_DATA_READY_SIGNAL
     ack = mpuConfiguration.write(MPU_RA_INT_ENABLE, MPU_RF_DATA_RDY_EN);
 #endif
+#ifdef ACCGYRO_FIFO
+    mpu6050FifoEnable();
+#endif
     UNUSED(ack);
 }
 
 int mpu6050GetFifoLen(void)
 {
     uint8_t buf[2];
-    i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_COUNTH, 2, buf);
+    mpuConfiguration.read(MPU_RA_FIFO_COUNTH, 2, buf);
     return (buf[0] << 8) | buf[1];
 }
 
 void mpu6050FifoEnable(void)
 {
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_RESET);   // flush FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_EN);      // enable FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_FIFO_EN, MPU_RF_XG_FIFO_EN | MPU_RF_YG_FIFO_EN | MPU_RF_ZG_FIFO_EN | MPU_RF_ACCEL_FIFO_EN);
+    mpuConfiguration.write(MPU_RA_USER_CTRL, MPU_RF_FIFO_RESET);   // flush FIFO
+    mpuConfiguration.write(MPU_RA_USER_CTRL, MPU_RF_FIFO_EN);      // enable FIFO
+    mpuConfiguration.write(MPU_RA_FIFO_EN, MPU_RF_XG_FIFO_EN | MPU_RF_YG_FIFO_EN | MPU_RF_ZG_FIFO_EN | MPU_RF_ACCEL_FIFO_EN);
 }
 
 void mpu6050FifoFlush(void)
 {
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_RESET);   // flush FIFO
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_USER_CTRL, MPU_RF_FIFO_EN);      // enable FIFO
+    mpuConfiguration.write(MPU_RA_USER_CTRL, MPU_RF_FIFO_RESET);   // flush FIFO
+    mpuConfiguration.write(MPU_RA_USER_CTRL, MPU_RF_FIFO_EN);      // enable FIFO
 }
 
 int mpu6050FifoRead(uint8_t *buffer, int maxLen, int modulo) {
@@ -325,7 +328,7 @@ int mpu6050FifoRead(uint8_t *buffer, int maxLen, int modulo) {
     if(len>12 && len <= 36)
         pinDbgToggle(DBP_MPU6050_2);
     if(len)
-        if(!i2cRead(MPU6050_ADDRESS, MPU_RA_FIFO_R_W, len, buffer))
+        if(!mpuConfiguration.read(MPU_RA_FIFO_R_W, len, buffer))
             return -1;
     return len;
 }

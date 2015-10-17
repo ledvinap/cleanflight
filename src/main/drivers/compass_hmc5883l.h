@@ -20,7 +20,7 @@
 #include "drivers/io.h"
 
 typedef struct hmc5883Config_s {
-    ioRec_t *intIO;
+    ioTag_t intIO;
 } hmc5883Config_t;
 
 bool hmc5883lDetect(mag_t* mag, const hmc5883Config_t *hmc5883ConfigToUse);

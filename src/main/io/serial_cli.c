@@ -1949,11 +1949,11 @@ static void cliPlaySound(char *cmdline)
 
     if (isEmpty(cmdline)) {
         i = lastSoundIdx + 1;     //next sound index
-        if ((name=beeperNameForTableIndex(i)) == NULL) {
+        if ((name = beeperNameForTableIndex(i)) == NULL) {
             while (true) {   //no name for index; try next one
                 if (++i >= beeperTableEntryCount())
                     i = 0;   //if end then wrap around to first entry
-                if ((name=beeperNameForTableIndex(i)) != NULL)
+                if ((name = beeperNameForTableIndex(i)) != NULL)
                     break;   //if name OK then play sound below
                 if (i == lastSoundIdx + 1) {     //prevent infinite loop
                     printf("Error playing sound\r\n");
@@ -1963,7 +1963,7 @@ static void cliPlaySound(char *cmdline)
         }
     } else {       //index value was given
         i = atoi(cmdline);
-        if ((name=beeperNameForTableIndex(i)) == NULL) {
+        if ((name = beeperNameForTableIndex(i)) == NULL) {
             printf("No sound for index %d\r\n", i);
             return;
         }
@@ -2415,6 +2415,7 @@ const char * const ownerNames[] = {
     "SERIAL_RXTX",
     "PINDEBUG",
     "TIMER",
+    "SYSTEM",
 };
 
 #include "drivers/io_impl.h"
@@ -2425,14 +2426,41 @@ static void cliResources(char *cmdline)
 {
     UNUSED(cmdline);
     printf("IO:\r\n");
-    for(unsigned i = 0; i < DEFIO_IO_USED_COUNT; i++)
-        printf("%c%02d: %19s %02x\r\n", IO_GPIOPortIdx(ioRecs + i)+'A', IO_GPIOPinIdx(ioRecs + i), ownerNames[ioRecs[i].owner], ioRecs[i].resourcesUsed);
+    for(unsigned i = 0; i < DEFIO_IO_USED_COUNT; i++) {
+        const char* owner;
+        char buff[15];
+        if(ioRecs[i].owner < ARRAYLEN(ownerNames)) {
+            owner = ownerNames[ioRecs[i].owner];
+        } else {
+            sprintf(buff, "O=%d", ioRecs[i].owner);
+            owner = buff;
+        }
+        printf("%c%02d: %19s %02x\r\n", IO_GPIOPortIdx(ioRecs + i)+'A', IO_GPIOPinIdx(ioRecs + i), owner, ioRecs[i].resourcesUsed);
+    }
     printf("TIMER:\r\n");
     for(unsigned i = 0; i < TIMER_USED_COUNT; i++) {
         timerRec_t *tim = timerRecPtrs[i];
         printf("%d : time: %d prio: 0x%02x\r\n", i, tim->runningTime, tim->priority);
-        for(int i = 0; i < tim->channels; i++)
-            printf(" - %d: %08x %08x %19s\r\n", i, tim->channel[i].edgeCallback, tim->channel[i].overflowCallback, ownerNames[tim->channel[i].owner]);
+        for(unsigned j = 0; j < tim->channels; j++) {
+            const char* owner;
+            char buff[15];
+            if(tim->channel[j].owner < ARRAYLEN(ownerNames)) {
+                owner = ownerNames[tim->channel[j].owner];
+            } else {
+                sprintf(buff, "O=%d", tim->channel[j].owner);
+                owner = buff;
+            }
+            IO_t io = tim->channel[j].io;
+            char ioname[6] = "---:-";
+            if(io) {
+#if defined(STM32F10X)
+                sprintf(ioname, "%c%02d:-", IO_GPIOPortIdx(io)+'A', IO_GPIOPinIdx(io));
+#elif defined(STM32F303xC)
+                sprintf(ioname, "%c%02d:%X", IO_GPIOPortIdx(io)+'A', IO_GPIOPinIdx(io), tim->channel[j].pinAF);
+#endif
+            }
+            printf(" - %d: %08x %08x %s %19s\r\n", j, tim->channel[j].edgeCallback, tim->channel[j].overflowCallback, ioname, owner);
+        }
     }
 }
 

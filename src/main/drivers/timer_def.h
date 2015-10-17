@@ -24,21 +24,21 @@
 
 #define DEF_TIMER_TIM(tim) CONCAT(TIM, tim)
 #define DEF_TIMER_REC(tim) (CONCAT(&timerRecs.rec_TIM, tim))
-
+#define DEF_TIMER_INDEX(tim) CONCAT(TARGET_TIMER_TIM, CONCAT(tim, _INDEX))
 // initializer for timerDef_t record
 #if defined(STM32F10X)
 # define DEF_TIMCH(pinid_, tim_, tim_ch_) {                             \
-        .timerIdx = (tim_),                                             \
-        .channelIdx = (tim_ch_),                                        \
+        .timerIdx = DEF_TIMER_INDEX(tim_),                              \
+        .channelIdx = (tim_ch_ - 1),                                    \
         .ioTag = DEFIO_TAG(pinid_),                                     \
     }                                                                   \
     /**/
 #elif defined(STM32F303xC)
 # define DEF_TIMCH(pinid, tim_, tim_ch_, pin_af_) {                     \
-        .timerIdx = (tim_),                                             \
-        .channelIdx = (tim_ch_),                                        \
+        .timerIdx = DEF_TIMER_INDEX(tim_),                              \
+        .channelIdx = (tim_ch_ - 1),                                    \
         .ioTag = DEFIO_TAG(pinid),                                      \
-        .pinAf = pin_af_                                                \
+        .pinAF = pin_af_                                                \
     }                                                                   \
     /**/
 #endif

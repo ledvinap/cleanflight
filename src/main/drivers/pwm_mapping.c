@@ -520,7 +520,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             if (timerChDef_TIM(timChDef) == LED_STRIP_TIMER)
                 continue;
 #if defined(STM32F303xC) && defined(WS2811_GPIO) && defined(WS2811_PIN)
-            if (timerChDef_IO(timChDef) == DEFIO_REC(WS2811_IO))
+            if (timerChDef_IO(timChDef) == DEFIO_IO(WS2811_IO))
                 continue;
 #endif
         }
@@ -528,17 +528,17 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
 
 #ifdef VBAT_ADC_IO
-        if (init->useVbat && timerChDef_IO(timChDef) == DEFIO_REC(VBAT_ADC_IO))
+        if (init->useVbat && timerChDef_IO(timChDef) == DEFIO_IO(VBAT_ADC_IO))
             continue;
 #endif
 
 #ifdef RSSI_ADC_IO
-        if (init->useRSSIADC && timerChDef_IO(timChDef) == DEFIO_REC(RSSI_ADC_IO))
+        if (init->useRSSIADC && timerChDef_IO(timChDef) == DEFIO_IO(RSSI_ADC_IO))
             continue;
 #endif
 
 #ifdef CURRENT_METER_ADC_IO
-        if (init->useCurrentMeterADC && timerChDef_IO(timChDef) == DEFIO_REC(CURRENT_METER_ADC_IO))
+        if (init->useCurrentMeterADC && timerChDef_IO(timChDef) == DEFIO_IO(CURRENT_METER_ADC_IO))
             continue;
 #endif
 

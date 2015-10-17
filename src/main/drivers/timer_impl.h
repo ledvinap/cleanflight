@@ -27,7 +27,7 @@ typedef struct timerChDef_s {
     unsigned channelIdx : 3;             // channel number (1-4 only)
     ioTag_t ioTag;                       // IO pin TAG (packed GPIO/PIN)
 #ifdef STM32F303xC
-    unsigned pinAf : 4;                  // alternate function
+    unsigned pinAF : 4;                  // alternate function
 #endif
 } timerChDef_t;
 
@@ -45,7 +45,7 @@ typedef struct timerDef_s {
 typedef struct timerChRec_s {
     timerRec_t *timRec;                       // timer rec
     TIM_TypeDef *tim;                         // timer peripheral, cache
-    ioRec_t *ioRec;                           // io pin for this timer
+    IO_t io;                                  // io pin for this timer
 #ifdef STM32F303xC
     uint8_t pinAF;                            // pin Alternate Function multiplexer for GPIO pin
 #endif
@@ -65,8 +65,8 @@ typedef struct timerRec_s {
     uint8_t runningTimeEnabled;
     uint8_t channels;                               // number of allocated channels
     const timerDef_t* def;                          // constant part to avoid caching everything
-    // channels are last - only space up to last used channel is allocated
-    struct timerChRec_s channel[];
+    // channels are last - only space up to last used channel is allocated. Outer structure contain members to allocate required space
+    struct timerChRec_s channel[0];
 } timerRec_t;
 
 // pointer to timers used on target

@@ -16,17 +16,16 @@ typedef struct ioRec_s {
     resourceType_t resourcesUsed; // TODO!
 } ioRec_t;
 
-#define DEFIO_IO_REC_INITIALIZER {NULL, 0, 0, 0}
-
 extern ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
 
-int IO_GPIOPortIdx(ioRec_t *io);
-int IO_GPIOPinIdx(ioRec_t *io);
+int IO_GPIOPortIdx(IO_t io);
+int IO_GPIOPinIdx(IO_t io);
 #if defined(STM32F10X)
-int IO_GPIO_PinSource(ioRec_t *io);
-int IO_GPIO_PortSource(ioRec_t *io);
+int IO_GPIO_PinSource(IO_t io);
+int IO_GPIO_PortSource(IO_t io);
 #elif defined(STM32F303xC)
-int IO_EXTI_PortSourceGPIO(ioRec_t *io);
-int IO_EXTI_PinSource(ioRec_t *io);
+int IO_EXTI_PortSourceGPIO(IO_t io);
+int IO_EXTI_PinSource(IO_t io);
 #endif
-uint32_t IO_EXTI_Line(ioRec_t *io);
+uint32_t IO_EXTI_Line(IO_t io);
+ioRec_t *IO_Rec(IO_t io);

@@ -45,22 +45,22 @@ void EXTIHandlerInit(extiCallbackRec_t *self, extiHandlerCallback *fn)
     self->fn = fn;
 }
 
-void EXTIConfig(ioRec_t* ioRec, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger)
+void EXTIConfig(IO_t io, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger)
 {
     int chIdx;
-    chIdx = IO_GPIOPinIdx(ioRec);
+    chIdx = IO_GPIOPinIdx(io);
     if(chIdx < 0)
         return;
     extiChannelRec_t *rec = &extiChannelRecs[chIdx];
     rec->handler = cb;
 #if defined(STM32F10X)
-    GPIO_EXTILineConfig(IO_GPIO_PortSource(ioRec), IO_GPIO_PinSource(ioRec));
+    GPIO_EXTILineConfig(IO_GPIO_PortSource(io), IO_GPIO_PinSource(io));
 #elif defined(STM32F303xC)
-    SYSCFG_EXTILineConfig(IO_EXTI_PortSourceGPIO(ioRec), IO_EXTI_PinSource(ioRec));
+    SYSCFG_EXTILineConfig(IO_EXTI_PortSourceGPIO(io), IO_EXTI_PinSource(io));
 #else
 # warning "Unknown CPU"
 #endif
-    uint32_t extiLine = IO_EXTI_Line(ioRec);
+    uint32_t extiLine = IO_EXTI_Line(io);
 
     EXTI_ClearITPendingBit(extiLine);
 
@@ -79,10 +79,10 @@ void EXTIConfig(ioRec_t* ioRec, extiCallbackRec_t *cb, int irqPriority, EXTITrig
     NVIC_Init(&NVIC_InitStructure);
 }
 
-void EXTIEnable(ioRec_t* ioRec, bool enable)
+void EXTIEnable(IO_t io, bool enable)
 {
 #if defined(STM32F10X)
-    uint32_t extiLine = IO_EXTI_Line(ioRec);
+    uint32_t extiLine = IO_EXTI_Line(io);
     if(!extiLine)
         return;
     if(enable)
@@ -90,7 +90,7 @@ void EXTIEnable(ioRec_t* ioRec, bool enable)
     else
         EXTI->IMR &= ~extiLine;
 #elif defined(STM32F303xC)
-    int extiLine = IO_EXTILine(ioRec);
+    int extiLine = IO_EXTILine(io);
     if(extiLine < 0)
         return;
     // assume extiLine < 32 (walid for all EXTI pins)

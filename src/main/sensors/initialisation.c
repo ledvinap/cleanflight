@@ -85,17 +85,17 @@ extern acc_t acc;
 uint8_t detectedSensors[MAX_SENSORS_TO_DETECT] = { GYRO_NONE, ACC_NONE, BARO_NONE, MAG_NONE };
 
 
-ioRec_t *selectMPUIntExtiConfig(void)
+IO_t selectMPUIntExtiConfig(void)
 {
 #ifdef NAZE
     if (hardwareRevision < NAZE32_REV5) {
-        return DEFIO_REC(PB13); // MPU_INT output on rev4 PB13
+        return IO_IO(PB13); // MPU_INT output on rev4 PB13
     } else {
-        return DEFIO_REC(PC13); // MPU_INT output on rev5 hardware PC13
+        return IO_IO(PC13); // MPU_INT output on rev5 hardware PC13
     }
 #endif
 #ifdef SPRACINGF3
-    return DEFIO_REC(PC13);
+    return IO_IO(PC13);
 #endif
     return NULL;
 }
@@ -403,8 +403,8 @@ static void detectBaro(baroSensor_e baroHardwareToUse)
 
 #if defined(BARO_XCLR_IO) && defined(BARO_EOC_IO)
     static const bmp085Config_t defaultBMP085Config = {
-        .xclrIO = IO_REC(BARO_XCLR_IO),
-        .eocIO = IO_REC(BARO_EOC_IO),
+        .xclrIO = IO_IO(BARO_XCLR_IO),
+        .eocIO = IO_IO(BARO_EOC_IO),
     };
     bmp085Config = &defaultBMP085Config;
 #endif
@@ -467,10 +467,10 @@ static void detectMag(magSensor_e magHardwareToUse)
 
 #ifdef NAZE
     static const hmc5883Config_t nazeHmc5883Config_v1_v4 = {
-        .intIO = DEFIO_REC(PB12),
+        .intIO = DEFIO_IO(PB12),
     };
     static const hmc5883Config_t nazeHmc5883Config_v5 = {
-        .intIO = DEFIO_REC(PC14),
+        .intIO = DEFIO_IO(PC14),
     };
     if (hardwareRevision < NAZE32_REV5) {
         hmc5883Config = &nazeHmc5883Config_v1_v4;
@@ -481,7 +481,7 @@ static void detectMag(magSensor_e magHardwareToUse)
 
 #ifdef SPRACINGF3
     static const hmc5883Config_t spRacingF3Hmc5883Config = {
-        .intIO = DEFIO_REC(PC14),
+        .intIO = DEFIO_IO(PC14),
     };
     hmc5883Config = &spRacingF3Hmc5883Config;
 #endif
@@ -561,7 +561,7 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
 
 #if defined(USE_GYRO_MPU6050) || defined(USE_GYRO_MPU3050) || defined(USE_GYRO_MPU6500) || defined(USE_GYRO_SPI_MPU6500) || defined(USE_GYRO_SPI_MPU6000) || defined(USE_ACC_MPU6050)
 
-    ioRec_t * mpuIntIO = selectMPUIntExtiConfig();
+    IO_t mpuIntIO = selectMPUIntExtiConfig();
 
     mpuDetectionResult_t *mpuDetectionResult = detectMpu(mpuIntIO);
     UNUSED(mpuDetectionResult);

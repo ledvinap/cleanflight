@@ -112,7 +112,9 @@ serialPort_t *usbVcpOpen(void)
     usbVcpPort_t *self = &vcpPort;
 
     self->port.vTable = &usbVcpVTable;
-
+    self->port.mode = MODE_RXTX;
+    self->port.state = STATE_RXTX;
+    
     self->port.rxBuffer = self->rxBuffer;
     self->port.rxBufferSize = VCP_BUFFER_SIZE;
     self->port.rxBufferTail = 0;

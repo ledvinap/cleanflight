@@ -175,11 +175,15 @@ timerChRec_t* timerChInit(const timerChDef_t *timChDef, resourceOwner_t owner, r
     timerChRec_t *timChRec = timerChDef_TimChRec(timChDef);
     if(timChRec == NULL)
         return NULL;
-    ioRec_t* ioRec = timerChDef_IO(timChDef);
-    if(ioRec) {  // claim io channel
-        IOInit(ioRec, owner, resources);
-    }
 
+    IO_t io = timerChDef_IO(timChDef);
+    if(io) {  // claim io channel
+        IOInit(io, owner, resources);
+    }
+    timChRec->io = io;
+#ifdef STM32F303xC
+    timChRec->pinAF = timChDef->pinAF;
+#endif
     timChRec->owner = owner;
     if(resources & RESOURCE_TIMER_DUAL) {
         // we must mark other channel too
@@ -298,18 +302,18 @@ void timerChClearCCFlag(timerChRec_t *timChRec)
 // configure timer channel GPIO mode
 void timerChConfigGPIO(timerChRec_t *timChRec, ioConfig_t config)
 {
-    if(timChRec->ioRec) {
+    if(!IO_ISEMPTY(timChRec->io)) {
 #ifdef STM32F303xC
-        IOConfigGPIOAF(timChRec->ioRec, config, timChRec->pinAF);
+        IOConfigGPIOAF(timChRec->io, config, timChRec->pinAF);
 #else
-        IOConfigGPIO(timChRec->ioRec, config);
+        IOConfigGPIO(timChRec->io, config);
 #endif
     }
 }
 
 void timerChIOWrite(timerChRec_t *timCh, bool value)
 {
-    IOWrite(timCh->ioRec, value);
+    IOWrite(timCh->io, value);
 }
 
 // calculate input filter value (for TIM_ICFilter)
@@ -503,12 +507,12 @@ timerChRec_t* timerChRecDual(timerChRec_t *timChRec)
 resourceType_t timerChGetResources(timerChRec_t *timChRec)
 {
     resourceType_t resources = 0;
-    ioRec_t *ioRec = timChRec->ioRec;
-    if(ioRec)
-        resources |= IOGetResources(ioRec);
-    ioRec_t *ioRecDual = timerChRecDual(timChRec)->ioRec;
-    if(ioRecDual && (IOGetResources(ioRecDual) & RESOURCE_TIMER_DUAL))
-        resources |=  IOGetResources(ioRecDual);
+    IO_t io = timChRec->io;
+    if(!IO_ISEMPTY(io))
+        resources |= IOGetResources(io);
+    IO_t ioDual = timerChRecDual(timChRec)->io;
+    if(!IO_ISEMPTY(ioDual) && (IOGetResources(ioDual) & RESOURCE_TIMER_DUAL))
+        resources |=  IOGetResources(ioDual);
     return resources;
 }
 
@@ -524,11 +528,17 @@ ioRec_t* timerChDef_IO(const timerChDef_t* timChDef)
     return IOGetByTag(timChDef->ioTag);
 }
 
+// TODO - what if caller wants old channel resources?
+// TODO - resource-dual must be associated with timer channel, not IO
 resourceType_t timerChDef_GetResources(const timerChDef_t* timChDef)
 {
+    resourceType_t resources = 0;
+    IO_t io = timerChDef_IO(timChDef);
+    if(!IO_ISEMPTY(io))
+        resources |= IOGetResources(io);
     timerChRec_t *timChRec = timerChDef_TimChRec(timChDef);
-    if(timChRec == NULL) return 0;
-    return timerChGetResources(timChRec);
+    resources |= timerChGetResources(timChRec);
+    return resources;
 }
 
 timerChRec_t* timerChDef_TimChRec(const timerChDef_t* timChDef)

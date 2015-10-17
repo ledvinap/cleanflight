@@ -75,7 +75,7 @@ void mpu6500GyroInit(uint16_t lpf)
 
     // MPU_INT output on rev5 hardware (PC13). rev4 was on PB13, conflicts with SPI devices
     if (hse_value == 12000000) {
-        ioRec_t * intIO = IO_REC(PC13);
+        IO_t intIO = DEFIO_IO(PC13);
         IOInit(intIO, OWNER_SYSTEM, RESOURCE_INPUT);
         IOConfigGPIO(intIO, IOCFG_IN_FLOATING);
     }

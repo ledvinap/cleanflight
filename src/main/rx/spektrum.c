@@ -199,7 +199,7 @@ void spektrumBind(rxConfig_t *rxConfig)
 
     LED1_ON;
 
-    ioRec_t *bindIO = IO_REC(BIND_IO);
+    IO_t bindIO = DEFIO_IO(BIND_IO);
     IOInit(bindIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
     IOConfigGPIO(bindIO, IOCFG_OUT_OD);
     // RX line, set high

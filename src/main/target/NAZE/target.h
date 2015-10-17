@@ -22,16 +22,13 @@
 
 #define BOARD_HAS_VOLTAGE_DIVIDER
 
+#define LED0
+#define LED1
 #define LED0_IO        PB3
 #define LED1_IO        PB4
 
+#define BEEPER
 #define BEEP_IO        PA12
-
-#define BARO_XCLR_IO   PC13
-#define BARO_EOC_IO    PC14
-
-#define INVERTER_IO    PB2           // PB2 (BOOT1) abused as inverter select GPIO
-#define INVERTER_USART USART2
 
 // SPI2
 // PB15 28 SPI2_MOSI
@@ -92,6 +89,8 @@
 #define ACC_MPU6500_ALIGN CW0_DEG
 
 #define BARO
+#define BARO_XCLR_IO   PC13
+#define BARO_EOC_IO    PC14
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085
 #define USE_BARO_BMP280
@@ -103,10 +102,9 @@
 
 #define SONAR
 #define USE_EXTI
-#define BEEPER
-#define LED0
-#define LED1
 #define INVERTER
+#define INVERTER_IO    PB2           // PB2 (BOOT1) abused as inverter select GPIO
+#define INVERTER_USART USART2
 #define DISPLAY
 
 #define USE_USART1

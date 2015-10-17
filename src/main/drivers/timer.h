@@ -115,7 +115,7 @@ void timerForceOverflow(timerRec_t *timRec);
 
 // functions to query timerChDef, used in CF initialization phase to resolve conflicts
 TIM_TypeDef* timerChDef_TIM(const timerChDef_t* timChDef);
-ioRec_t* timerChDef_IO(const timerChDef_t* timChDef);
+IO_t timerChDef_IO(const timerChDef_t* timChDef);
 resourceType_t timerChDef_GetResources(const timerChDef_t* timChDef);
 timerChRec_t* timerChDef_TimChRec(const timerChDef_t* timChDef);
 timerRec_t* timerChDef_TimRec(const timerChDef_t* timChDef);

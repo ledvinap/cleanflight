@@ -63,13 +63,13 @@ static const uartHwDef_t uartPort1Def = {
     .txDMAChannelId = DMAId1c4,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
     .rcc = RCC_APB2(USART1),
-    .rxCh = DEFIO_REC(USART1_RX_IO),
-    .txCh = DEFIO_REC(USART1_TX_IO),
+    .rxCh = DEFIO_IO(USART1_RX_IO),
+    .txCh = DEFIO_IO(USART1_TX_IO),
 #ifdef USART1_RX_IO_REMAP
-    .rxChRemap = DEFIO_REC(USART1_RX_IO_REMAP),
+    .rxChRemap = DEFIO_IO(USART1_RX_IO_REMAP),
 #endif
 #ifdef USART1_TX_IO_REMAP
-    .txChRemap = DEFIO_REC(USART1_TX_IO_REMAP),
+    .txChRemap = DEFIO_IO(USART1_TX_IO_REMAP),
 #endif
     .remap = GPIO_Remap_USART1,
 };
@@ -89,8 +89,8 @@ static const uartHwDef_t uartPort2Def = {
     .IRQn = USART2_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART2,
     .rcc = RCC_APB1(USART2),
-    .rxCh = DEFIO_REC(USART2_RX_IO),
-    .txCh = DEFIO_REC(USART2_TX_IO),
+    .rxCh = DEFIO_IO(USART2_RX_IO),
+    .txCh = DEFIO_IO(USART2_TX_IO),
 #ifdef USART2_RX_PIN_REMAP
     .rxChRemap = USART2_RX_PIN_REMAP,
 #endif
@@ -115,8 +115,8 @@ static const uartHwDef_t uartPort3Def = {
     .IRQn = USART3_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART3,
     .rcc = RCC_APB1(USART3),
-    .rxCh = DEFIO_REC(USART3_RX_IO),
-    .txCh = DEFIO_REC(USART3_TX_IO),
+    .rxCh = DEFIO_IO(USART3_RX_IO),
+    .txCh = DEFIO_IO(USART3_TX_IO),
 #ifdef USART3_RX_PIN_REMAP
     .rxChRemap = USART3_RX_PIN_REMAP,
 #endif
@@ -143,17 +143,17 @@ void serialUSARTHwInit(uartPort_t *self, const serialPortMode_t *config)
 void usartHwConfigurePins(uartPort_t *self, const serialPortMode_t *config) {
     ioRec_t *tx, *rx, *rxi, *txi;
     if(config->mode & MODE_U_REMAP) {
-        rx = self->hwDef->rxChRemap;
-        tx = self->hwDef->txChRemap;
-        rxi = self->hwDef->rxCh;
-        txi = self->hwDef->txCh;
+        rx = IOGetByTag(self->hwDef->rxChRemap);
+        tx = IOGetByTag(self->hwDef->txChRemap);
+        rxi = IOGetByTag(self->hwDef->rxCh);
+        txi = IOGetByTag(self->hwDef->txCh);
         GPIO_PinRemapConfig(self->hwDef->remap, ENABLE);
         self->port.mode |= MODE_U_REMAP;
     } else {
-        rx = self->hwDef->rxCh;
-        tx = self->hwDef->txCh;
-        rxi = self->hwDef->rxChRemap;
-        txi = self->hwDef->txChRemap;
+        rx = IOGetByTag(self->hwDef->rxCh);
+        tx = IOGetByTag(self->hwDef->txCh);
+        rxi = IOGetByTag(self->hwDef->rxChRemap);
+        txi = IOGetByTag(self->hwDef->txChRemap);
         GPIO_PinRemapConfig(self->hwDef->remap, DISABLE);
         self->port.mode &= ~MODE_U_REMAP;
     }

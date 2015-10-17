@@ -12,6 +12,10 @@
 #define DEFIO_REC(pinid) CONCAT(DEFIO_REC__, pinid)
 #define DEFIO_REC__NONE NULL
 
+#define DEFIO_IO(pinid) (IO_t)DEFIO_REC(pinid)
+#define DEFIO_IO_ISEMPTY(io) (io == NULL)
+// TODO - macro to check for pinid NONE
+
 // get ioRec by index
 #define DEFIO_REC_INDEXED(idx) (ioRecs + (idx))
 

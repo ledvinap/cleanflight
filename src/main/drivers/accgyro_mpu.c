@@ -57,7 +57,7 @@ static bool detectSPISensorsAndUpdateDetectionResult(void);
 mpuDetectionResult_t mpuDetectionResult;
 
 mpuConfiguration_t mpuConfiguration;
-static ioRec_t *mpuIntIO = NULL;
+static IO_t mpuIntIO = DEFIO_IO(NONE);
 
 #define MPU_ADDRESS             0x68
 
@@ -75,7 +75,7 @@ static ioRec_t *mpuIntIO = NULL;
 
 #define MPU_INQUIRY_MASK   0x7E
 
-mpuDetectionResult_t *detectMpu(ioRec_t* intIO)
+mpuDetectionResult_t *detectMpu(IO_t intIO)
 {
     memset(&mpuDetectionResult, 0, sizeof(mpuDetectionResult));
     memset(&mpuConfiguration, 0, sizeof(mpuConfiguration));

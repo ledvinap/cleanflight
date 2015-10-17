@@ -20,18 +20,17 @@
 
 #include "platform.h"
 
-#ifdef INVERTER
+#ifdef INVERTER  // TODO - check INVERTER_IO is not NONE
 
 #include "drivers/io.h"
 #include "drivers/io_impl.h"
 
 #include "inverter.h"
 
-static ioRec_t *pin = NULL;
+static IO_t pin = DEFIO_IO(INVERTER_IO);
 
 void initInverter(void)
 {
-    pin = IO_REC(INVERTER_IO);
     IOInit(pin, OWNER_SYSTEM, RESOURCE_OUTPUT);
     IOConfigGPIO(pin, IOCFG_OUT_PP);
 }

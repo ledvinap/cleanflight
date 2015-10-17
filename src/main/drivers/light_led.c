@@ -38,10 +38,10 @@
 # define LED2_IO NONE
 #endif
 
-static ioRec_t *leds[] = {
-    IO_REC(LED0_IO),
-    IO_REC(LED1_IO),
-    IO_REC(LED2_IO),
+static IO_t leds[] = {
+    DEFIO_IO(LED0_IO),
+    DEFIO_IO(LED1_IO),
+    DEFIO_IO(LED2_IO),
 };
 
 uint8_t ledPolarity = 0
@@ -65,8 +65,10 @@ void ledInit(void)
     LED2_OFF;
 
     for (i = 0; i < ARRAYLEN(leds); i++) {
-        IOInit(leds[i], OWNER_STATUSLED, RESOURCE_OUTPUT);
-        IOConfigGPIO(leds[i], IOCFG_OUT_PP);
+        if(!IO_ISEMPTY(leds[i])) {
+            IOInit(leds[i], OWNER_SYSTEM, RESOURCE_OUTPUT);
+            IOConfigGPIO(leds[i], IOCFG_OUT_PP);
+        }
     }
 }
 

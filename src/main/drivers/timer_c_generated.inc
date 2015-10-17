@@ -67,4 +67,5 @@ timerRec_t* const timerRecPtrs[] = {
 #if TARGET_TIMER_TIM17 >= 0
        &timerRecs.rec_TIM17,
 #endif
+NULL    // terminate the list
 };

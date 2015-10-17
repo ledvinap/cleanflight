@@ -14,5 +14,5 @@ struct extiCallbackRec_s {
 void EXTIInit(void);
 
 void EXTIHandlerInit(extiCallbackRec_t *cb, extiHandlerCallback *fn);
-void EXTIConfig(ioRec_t *ioRec, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger);
-void EXTIEnable(ioRec_t *ioRec, bool enable);
+void EXTIConfig(IO_t io, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger);
+void EXTIEnable(IO_t io, bool enable);

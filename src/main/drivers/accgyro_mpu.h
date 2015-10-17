@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "io.h"
+
 typedef bool (*mpuReadRegisterFunc)(uint8_t reg, uint8_t length, uint8_t* data);
 typedef bool (*mpuWriteRegisterFunc)(uint8_t reg, uint8_t data);
 
@@ -80,11 +82,9 @@ typedef struct mpuDetectionResult_s {
 
 extern mpuDetectionResult_t mpuDetectionResult;
 
-typedef struct ioRec_s ioRec_t;
-
 uint8_t determineMPULPF(uint16_t lpf);
 void configureMPUDataReadyInterruptHandling(void);
 void mpuIntExtiInit(void);
 bool mpuAccRead(int16_t *accData);
 bool mpuGyroRead(int16_t *gyroADC);
-mpuDetectionResult_t *detectMpu(ioRec_t* intIO);
+mpuDetectionResult_t *detectMpu(IO_t intIO);

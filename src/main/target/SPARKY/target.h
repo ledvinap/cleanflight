@@ -41,8 +41,11 @@
 
 #define LED0
 #define LED1
-#define LED0_IO     PB4
-#define LED1_IO     PB5
+#define LED0_IO          PB4
+#define LED1_IO          PB5
+#define BEEPER
+#define BEEPER_INVERTED
+#define BEEPER_IO        PA6
 
 //#define USE_EXTI
 

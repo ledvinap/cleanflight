@@ -93,11 +93,15 @@ ${disclaimer_generated}
 END2
 
 // generate mask with used timers
-@{[ map { my $timer = $_; chomp(my $ret = << "END2"); $ret } @timers ]}
+@{[do {
+     my @prev_timers = ();
+     map { my $timer = $_; chomp(my $ret = << "END2"); push @prev_timers, $timer; $ret } @timers }]}
 #if TARGET_TIMER_TIM${timer} > 0
 # define TARGET_TIMER_TIM${timer}_BIT BIT(${timer})
+# define TARGET_TIMER_TIM${timer}_INDEX  ( @{[ join("+", map("(TARGET_TIMER_TIM${_} >= 0)", @prev_timers)) || 0 ]} )
 #else
 # define TARGET_TIMER_TIM${timer}_BIT 0
+# define TARGET_TIMER_TIM${timer}_INDEX deftimer_error_TIMER${timer}_is_not_enabled_on_target
 #endif
 END2
 #define TIMER_USED_BITS  ( @{[ join "|", map("TARGET_TIMER_TIM${_}_BIT", @timers) ]} )
@@ -138,6 +142,7 @@ timerRec_t* const timerRecPtrs[] = {
        &timerRecs.rec_TIM${timer},
 #endif
 END2
+NULL    // terminate the list
 };
 END
 

@@ -46,44 +46,49 @@ const struct ioPortDef_s ioPortDefs[] = {
 };
 #endif
 
+ioRec_t* IO_Rec(IO_t io)
+{
+    return io;
+}
+
 // port index, GPIOA == 0
-int IO_GPIOPortIdx(ioRec_t *io)
+int IO_GPIOPortIdx(IO_t io)
 {
     if(!io)
         return -1;
     return (((size_t)io->gpio - GPIOA_BASE) >> 10);     // ports are 0x400 apart
 }
 
-int IO_EXTI_PortSourceGPIO(ioRec_t *io)
+int IO_EXTI_PortSourceGPIO(IO_t io)
 {
     return IO_GPIOPortIdx(io);
 }
 
-int IO_GPIO_PortSource(ioRec_t *io)
+int IO_GPIO_PortSource(IO_t io)
 {
     return IO_GPIOPortIdx(io);
 }
 
 // zero based pin index
-int IO_GPIOPinIdx(ioRec_t *io)
+int IO_GPIOPinIdx(IO_t io)
 {
     if(!io)
         return -1;
     return 31 - __builtin_clz(io->pin);  // CLZ is a bit faster than FFS
 }
 
-int IO_EXTI_PinSource(ioRec_t *io)
+int IO_EXTI_PinSource(IO_t io)
 {
     return IO_GPIOPinIdx(io);
 }
 
-int IO_GPIO_PinSource(ioRec_t *io)
+int IO_GPIO_PinSource(IO_t io)
 {
     return IO_GPIOPinIdx(io);
 }
 
 // mask on stm32f103, bit index on stm32f303
-uint32_t IO_EXTI_Line(ioRec_t *io)
+uint32_t IO_EXTI_Line(IO_t io)
 {
     if(!io)
         return 0;
@@ -96,7 +101,7 @@ uint32_t IO_EXTI_Line(ioRec_t *io)
 #endif
 }
 
-bool IORead(ioRec_t *io)
+bool IORead(IO_t io)
 {
     if(!io)
         return false;
@@ -104,65 +109,69 @@ bool IORead(ioRec_t *io)
     return !!(io->gpio->IDR & io->pin);
 }
 
-void IOWrite(ioRec_t *io, bool hi)
+void IOWrite(IO_t io, bool hi)
 {
     if(!io)
         return;
     io->gpio->BSRR = io->pin << (hi ? 0 : 16);
 }
 
-void IOHi(ioRec_t *io)
+void IOHi(IO_t io)
 {
     if(!io)
         return;
     io->gpio->BSRR = io->pin;
 }
 
-void IOLo(ioRec_t *io)
+void IOLo(IO_t io)
 {
     if(!io)
         return;
     io->gpio->BRR = io->pin;
 }
 
-void IOToggle(ioRec_t *io)
+void IOToggle(IO_t io)
 {
     if(!io)
         return;
     // check pin state and use BSRR accordinly to avoid race condition
     uint16_t mask = io->pin;
-    if(io->gpio->IDR & mask)
+    if(io->gpio->ODR & mask)
         mask <<= 16;   // bit set, more to reset index
     io->gpio->BSRR = mask;
 }
 
 // claim IO pin, set owner and resources
-void IOInit(ioRec_t *io, resourceOwner_t owner, resourceType_t resources)
+void IOInit(IO_t io, resourceOwner_t owner, resourceType_t resources)
 {
+    ioRec_t *ioRec = IO_Rec(io);
     if(owner != OWNER_FREE)   // pass OWNER_FREE to keep old owner
-        io->owner = owner;
-    io->resourcesUsed |= resources;
+        ioRec->owner = owner;
+    ioRec->resourcesUsed |= resources;
 }
 
 // release IO pin
-void IORelease(ioRec_t *io)
+void IORelease(IO_t io)
 {
-    io->owner = OWNER_FREE;
+    ioRec_t *ioRec = IO_Rec(io);
+    ioRec->owner = OWNER_FREE;
 }
 
-resourceOwner_t IOGetOwner(ioRec_t *io)
+resourceOwner_t IOGetOwner(IO_t io)
 {
-    return io->owner;
+    ioRec_t *ioRec = IO_Rec(io);
+    return ioRec->owner;
 }
 
-resourceType_t IOGetResources(ioRec_t *io)
+resourceType_t IOGetResources(IO_t io)
 {
-    return io->resourcesUsed;
+    ioRec_t *ioRec = IO_Rec(io);
+    return ioRec->resourcesUsed;
 }
 
 #if defined(STM32F10X)
 
-void IOConfigGPIO(ioRec_t *io, ioConfig_t cfg)
+void IOConfigGPIO(IO_t io, ioConfig_t cfg)
 {
     if(!io)
         return;
@@ -180,7 +189,7 @@ void IOConfigGPIO(ioRec_t *io, ioConfig_t cfg)
 
 #elif defined(STM32F303xC)
 
-void IOConfigGPIO(ioRec_t *io, ioConfig_t cfg)
+void IOConfigGPIO(IO_t io, ioConfig_t cfg)
 {
     if(!io)
         return;
@@ -197,7 +206,7 @@ void IOConfigGPIO(ioRec_t *io, ioConfig_t cfg)
     GPIO_Init(io->gpio, &init);
 }
 
-void IOConfigGPIOAF(ioRec_t *io, ioConfig_t cfg, uint8_t af)
+void IOConfigGPIOAF(IO_t io, ioConfig_t cfg, uint8_t af)
 {
     if(!io)
        return;
@@ -223,18 +232,18 @@ ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
 // initialize all ioRec_t structures from ROM
 // currently only bitmask is used, this may change in future
 void IOInitGlobal(void) {
-    ioRec_t *io = ioRecs;
+    ioRec_t *ioRec = ioRecs;
 
     for(unsigned port = 0; port < ARRAYLEN(ioDefMask); port++)
         for(unsigned pin = 0; pin < sizeof(ioDefMask[0]) * 8; pin++)
             if(ioDefMask[port] & (1 << pin)) {
-                io->gpio = (GPIO_TypeDef *)(GPIOA_BASE + (port << 10));   // ports are 0x400 apart
-                io->pin = 1 << pin;
-                io++;
+                ioRec->gpio = (GPIO_TypeDef *)(GPIOA_BASE + (port << 10));   // ports are 0x400 apart
+                ioRec->pin = 1 << pin;
+                ioRec++;
             }
 }
 
-ioRec_t* IOGetByTag(ioTag_t tag)
+IO_t IOGetByTag(ioTag_t tag)
 {
     for(unsigned i = 0; i < DEFIO_IO_USED_COUNT; i++)
         if(IO_GPIOPortIdx(ioRecs + i) == DEFIO_TAG_GPIOID(tag)

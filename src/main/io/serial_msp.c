@@ -41,6 +41,7 @@
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
+#include "drivers/light_led.h"
 
 #include "rx/rx.h"
 #include "rx/msp.h"
@@ -1823,7 +1824,9 @@ void mspProcess(void)
             }
 
             if (currentPort->c_state == COMMAND_RECEIVED) {
+                LED1_ON;
                 mspProcessReceivedCommand();
+                LED1_OFF;
                 break; // process one command at a time so as not to block.
             }
         }

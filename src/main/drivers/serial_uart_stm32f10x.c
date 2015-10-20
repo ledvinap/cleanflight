@@ -63,13 +63,13 @@ static const uartHwDef_t uartPort1Def = {
     .txDMAChannelId = DMAId1c4,
     .IRQPrio_txDMA = NVIC_PRIO_SERIALUART1_TXDMA,
     .rcc = RCC_APB2(USART1),
-    .rxCh = DEFIO_IO(USART1_RX_IO),
-    .txCh = DEFIO_IO(USART1_TX_IO),
-#ifdef USART1_RX_IO_REMAP
-    .rxChRemap = DEFIO_IO(USART1_RX_IO_REMAP),
+    .rxCh = IO_TAG(USART1_RX_IO),
+    .txCh = IO_TAG(USART1_TX_IO),
+#ifdef USART1_RX_REMAP_IO
+    .rxChRemap = IO_TAG(USART1_RX_REMAPI_IO),
 #endif
-#ifdef USART1_TX_IO_REMAP
-    .txChRemap = DEFIO_IO(USART1_TX_IO_REMAP),
+#ifdef USART1_TX_REMAP_IO
+    .txChRemap = IO_TAG(USART1_TX_REMAP_IO),
 #endif
     .remap = GPIO_Remap_USART1,
 };
@@ -89,13 +89,13 @@ static const uartHwDef_t uartPort2Def = {
     .IRQn = USART2_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART2,
     .rcc = RCC_APB1(USART2),
-    .rxCh = DEFIO_IO(USART2_RX_IO),
-    .txCh = DEFIO_IO(USART2_TX_IO),
-#ifdef USART2_RX_PIN_REMAP
-    .rxChRemap = USART2_RX_PIN_REMAP,
+    .rxCh = IO_TAG(USART2_RX_IO),
+    .txCh = IO_TAG(USART2_TX_IO),
+#ifdef USART2_RX_REMAP_IO
+    .rxChRemap = IO_TAG(USART2_RX_REMAP_IO),
 #endif
-#ifdef USART2_TX_PIN_REMAP
-    .txChRemap = USART2_TX_PIN_REMAP,
+#ifdef USART2_TX_REMAP_IO
+    .txChRemap = IO_TAG(USART2_TX_REMAP_IO),
 #endif
     .remap = GPIO_Remap_USART2,
 };
@@ -115,13 +115,13 @@ static const uartHwDef_t uartPort3Def = {
     .IRQn = USART3_IRQn,
     .IRQPrio = NVIC_PRIO_SERIALUART3,
     .rcc = RCC_APB1(USART3),
-    .rxCh = DEFIO_IO(USART3_RX_IO),
-    .txCh = DEFIO_IO(USART3_TX_IO),
-#ifdef USART3_RX_PIN_REMAP
-    .rxChRemap = USART3_RX_PIN_REMAP,
+    .rxCh = IO_TAG(USART3_RX_IO),
+    .txCh = IO_TAG(USART3_TX_IO),
+#ifdef USART3_RX_PIN_REMAP_IO
+    .rxChRemap = IO_TAG(USART3_RX_REMAP_IO),
 #endif
-#ifdef USART3_TX_PIN_REMAP
-    .txChRemap = USART3_TX_PIN_REMAP,
+#ifdef USART3_TX_PIN_REMAP_IO
+    .txChRemap = IO_TAG(USART3_TX_REMAP_IO),
 #endif
     .remap = GPIO_PartialRemap_USART3,
 };

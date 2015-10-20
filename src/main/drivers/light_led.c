@@ -65,7 +65,7 @@ void ledInit(void)
     LED2_OFF;
 
     for (i = 0; i < ARRAYLEN(leds); i++) {
-        if(!IO_ISEMPTY(leds[i])) {
+        if(leds[i]) {
             IOInit(leds[i], OWNER_SYSTEM, RESOURCE_OUTPUT);
             IOConfigGPIO(leds[i], IOCFG_OUT_PP);
         }

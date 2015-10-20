@@ -6,18 +6,23 @@
 #include "drivers/resource.h"
 
 // IO pin identification
-typedef struct ioRec_s ioRec_t;   // ioRec structure
+// make sure that ioTag_t can't be assigned into IO_t without warning
 typedef uint8_t ioTag_t;          // packet tag to specify IO pin
-typedef ioRec_t* IO_t;            // type spcifing IO pin. Currently ioRec_t pointer, but this may change
+typedef void* IO_t;            // type specifying IO pin. Currently ioRec_t pointer, but this may change
 
-// all available pins may be referenced using pinid (IO_PA1, IO_PB10, IO_NONE)
-// preprocessor is used to convert it to requested C data
-// compile-time error is generated if requexted pin is not available
+// preprocessor is used to convert pinid to requested C data value
+// compile-time error is generated if requested pin is not available (not set in TARGET_IO_PORTx)
+// ioTag_t and IO_t is supported, but ioTag_t is preferred
 
 // expand pinid to to ioTag_t
 #define IO_TAG(pinid) DEFIO_TAG(pinid)
-// check io io is NONE
-#define IO_ISEMPTY(io) DEFIO_IO_ISEMPTY(io)
+
+// both ioTag_t and IO_t are guarantied to be zero if pinid is NONE (no pin)
+// this simplifies initialization (globals are zeroed on start) and allows
+//  omitting unused fields in structure initializers.
+// it is also possible to use IO_t and ioTag_t as boolean value
+//   TODO - this may conflict with requirement to generate warning/error on IO_t - ioTag_t assignment
+//   IO_t being pointer is only possibility I know of ..
 
 // pin config handling
 // pin config is packed into ioConfig_t to decrease memory requirements
@@ -27,7 +32,7 @@ typedef ioRec_t* IO_t;            // type spcifing IO pin. Currently ioRec_t poi
 typedef uint8_t ioConfig_t;  // packed IO configuration
 #if defined(STM32F10X)
 
-// mode is using bits 6-2
+// mode is using only bits 6-2
 # define IO_CONFIG(mode, speed) ((mode) | (speed))
 
 # define IOCFG_OUT_PP         IO_CONFIG(GPIO_Mode_Out_PP,      GPIO_Speed_2MHz)
@@ -54,7 +59,6 @@ typedef uint8_t ioConfig_t;  // packed IO configuration
 
 // declare available IO pins. Available pins are specified per target
 #include "io_def.h"
-#include "target_io.h"
 
 bool IORead(IO_t io);
 void IOWrite(IO_t io, bool value);
@@ -63,7 +67,7 @@ void IOLo(IO_t io);
 void IOToggle(IO_t io);
 
 void IOInit(IO_t io, resourceOwner_t owner, resourceType_t resources);
-void IORelease(IO_t io);
+void IORelease(IO_t io);  // unimplemented
 resourceOwner_t IOGetOwner(IO_t io);
 resourceType_t IOGetResources(IO_t io);
 IO_t IOGetByTag(ioTag_t tag);

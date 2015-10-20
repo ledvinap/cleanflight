@@ -87,4 +87,4 @@ void configureMPUDataReadyInterruptHandling(void);
 void mpuIntExtiInit(void);
 bool mpuAccRead(int16_t *accData);
 bool mpuGyroRead(int16_t *gyroADC);
-mpuDetectionResult_t *detectMpu(IO_t intIO);
+mpuDetectionResult_t *detectMpu(ioTag_t intTag);

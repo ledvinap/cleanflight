@@ -302,7 +302,7 @@ void timerChClearCCFlag(timerChRec_t *timChRec)
 // configure timer channel GPIO mode
 void timerChConfigGPIO(timerChRec_t *timChRec, ioConfig_t config)
 {
-    if(!IO_ISEMPTY(timChRec->io)) {
+    if(timChRec->io) {
 #ifdef STM32F303xC
         IOConfigGPIOAF(timChRec->io, config, timChRec->pinAF);
 #else
@@ -508,10 +508,10 @@ resourceType_t timerChGetResources(timerChRec_t *timChRec)
 {
     resourceType_t resources = 0;
     IO_t io = timChRec->io;
-    if(!IO_ISEMPTY(io))
+    if(io)
         resources |= IOGetResources(io);
     IO_t ioDual = timerChRecDual(timChRec)->io;
-    if(!IO_ISEMPTY(ioDual) && (IOGetResources(ioDual) & RESOURCE_TIMER_DUAL))
+    if(ioDual && (IOGetResources(ioDual) & RESOURCE_TIMER_DUAL))
         resources |=  IOGetResources(ioDual);
     return resources;
 }
@@ -523,7 +523,7 @@ TIM_TypeDef* timerChDef_TIM(const timerChDef_t* timChDef)
     return timChRec->tim;
 }
 
-ioRec_t* timerChDef_IO(const timerChDef_t* timChDef)
+IO_t timerChDef_IO(const timerChDef_t* timChDef)
 {
     return IOGetByTag(timChDef->ioTag);
 }
@@ -534,7 +534,7 @@ resourceType_t timerChDef_GetResources(const timerChDef_t* timChDef)
 {
     resourceType_t resources = 0;
     IO_t io = timerChDef_IO(timChDef);
-    if(!IO_ISEMPTY(io))
+    if(io)
         resources |= IOGetResources(io);
     timerChRec_t *timChRec = timerChDef_TimChRec(timChDef);
     resources |= timerChGetResources(timChRec);

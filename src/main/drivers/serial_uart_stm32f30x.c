@@ -54,35 +54,17 @@
 #define UART1_RX_IO        PA10
 #define UART1_GPIO_AF      GPIO_AF_7
 #endif
-#ifndef UART1_RX_IO_REMAP
-# define UART1_RX_IO_REMAP NONE
-#endif
-#ifndef UART1_TX_IO_REMAP
-# define UART1_TX_IO_REMAP NONE
-#endif
 
 #ifndef UART2_TX_IO
 #define UART2_TX_IO        PD5
 #define UART2_RX_IO        PD6
 #define UART2_GPIO_AF      GPIO_AF_7
 #endif
-#ifndef UART2_RX_IO_REMAP
-# define UART2_RX_IO_REMAP NONE
-#endif
-#ifndef UART2_TX_IO_REMAP
-# define UART2_TX_IO_REMAP NONE
-#endif
 
 #ifndef UART3_TX_IO
 #define UART3_TX_IO        PB10
 #define UART3_RX_IO        PB11
 #define UART3_GPIO_AF      GPIO_AF_7
-#endif
-#ifndef UART3_RX_IO_REMAP
-# define UART3_RX_IO_REMAP NONE
-#endif
-#ifndef UART3_TX_IO_REMAP
-# define UART3_TX_IO_REMAP NONE
 #endif
 
 #ifdef USE_USART1
@@ -106,8 +88,12 @@ static const uartHwDef_t uartPort1Def = {
     .rcc = RCC_APB2(USART1),
     .rxCh = DEFIO_TAG(UART1_RX_IO),
     .txCh = DEFIO_TAG(UART1_TX_IO),
-    .rxChRemap = DEFIO_TAG(UART1_RX_IO_REMAP),
-    .txChRemap = DEFIO_TAG(UART1_TX_IO_REMAP),
+#ifdef UART1_RX_REMAP_IO
+    .rxChRemap = DEFIO_TAG(UART1_RX_REMAP_IO),
+#endif
+#ifdef UART1_TX_REMAP_IO
+    .txChRemap = DEFIO_TAG(UART1_TX_REMAP_IO),
+#endif
     .afConfig = UART1_GPIO_AF,
 };
 #endif
@@ -132,8 +118,12 @@ static const uartHwDef_t uartPort2Def = {
     .rcc = RCC_APB1(USART2),
     .rxCh = DEFIO_TAG(UART2_RX_IO),
     .txCh = DEFIO_TAG(UART2_TX_IO),
-    .rxChRemap = DEFIO_TAG(UART2_RX_IO_REMAP),
-    .txChRemap = DEFIO_TAG(UART2_TX_IO_REMAP),
+#ifdef UART2_RX_REMAP_IO
+    .rxChRemap = DEFIO_TAG(UART2_RX_REMAP_IO),
+#endif
+#ifdef UART2_TX_REMAP_IO
+    .txChRemap = DEFIO_TAG(UART2_TX_REMAP_IO),
+#endif
     .afConfig = UART2_GPIO_AF,
 };
 #endif
@@ -158,8 +148,12 @@ static const uartHwDef_t uartPort3Def = {
     .rcc = RCC_APB1(USART3),
     .rxCh = DEFIO_TAG(UART3_RX_IO),
     .txCh = DEFIO_TAG(UART3_TX_IO),
-    .rxChRemap = DEFIO_TAG(UART3_RX_IO_REMAP),
-    .txChRemap = DEFIO_TAG(UART3_TX_IO_REMAP),
+#ifdef UART3_RX_REMAP_IO
+    .rxChRemap = DEFIO_TAG(UART3_RX_REMAP_IO),
+#endif
+#ifdef UART3_TX_REMAP_IO
+    .txChRemap = DEFIO_TAG(UART3_TX_REMAP_IO),
+#endif
     .afConfig = UART3_GPIO_AF,
 };
 #endif

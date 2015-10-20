@@ -22,6 +22,8 @@
 #include "platform.h"
 #include "build_config.h"
 
+#include "common/maths.h"
+
 #include "drivers/gpio.h"
 #include "drivers/sound_beeper.h"
 #include "drivers/system.h"
@@ -185,31 +187,23 @@ void beeper(beeperMode_e mode)
         return;
     }
 
-    const beeperTableEntry_t *selectedCandidate = NULL;
-    for (uint32_t i = 0; i < BEEPER_TABLE_ENTRY_COUNT; i++) {
-        const beeperTableEntry_t *candidate = &beeperTable[i];
-        if (candidate->mode != mode) {
-            continue;
-        }
-
-        if (!currentBeeperEntry) {
-            selectedCandidate = candidate;
+    const beeperTableEntry_t *candidate = NULL;
+    for (unsigned i = 0; i < BEEPER_TABLE_ENTRY_COUNT; i++) {
+        if(beeperTable[i].mode == mode) {
+            candidate = &beeperTable[i];
             break;
         }
-
-        if (candidate->priority < currentBeeperEntry->priority) {
-            selectedCandidate = candidate;
-        }
-
-        break;
     }
-
-    if (!selectedCandidate) {
+    if(!candidate)   // nothing found
         return;
-    }
 
-    currentBeeperEntry = selectedCandidate;
+    if (currentBeeperEntry
+        && currentBeeperEntry->priority >= candidate->priority)   // current has higher priority
+        return;
 
+    currentBeeperEntry = candidate;
+
+    beeperIsOn = 0;  // sequencce starts with beep
     beeperPos = 0;
     beeperNextToggleTime = 0;
 }
@@ -235,16 +229,10 @@ void beeperSilence(void)
 void beeperConfirmationBeeps(uint8_t beepCount)
 {
     int i;
-    int cLimit;
-
-    i = 0;
-    cLimit = beepCount * 2;
-    if(cLimit > MAX_MULTI_BEEPS)
-        cLimit = MAX_MULTI_BEEPS;  //stay within array size
-    do {
-        beep_multiBeeps[i++] = BEEPER_CONFIRMATION_BEEP_DURATION;       // 20ms beep
-        beep_multiBeeps[i++] = BEEPER_CONFIRMATION_BEEP_GAP_DURATION;   // 200ms pause
-    } while (i < cLimit);
+    for(i = 0; i < MIN(beepCount * 2 + 2, MAX_MULTI_BEEPS); i += 2) {
+        beep_multiBeeps[i] = BEEPER_CONFIRMATION_BEEP_DURATION;       // 20ms beep
+        beep_multiBeeps[i + 1] = BEEPER_CONFIRMATION_BEEP_GAP_DURATION;   // 200ms pause
+    };
     beep_multiBeeps[i] = BEEPER_COMMAND_STOP;     //sequence end
     beeper(BEEPER_MULTI_BEEPS);    //initiate sequence
 }
@@ -295,7 +283,7 @@ void beeperUpdate(void)
     }
 
     uint32_t now = millis();
-    if (beeperNextToggleTime > now) {
+    if (cmp32(beeperNextToggleTime, now) > 0) {
         return;
     }
 
@@ -306,10 +294,8 @@ void beeperUpdate(void)
             warningLedEnable();
             warningLedRefresh();
             // if this was arming beep then mark time (for blackbox)
-            if (
-                beeperPos == 0
-                && (currentBeeperEntry->mode == BEEPER_ARMING || currentBeeperEntry->mode == BEEPER_ARMING_GPS_FIX)
-            ) {
+            if (beeperPos == 0
+                && (currentBeeperEntry->mode == BEEPER_ARMING || currentBeeperEntry->mode == BEEPER_ARMING_GPS_FIX) ) {
                 armingBeepTimeMicros = micros();
             }
         }

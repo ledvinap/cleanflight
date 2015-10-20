@@ -123,6 +123,7 @@ static const hmc5883Config_t *hmc5883Config = NULL;
 
 #ifdef USE_MAG_DATA_READY_SIGNAL
 
+static IO_t intIO;
 static extiCallbackRec_t hmc5883_extiCallbackRec;
 
 void hmc5883_extiHandler(extiCallbackRec_t* cb)
@@ -169,10 +170,13 @@ void hmc5883lInit(void)
     int i;
     int32_t xyz_total[3] = { 0, 0, 0 }; // 32 bit totals so they won't overflow.
     bool bret = true;           // Error indicator
-
-    if(hmc5883Config)
-        IOConfigGPIO(hmc5883Config->intIO, IOCFG_IN_FLOATING); 
-
+#ifdef USE_MAG_DATA_READY_SIGNAL
+    if(hmc5883Config && hmc5883Config->intIO) {
+        intIO = IOGetByTag(hmc5883Config->intIO);
+        IOInit(intIO, OWNER_SYSTEM, RESOURCE_INPUT | RESOURCE_EXTI);
+        IOConfigGPIO(intIO, IOCFG_IN_FLOATING);
+    }
+#endif
     delay(50);
     i2cWrite(MAG_ADDRESS, HMC58X3_R_CONFA, 0x010 + HMC_POS_BIAS);   // Reg A DOR = 0x010 + MS1, MS0 set to pos bias
     // Note that the  very first measurement after a gain change maintains the same gain as the previous setting.
@@ -235,18 +239,19 @@ void hmc5883lInit(void)
         magGain[Z] = 1.0f;
     }
 
-    if (hmc5883Config) {
 #ifdef USE_MAG_DATA_READY_SIGNAL
+    do {
+        if (!(hmc5883Config && intIO))
+            break;
 # ifdef ENSURE_MAG_DATA_READY_IS_HIGH
-    if (!IODigitalRead(hmc5883Config->intIO)) {
-        return;
-    }
+        if (!IODigitalRead(intIO))
+            break;
 # endif
-    EXTIHandlerInit(&hmc5883_extiCallbackRec, hmc5883_extiHandler);
-    EXTIConfig(hmc5883Config->intIO, &hmc5883_extiCallbackRec, NVIC_PRIO_MAG_INT_EXTI, EXTI_Trigger_Rising);
-    EXTIEnable(hmc5883Config->intIO, true);
+        EXTIHandlerInit(&hmc5883_extiCallbackRec, hmc5883_extiHandler);
+        EXTIConfig(intIO, &hmc5883_extiCallbackRec, NVIC_PRIO_MAG_INT_EXTI, EXTI_Trigger_Rising);
+        EXTIEnable(intIO, true);
+    } while(0);
 #endif
-    }
 }
 
 bool hmc5883lRead(int16_t *magData)

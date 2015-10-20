@@ -42,14 +42,14 @@ static int32_t calculatedAltitude;
 void sonarInit(batteryConfig_t *batteryConfig)
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
-# if 0
+#if 1
     static const sonarHardware_t sonarPWM56 = {
-        .triggerIO = DEFIO_IO(PB8),   // PWM5 (PB8) - 5v tolerant
-        .echoIO = DEFIO_IO(PB9)       // PWM6 (PB9) - 5v tolerant
+        .triggerIO = IO_TAG(PB8),   // PWM5 (PB8) - 5v tolerant
+        .echoIO = IO_TAG(PB9)       // PWM6 (PB9) - 5v tolerant
     };
     static const sonarHardware_t sonarRC78 = {
-        .triggerIO = DEFIO_IO(PB0),   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = DEFIO_IO(PB1),      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIO = IO_TAG(PB0),   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIO = IO_TAG(PB1),      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
     if (feature(FEATURE_RX_PARALLEL_PWM ) || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC) ) {
@@ -59,23 +59,23 @@ void sonarInit(batteryConfig_t *batteryConfig)
     }
 # else
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = DEFIO_IO(PB7),
-        .echoIO = DEFIO_IO(PB6),
+        .triggerIO = IO_TAG(PB7),
+        .echoIO = IO_TAG(PB6),
     };
     hcsr04_Init(&sonarHardware);
 # endif
 #elif defined(OLIMEXINO)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = DEFIO_IO(PB0),   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = DEFIO_IO(PB1),       // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIO = IO_TAG(PB0),    // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIO = IO_TAG(PB1),       // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     hcsr04_init(&sonarHardware);
 #elif defined(SPRACINGF3)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = DEFIO_IO(PB0),   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = DEFIO_IO(PB1),       // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIO = IO_TAG(PB0),    // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIO = IO_TAG(PB1),       // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     hcsr04_init(&sonarHardware);
 #else

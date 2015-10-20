@@ -75,12 +75,12 @@ static IO_t mpuIntIO = DEFIO_IO(NONE);
 
 #define MPU_INQUIRY_MASK   0x7E
 
-mpuDetectionResult_t *detectMpu(IO_t intIO)
+mpuDetectionResult_t *detectMpu(ioTag_t intTag)
 {
     memset(&mpuDetectionResult, 0, sizeof(mpuDetectionResult));
     memset(&mpuConfiguration, 0, sizeof(mpuConfiguration));
 
-    mpuIntIO = intIO;
+    mpuIntIO = IOGetByTag(intTag);
 
     bool ack;
     uint8_t sig;

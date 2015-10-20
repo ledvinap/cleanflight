@@ -28,7 +28,7 @@
 #define LED1_IO        PB4
 
 #define BEEPER
-#define BEEP_IO        PA12
+#define BEEPER_IO      PA12
 
 // SPI2
 // PB15 28 SPI2_MOSI

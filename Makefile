@@ -670,8 +670,8 @@ SIZE		 = arm-none-eabi-size
 #
 
 ifeq ($(DEBUG),GDB)
-OPTIMIZE	 = -Os
-LTO_FLAGS	 = $(OPTIMIZE) -flto -fuse-linker-plugin
+OPTIMIZE	 = -O1
+LTO_FLAGS	 = $(OPTIMIZE) # -flto -fuse-linker-plugin
 else
 OPTIMIZE	 = -Os
 LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)

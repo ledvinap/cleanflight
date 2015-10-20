@@ -51,6 +51,7 @@ static volatile int32_t measurement = -1;
 static sonarHardware_t const *sonarHardware;
 
 extiCallbackRec_t hcsr04_extiCallbackRec;
+static IO_t echoIO, triggerIO;
 
 void hcsr04_extiHandler(extiCallbackRec_t* cb)
 {
@@ -59,29 +60,41 @@ void hcsr04_extiHandler(extiCallbackRec_t* cb)
 
     UNUSED(cb);
 
-    if (IORead(sonarHardware->echoIO) != 0) {
+    if (IORead(echoIO)) {
         timing_start = micros();
     } else {
         timing_stop = micros();
         measurement = cmp32(timing_stop, timing_start);
+        // disable exti until we request another pulse
+        EXTIEnable(echoIO, false);
     }
 }
 
 void hcsr04_Init(const sonarHardware_t *initialSonarHardware)
 {
     sonarHardware = initialSonarHardware;
+    // both pins must be defined, but may be the same
+    if(!sonarHardware->triggerIO || !sonarHardware->echoIO)
+        return;
 
-    if(sonarHardware->triggerIO != sonarHardware->echoIO) {
-        // separate trigger pin, configure it as output
-        IOConfigGPIO(sonarHardware->triggerIO, IOCFG_OUT_PP);
+    if(sonarHardware->triggerIO == sonarHardware->echoIO) {
+        // single-wire configuration
+        triggerIO = echoIO = IOGetByTag(sonarHardware->triggerIO);
+        IOInit(triggerIO, OWNER_SONAR, RESOURCE_IO | RESOURCE_EXTI);
+        // start in input mode
+        IOConfigGPIO(echoIO, IOCFG_IN_FLOATING);
+    } else {
+        triggerIO = IOGetByTag(sonarHardware->triggerIO);
+        IOInit(triggerIO, OWNER_SONAR, RESOURCE_OUTPUT);
+        IOConfigGPIO(triggerIO, IOCFG_OUT_PP);
+        echoIO = IOGetByTag(sonarHardware->echoIO);
+        IOInit(echoIO, OWNER_SONAR, RESOURCE_INPUT | RESOURCE_EXTI);
+        IOConfigGPIO(echoIO, IOCFG_IN_FLOATING);
     }
-    // ep - echo pin, configure as input (even if same as trigger)
-    IOConfigGPIO(sonarHardware->echoIO, IOCFG_IN_FLOATING);
-
     // setup external interrupt on echo pin
     EXTIHandlerInit(&hcsr04_extiCallbackRec, hcsr04_extiHandler);
-    EXTIConfig(sonarHardware->echoIO, &hcsr04_extiCallbackRec, NVIC_PRIO_SONAR_EXTI, EXTI_Trigger_Rising_Falling); // TODO - priority!
-    EXTIEnable(sonarHardware->echoIO, true);
+    EXTIConfig(echoIO, &hcsr04_extiCallbackRec, NVIC_PRIO_SONAR_EXTI, EXTI_Trigger_Rising_Falling); // TODO - priority!
+    EXTIEnable(echoIO, true);
 
     lastMeasurementAt = 0;      // force 1st measurement in hcsr04_get_distance()
 }
@@ -98,22 +111,23 @@ void hcsr04_Poll(void)
     }
 
     lastMeasurementAt = now;
-    // TODO - this needs some analysis to avoid race conditions
-    if(sonarHardware->triggerIO != sonarHardware->echoIO) {
-        IOHi(sonarHardware->triggerIO);
+
+    if(triggerIO != echoIO) {
+        IOHi(triggerIO);
         //  The width of trig signal must be greater than 10us
         delayMicroseconds(10);
-        IOLo(sonarHardware->triggerIO);
+        IOLo(triggerIO);
     } else {
-        EXTIEnable(sonarHardware->echoIO, false);
-        IOConfigGPIO(sonarHardware->echoIO, IOCFG_OUT_PP);
-        IOHi(sonarHardware->echoIO);
+        EXTIEnable(echoIO, false);
+        IOConfigGPIO(echoIO, IOCFG_OUT_PP);
+        IOHi(echoIO);
         delayMicroseconds(10);
-        IOLo(sonarHardware->echoIO);
-        IOConfigGPIO(sonarHardware->echoIO, IOCFG_IN_FLOATING);
-        // TODO - there may be race if we don't enable EXTI soon enough
+        IOLo(echoIO);
+        IOConfigGPIO(echoIO, IOCFG_IN_FLOATING);
+        // EXTI must be enabled before rising edge of measurement pulse
+        // minimum delay is 8 40kHz pulses = 200us. Only single measurement will be lost if we don't make it
     }
-    EXTIEnable(sonarHardware->echoIO, true);
+    EXTIEnable(echoIO, true);
 }
 
 /**

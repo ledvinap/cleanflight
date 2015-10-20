@@ -83,12 +83,14 @@ void adcInitHw(drv_adc_config_t *init)
 #endif
 
 #ifdef EXTERNAL1_ADC_GPIO
-    GPIO_InitStructure.GPIO_Pin = EXTERNAL1_ADC_GPIO_PIN;
-    GPIO_Init(EXTERNAL1_ADC_GPIO, &GPIO_InitStructure);
+    if (init->enableExternal1) {
+        GPIO_InitStructure.GPIO_Pin = EXTERNAL1_ADC_GPIO_PIN;
+        GPIO_Init(EXTERNAL1_ADC_GPIO, &GPIO_InitStructure);
 
-    adcConfig[ADC_EXTERNAL1].adcChannel = EXTERNAL1_ADC_CHANNEL;
-    adcConfig[ADC_EXTERNAL1].enabled = true;
-    adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_601Cycles5;
+        adcConfig[ADC_EXTERNAL1].adcChannel = EXTERNAL1_ADC_CHANNEL;
+        adcConfig[ADC_EXTERNAL1].enabled = true;
+        adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_601Cycles5;
+    }
 #endif
 
     // count used channels

@@ -97,6 +97,10 @@ ioTag_t selectMPUIntExtiConfig(void)
 #ifdef SPRACINGF3
     return IO_TAG(PC13);
 #endif
+
+#if defined(CC3D)
+    return IO_TAG(PA3);
+#endif
     return IO_TAG(NONE);
 }
 
@@ -401,10 +405,14 @@ static void detectBaro(baroSensor_e baroHardwareToUse)
 
     const bmp085Config_t *bmp085Config = NULL;
 
-#if defined(BARO_XCLR_IO) && defined(BARO_EOC_IO)
+#if defined(BARO_XCLR_IO) || defined(BARO_EOC_IO)
     static const bmp085Config_t defaultBMP085Config = {
+# if defined(BARO_XCLR_IO)
         .xclrIO = IO_TAG(BARO_XCLR_IO),
+# endif
+# if defined(BARO_EOC_IO)
         .eocIO = IO_TAG(BARO_EOC_IO),
+# endif
     };
     bmp085Config = &defaultBMP085Config;
 #endif
@@ -561,9 +569,9 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
 
 #if defined(USE_GYRO_MPU6050) || defined(USE_GYRO_MPU3050) || defined(USE_GYRO_MPU6500) || defined(USE_GYRO_SPI_MPU6500) || defined(USE_GYRO_SPI_MPU6000) || defined(USE_ACC_MPU6050)
 
-    ioTag_t mpuIntTag = selectMPUIntExtiConfig();
+    ioTag_t mpuIntIOTag = selectMPUIntExtiConfig();
 
-    mpuDetectionResult_t *mpuDetectionResult = detectMpu(mpuIntTag);
+    mpuDetectionResult_t *mpuDetectionResult = detectMpu(mpuIntIOTag);
     UNUSED(mpuDetectionResult);
 #endif
 

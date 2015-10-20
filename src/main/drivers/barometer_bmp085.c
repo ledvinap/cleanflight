@@ -133,16 +133,18 @@ STATIC_UNIT_TESTED void bmp085_calculate(int32_t *pressure, int32_t *temperature
 
 static IO_t xclrIO;
 
+void bmp085InitXclrIO(const bmp085Config_t *config) {
+    if (!xclrIO && config && config->xclrIO) {
+        xclrIO = IOGetByTag(config->xclrIO);
+        IOInit(xclrIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
+        IOConfigGPIO(xclrIO, IOCFG_OUT_PP);
+    }
+}
+
 void bmp085Disable(const bmp085Config_t *config)
 {
-    if(config && config->xclrIO) {
-        if(!xclrIO) {
-            xclrIO = IOGetByTag(config->xclrIO);
-            IOInit(xclrIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
-            IOConfigGPIO(xclrIO, IOCFG_OUT_PP);
-        }
-        IOLo(xclrIO);   // disable baro
-    }
+    bmp085InitXclrIO(config);
+    IOLo(xclrIO);   // disable baro
 }
 
 bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
@@ -152,14 +154,9 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
 
     if (bmp085InitDone)
         return true;
-    if (config && config->xclrIO) {
-        if(!xclrIO) {   // disable or detect may be called first
-            xclrIO = IOGetByTag(config->xclrIO);
-            IOInit(xclrIO, OWNER_SYSTEM, RESOURCE_OUTPUT);
-            IOConfigGPIO(xclrIO, IOCFG_OUT_PP);
-        }
-        IOHi(xclrIO);   // enable baro
-    }
+    bmp085InitXclrIO(config);
+    IOHi(xclrIO);   // enable baro
+
 #if defined(BARO_EOC_GPIO)
     if (config && config->eocIO) {
         eocIO = IOGetByTag(config->eocIO);

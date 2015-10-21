@@ -115,6 +115,26 @@
 #define MPU_RA_WHO_AM_I         0x75
 
 // RF = Register Flag
+// MPU_RA_FIFO_EN
+#define MPU_RF_TEMP_FIFO_EN     0x80
+#define MPU_RF_XG_FIFO_EN       0x40
+#define MPU_RF_YG_FIFO_EN       0x20
+#define MPU_RF_ZG_FIFO_EN       0x10
+#define MPU_RF_ACCEL_FIFO_EN    0x08
+#define MPU_RF_SLV2_FIFO_EN     0x04
+#define MPU_RF_SLV1_FIFO_EN     0x02
+#define MPU_RF_SLV0_FIFO_EN     0x01
+// MPU_RA_USER_CTRL
+#define MPU_RF_FIFO_EN          0x40
+#define MPU_RF_I2C_MST_EN       0x20
+#define MPU_RF_I2C_IF_DIS       0x10
+#define MPU_RF_FIFO_RESET       0x04
+#define MPU_RF_I2C_MST_RESET    0x02
+#define MPU_RF_SIG_COND_RESET   0x01
+// MPU_RA_INT_ENABLE
+#define MPU_RF_DATA_RDY_EN (1 << 0)
+
+// RF = Register Flag
 #define MPU_RF_DATA_RDY_EN (1 << 0)
 
 typedef bool (*mpuReadRegisterFunc)(uint8_t reg, uint8_t length, uint8_t* data);

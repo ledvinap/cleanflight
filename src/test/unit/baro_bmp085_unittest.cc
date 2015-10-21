@@ -18,6 +18,8 @@
 
 extern "C" {
 
+#include "drivers/io.h"
+
     void bmp085_calculate(int32_t *pressure, int32_t *temperature);
     extern uint32_t bmp085_up;
     extern uint16_t bmp085_ut;
@@ -48,7 +50,6 @@ typedef struct {
     bmp085_t bmp085;
 
 }
-
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
@@ -193,4 +194,9 @@ extern "C" {
         return 1;
     }
 
+    IO_t IOGetByTag(ioTag_t) { return NULL; }
+    void IOInit(IO_t, resourceOwner_t, resourceType_t) { }
+    void IOConfigGPIO(IO_t, ioConfig_t) { }
+    void IOHi(IO_t) { }
+    void IOLo(IO_t) { }
 }

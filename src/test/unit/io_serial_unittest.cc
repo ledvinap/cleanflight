@@ -26,7 +26,7 @@ extern "C" {
     #include "drivers/serial.h"
     #include "io/serial.h"
 
-    void serialInit(serialConfig_t *initialSerialConfig);
+    void serialInit(serialConfig_t *initialSerialConfig, bool);
 
 }
 
@@ -43,7 +43,7 @@ TEST(IoSerialTest, TestFindPortConfig)
     memset(&serialConfig, 0, sizeof(serialConfig));
 
     // when
-    serialInit(&serialConfig);
+    serialInit(&serialConfig, true);
 
     // and
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP);
@@ -69,5 +69,5 @@ bool isSerialTransmitBufferEmpty(serialPort_t *) {
 }
 void mspProcess(void) {}
 void systemResetToBootloader(void) {}
-
+void serialRelease(serialPort_t *) {}
 }

@@ -36,7 +36,7 @@ extern "C" {
     #include "rx/rx.h"
     #include "flight/failsafe.h"
 
-    failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig);
+    void failsafeInit(rxConfig_t *intialRxConfig, uint16_t);
 }
 
 #include "unittest_macros.h"
@@ -97,7 +97,7 @@ TEST(FlightFailsafeTest, TestFailsafeInitialState)
 
     // when
     useFailsafeConfig(&failsafeConfig);
-    failsafeInit(&rxConfig);
+    failsafeInit(&rxConfig, 1500);
 
     // then
     EXPECT_EQ(false, failsafeIsMonitoring());
@@ -365,7 +365,7 @@ TEST(FlightFailsafeTest, TestFailsafeNotActivatedWhenDisarmedAndRXLossIsDetected
 
     // and
     useFailsafeConfig(&failsafeConfig);
-    failsafeInit(&rxConfig);
+    failsafeInit(&rxConfig, 1500);
 
     // and
     DISABLE_ARMING_FLAG(ARMED);

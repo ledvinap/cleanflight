@@ -22,7 +22,7 @@
 
 extern "C" {
     #include "sensors/battery.h"
-    
+
     #include "io/rc_controls.h"
     #include "flight/lowpass.h"
     #include "io/beeper.h"
@@ -311,5 +311,12 @@ void beeper(beeperMode_e mode)
 {
     UNUSED(mode);
 }
+
+typedef struct timerQueueRec_s timerQueueRec_t;
+typedef void timerQueueCallbackFn(timerQueueRec_t *);
+
+void adcTriggerPeriodicConversion(void) {}
+void timerQueue_Start(timerQueueRec_t *, int16_t) {}
+void timerQueue_Config(timerQueueRec_t *, timerQueueCallbackFn *) {}
 
 }

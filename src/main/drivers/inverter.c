@@ -27,7 +27,7 @@
 
 #include "inverter.h"
 
-static IO_t pin = DEFIO_IO(INVERTER_IO);
+static const IO_t pin = DEFIO_IO(INVERTER_IO);
 
 void initInverter(void)
 {

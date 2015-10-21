@@ -31,7 +31,7 @@
 
 #ifdef BEEPER
 
-static IO_t beeperIO = DEFIO_IO(NONE);
+static IO_t beeperIO;
 static bool beeperInverted;
 
 #endif

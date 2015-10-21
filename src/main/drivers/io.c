@@ -5,7 +5,6 @@
 #include "drivers/io_impl.h"
 #include "drivers/rcc.h"
 
-#include "target_io.h"
 #include "target.h"
 
 // io ports defs are stored in array by index now

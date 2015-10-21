@@ -38,7 +38,7 @@
 # define LED2_IO NONE
 #endif
 
-static IO_t leds[] = {
+static const IO_t leds[] = {
     DEFIO_IO(LED0_IO),
     DEFIO_IO(LED1_IO),
     DEFIO_IO(LED2_IO),

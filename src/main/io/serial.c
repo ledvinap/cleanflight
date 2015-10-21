@@ -252,13 +252,6 @@ serialPort_t *openSerialPort(
     const serialPortMode_t *configPrm
 )
 {
-#if (!defined(USE_VCP) && !defined(USE_USART1) && !defined(USE_USART2) && !defined(USE_USART3) && !defined(USE_SOFTSERIAL1) && !defined(USE_SOFTSERIAL1))
-    UNUSED(callback);
-    UNUSED(baudRate);
-    UNUSED(mode);
-    UNUSED(options);
-#endif
-
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
     if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {
         // not available / already in use

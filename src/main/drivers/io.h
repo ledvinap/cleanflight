@@ -55,6 +55,18 @@ typedef uint8_t ioConfig_t;  // packed IO configuration
 # define IOCFG_IPU            IO_CONFIG(GPIO_Mode_IN,  0, 0,             GPIO_PuPd_UP)
 # define IOCFG_IN_FLOATING    IO_CONFIG(GPIO_Mode_IN,  0, 0,             GPIO_PuPd_NOPULL)
 
+#elif defined(UNIT_TEST)
+
+# define IOCFG_OUT_PP         0
+# define IOCFG_OUT_OD         0
+# define IOCFG_AF_PP          0
+# define IOCFG_AF_OD          0
+# define IOCFG_IPD            0
+# define IOCFG_IPU            0
+# define IOCFG_IN_FLOATING    0
+
+#else
+# warning "Unknown TARGET"
 #endif
 
 // declare available IO pins. Available pins are specified per target

@@ -57,7 +57,7 @@ static bool detectSPISensorsAndUpdateDetectionResult(void);
 mpuDetectionResult_t mpuDetectionResult;
 
 mpuConfiguration_t mpuConfiguration;
-static IO_t mpuIntIO = DEFIO_IO(NONE);
+static IO_t mpuIntIO;
 
 #define MPU_ADDRESS             0x68
 

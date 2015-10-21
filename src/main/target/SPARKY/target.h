@@ -140,3 +140,19 @@
 #define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_IO PA3
+
+// available IO pins
+#define TARGET_IO_PORTA (BIT(1)|BIT(2)|BIT(3)|BIT(4)|BIT(6)|BIT(7)|BIT(8)|BIT(9)|BIT(10)|BIT(11)|BIT(12)|BIT(13)|BIT(14)|BIT(15))
+#define TARGET_IO_PORTB (BIT(0)|BIT(1)|BIT(10)|BIT(11)|BIT(14)|BIT(15)|BIT(3)|BIT(4)|BIT(5)|BIT(6)|BIT(7)|BIT(8)|BIT(9))
+
+// available timers
+#define TARGET_TIMER_TIM1     4
+#define TARGET_TIMER_TIM8     4
+#define TARGET_TIMER_TIM2     4
+#define TARGET_TIMER_TIM3     4
+#define TARGET_TIMER_TIM4     4
+#define TARGET_TIMER_TIM15    2
+#define TARGET_TIMER_TIM16    1
+#define TARGET_TIMER_TIM17    1
+#define TARGET_TIMER_TIM6     0
+#define TARGET_TIMER_TIM7     0

@@ -177,17 +177,17 @@ uint32_t millis(void) {
 
 uint32_t micros(void) { return 0; }
 
-uint8_t serialRxBytesWaiting(serialPort_t *instance) {
+int serialRxBytesWaiting(serialPort_t *instance) {
     UNUSED(instance);
     return 0;
 }
 
-uint8_t serialTxBytesFree(serialPort_t *instance) {
+int serialTxBytesFree(serialPort_t *instance) {
     UNUSED(instance);
     return 0;
 }
 
-uint8_t serialRead(serialPort_t *instance) {
+int serialRead(serialPort_t *instance) {
     UNUSED(instance);
     return 0;
 }
@@ -203,13 +203,9 @@ void serialSetMode(serialPort_t *instance, portMode_t mode) {
 }
 
 
-serialPort_t *openSerialPort(serialPortIdentifier_e identifier, serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options) {
+serialPort_t *openSerialPort(serialPortIdentifier_e identifier, serialPortFunction_e functionMask,  const serialPortMode_t*) {
     UNUSED(identifier);
     UNUSED(functionMask);
-    UNUSED(baudRate);
-    UNUSED(callback);
-    UNUSED(mode);
-    UNUSED(options);
 
     return NULL;
 }
@@ -223,6 +219,8 @@ serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function) {
 
     return NULL;
 }
+
+void serialSetDirection(serialPort_t *, portState_t) {}
 
 bool sensors(uint32_t mask) {
     UNUSED(mask);

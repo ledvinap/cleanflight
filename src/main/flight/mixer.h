@@ -18,6 +18,7 @@
 #pragma once
 
 #include "drivers/pwm_mapping.h"
+#include "io/escservo.h"
 
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
@@ -219,6 +220,9 @@ void mixTable(void);
 void writeMotors(void);
 void stopMotors(void);
 void StopPwmAllMotors(void);
-
-void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMotorMixers, servoMixer_t *initialCustomServoMixers);
+#ifdef USE_SERVOS
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers, servoMixer_t *customServoMixers);
+#else
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers);
+#endif
 void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);

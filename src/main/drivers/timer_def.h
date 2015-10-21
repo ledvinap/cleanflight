@@ -19,7 +19,7 @@
 
 #include "common/utils.h"
 // target timer usage configuration
-#include "target_timer.h"
+#include "target.h"
 #include "timer_def_generated.h"
 
 #define DEF_TIMER_TIM(tim) CONCAT(TIM, tim)
@@ -47,15 +47,15 @@
 // defined for all available timers, target_timer.h select actually used timers
 // each tuple is (CC_IRQn, UP_IRQn, outputEnable, RRC)
 #if defined(STM32F10X)
-# define DEF_TIMER_INFO_TIM1  (TIM1_CC_IRQn, TIM1_UP_IRQn,       true,  RCC_APB2(TIM1))
-# define DEF_TIMER_INFO_TIM2  (TIM2_IRQn,    TIM2_IRQn,          false, RCC_APB1(TIM2))
-# define DEF_TIMER_INFO_TIM3  (TIM3_IRQn,    TIM3_IRQn,          false, RCC_APB1(TIM2))
-# define DEF_TIMER_INFO_TIM4  (TIM4_IRQn,    TIM4_IRQn,          false, RCC_APB1(TIM4))
+# define DEF_TIMER_INFO_TIM1  (TIM1_CC_IRQn,             TIM1_UP_IRQn,            true,  RCC_APB2(TIM1))
+# define DEF_TIMER_INFO_TIM2  (TIM2_IRQn,                TIM2_IRQn,               false, RCC_APB1(TIM2))
+# define DEF_TIMER_INFO_TIM3  (TIM3_IRQn,                TIM3_IRQn,               false, RCC_APB1(TIM2))
+# define DEF_TIMER_INFO_TIM4  (TIM4_IRQn,                TIM4_IRQn,               false, RCC_APB1(TIM4))
 // TODO - TIM6, TIM7
 # if defined(STM32F10X_XL)
-#  define DEF_TIMER_INFO_TIM8 (TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn, true,  RCC_APB2(TIM8));
+#  define DEF_TIMER_INFO_TIM8 (TIM8_CC_IRQn,             TIM8_UP_TIM13_IRQn,      true,  RCC_APB2(TIM8));
 # elif defined( STM32F10X_HD)
-#  define DEF_TIMER_INFO_TIM8 (TIM8_CC_IRQn, TIM8_UP_IRQn,       true,  RCC_APB2(TIM8));
+#  define DEF_TIMER_INFO_TIM8 (TIM8_CC_IRQn,             TIM8_UP_IRQn,            true,  RCC_APB2(TIM8));
 # endif
 #elif defined(STM32F303xC)
 # define DEF_TIMER_INFO_TIM1  (TIM1_CC_IRQn,             TIM1_UP_TIM16_IRQn,      true,  RCC_APB2(TIM1))
@@ -65,9 +65,9 @@
 # define DEF_TIMER_INFO_TIM6  (TIM6_DAC_IRQn,            TIM6_DAC_IRQn,           false, RCC_APB1(TIM6))
 # define DEF_TIMER_INFO_TIM7  (TIM7_IRQn,                TIM7_IRQn,               false, RCC_APB1(TIM7))
 # define DEF_TIMER_INFO_TIM8  (TIM8_CC_IRQn,             TIM8_UP_IRQn,            true,  RCC_APB2(TIM8))
-# define DEF_TIMER_INFO_TIM15 (TIM1_BRK_TIM15_IRQn,     TIM1_BRK_TIM15_IRQn,     true,  RCC_APB2(TIM15))
-# define DEF_TIMER_INFO_TIM16 (TIM1_UP_TIM16_IRQn,      TIM1_UP_TIM16_IRQn,      true,  RCC_APB2(TIM16))
-# define DEF_TIMER_INFO_TIM17 (TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn, true,  RCC_APB2(TIM17))
+# define DEF_TIMER_INFO_TIM15 (TIM1_BRK_TIM15_IRQn,      TIM1_BRK_TIM15_IRQn,     true,  RCC_APB2(TIM15))
+# define DEF_TIMER_INFO_TIM16 (TIM1_UP_TIM16_IRQn,       TIM1_UP_TIM16_IRQn,      true,  RCC_APB2(TIM16))
+# define DEF_TIMER_INFO_TIM17 (TIM1_TRG_COM_TIM17_IRQn,  TIM1_TRG_COM_TIM17_IRQn, true,  RCC_APB2(TIM17))
 #else
 # error "TIMER_INFO is not defined for current cpu"
 #endif

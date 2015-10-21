@@ -108,7 +108,14 @@
 #define DISPLAY
 
 #define USE_USART1
+#define USART1_RX_IO PA10
+#define USART1_TX_IO PA9
+#define USART1_RX_IO_REMAP PB7
+#define USART1_TX_IO_REMAP PB6
 #define USE_USART2
+#define USART2_RX_IO PA3
+#define USART2_TX_IO PA2
+
 #define USE_USART3
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
@@ -184,3 +191,12 @@
 #define HARDWARE_BIND_PLUG
 #define BINDPLUG_IO  PB5               // Hardware bind plug at PB5 (Pin 41)
 #endif
+
+#define TARGET_IO_PORTA 0xffff  // TODO!
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+
+#define TARGET_TIMER_TIM1     4
+#define TARGET_TIMER_TIM2     4
+#define TARGET_TIMER_TIM3     4
+#define TARGET_TIMER_TIM4     4

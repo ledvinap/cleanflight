@@ -35,9 +35,7 @@
 #include "nvic.h"
 #include "dma.h"
 
-#include "target_io.h"  // TODO
-
-#include "timer.h" // TODO - should be in IO.h
+//#include "timer.h" // TODO - should be in IO.h
 
 #include "serial.h"
 #include "serial_uart.h"

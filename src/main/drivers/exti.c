@@ -123,8 +123,16 @@ void EXTI_IRQHandler(void)
     struct dummy                                \
     /**/
 
+
+_EXTI_IRQ_HANDLER(EXTI0_IRQHandler);
 _EXTI_IRQ_HANDLER(EXTI1_IRQHandler);
+#if defined(STM32F10X)
 _EXTI_IRQ_HANDLER(EXTI2_IRQHandler);
+#elif defined(STM32F303xC)
+_EXTI_IRQ_HANDLER(EXTI2_TS_IRQHandler);
+#else
+# warning "Unknown CPU"
+#endif
 _EXTI_IRQ_HANDLER(EXTI3_IRQHandler);
 _EXTI_IRQ_HANDLER(EXTI4_IRQHandler);
 _EXTI_IRQ_HANDLER(EXTI9_5_IRQHandler);

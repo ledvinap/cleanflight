@@ -168,6 +168,7 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
         EXTIEnable(eocIO, true);
     }
 #endif
+
     delay(20); // datasheet says 10ms, we'll be careful and do 20.
 
     ack = i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */ 

@@ -212,7 +212,6 @@ void mpuIntExtiInit(void)
         return;
     }
 
-
     IOInit(mpuIntIO, OWNER_SYSTEM, RESOURCE_INPUT | RESOURCE_EXTI);
     IOConfigGPIO(mpuIntIO, IOCFG_IN_FLOATING);   // TODO - maybe pullup / pulldown ?
 #ifdef USE_MPU_DATA_READY_SIGNAL

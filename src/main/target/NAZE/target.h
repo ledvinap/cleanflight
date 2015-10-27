@@ -174,8 +174,6 @@
 #define USE_SERVOS
 #define USE_CLI
 
-#define CurrentMeter_TIMER 7 // OUT6
-
 //#define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_IO   PA3

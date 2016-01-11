@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "drivers/io.h"
+
 typedef enum {
     ADC_BATTERY = 0,
     ADC_RSSI = 1,
@@ -28,9 +30,8 @@ typedef enum {
 #define ADC_CHANNEL_COUNT (ADC_CHANNEL_MAX + 1)
 
 typedef struct adc_config_s {
-    uint8_t adcChannel;         // ADC1_INxx channel number
+    ioTag_t pin;                // input pin
     uint8_t dmaIndex;           // index into DMA buffer in case of sparse channels
-    bool enabled;
     uint8_t sampleTime;
 } adc_config_t;
 

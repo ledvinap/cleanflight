@@ -33,25 +33,54 @@
 adc_config_t adcConfig[ADC_CHANNEL_COUNT];
 volatile uint16_t adcValues[ADC_CHANNEL_COUNT];
 
+// prepare ADC channel
+bool adcInitChannel(AdcChannel channel, ioTag_t ioTag)
+{
+    if(!ioTag || !adcHwIOAvailable(IOGetByTag(ioTag)))
+        return false;
+    adcConfig[channel].pin = ioTag;
+    return true;
+}
 
 void adcInit(drv_adc_config_t *init)
 {
-    adcInitHw(init);
+    adcInitHw();
+#ifdef VBAT_ADC_IO
+    if (init->enableVBat) {
+        adcInitChannel(ADC_BATTERY, IO_TAG(VBAT_ADC_IO));
+    }
+#endif
+#ifdef RSSI_ADC_IO
+    if (init->enableRSSI) {
+        adcInitChannel(ADC_RSSI, IO_TAG(RSSI_ADC_IO));
+    }
+#endif
+#ifdef EXTERNAL1_ADC_IO
+    if (init->enableExternal1) {
+        adcInitChannel(ADC_EXTERNAL1, IO_TAG(EXTERNAL1_ADC_IO));
+    }
+#endif
+#ifdef CURRENT_METER_ADC_IO
+    if (init->enableCurrentMeter) {
+        adcInitChannel(ADC_CURRENT, IO_TAG(CURRENT_METER_ADC_IO));
+    }
+#endif
+    adcHwStart();
 }
 
 uint16_t adcGetChannel(uint8_t channel)
 {
 #ifdef DEBUG_ADC_CHANNELS
-    if (adcConfig[0].enabled) {
+    if (adcConfig[0].pin) {
         debug[0] = adcValues[adcConfig[0].dmaIndex];
     }
-    if (adcConfig[1].enabled) {
+    if (adcConfig[1].pin) {
         debug[1] = adcValues[adcConfig[1].dmaIndex];
     }
-    if (adcConfig[2].enabled) {
+    if (adcConfig[2].pin) {
         debug[2] = adcValues[adcConfig[2].dmaIndex];
     }
-    if (adcConfig[3].enabled) {
+    if (adcConfig[3].pin) {
         debug[3] = adcValues[adcConfig[3].dmaIndex];
     }
 #endif

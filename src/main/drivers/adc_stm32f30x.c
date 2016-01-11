@@ -33,146 +33,145 @@
 #include "adc.h"
 #include "adc_impl.h"
 
-#ifndef ADC_INSTANCE
-#define ADC_INSTANCE                ADC1
-#define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA1
-#define ADC_DMA_CHANNEL             DMA1_Channel1
-#endif
+#define ADC_IOPIN_COUNT 16
+#define ADC_COUNT 4
 
-void adcInitHw(drv_adc_config_t *init)
+#define DEFM(c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16) \
+    { IO_TAG_E(c1), IO_TAG_E(c2),  IO_TAG_E(c3),  IO_TAG_E(c4),  IO_TAG_E(c5),  IO_TAG_E(c6),  IO_TAG_E(c7),  IO_TAG_E(c8), \
+      IO_TAG_E(c9), IO_TAG_E(c10), IO_TAG_E(c11), IO_TAG_E(c12), IO_TAG_E(c13), IO_TAG_E(c14), IO_TAG_E(c15), IO_TAG_E(c16)}
+
+//                                           1     2     3     4     5     6     7     8     9     10    11    12    13    14    15    16
+ioTag_t adcMap[ADC_COUNT][ADC_IOPIN_COUNT] = {
+    DEFM(PA0,  PA1,  PA2,  PA3,  PF4,  PC0,  PC1,  PC2,  PC3,  PF2,  NONE, NONE, NONE, NONE, NONE, NONE),
+    DEFM(PA4,  PA5,  PA6,  PA7,  PC4,  PC0,  PC1,  PC2,  PC3,  PF2,  PC5,  PB2,  NONE, NONE, NONE, NONE),
+    DEFM(PB1,  PE9,  PE13, NONE, PB13, PE8,  PD10, PD11, PD12, PD13, PD14, PB0,  PE7,  PE10, PE11, PE12),
+    DEFM(PE14, PE15, PB12, PB14, PB15, PE8,  PD10, PD11, PD12, PD13, PD14, PD8,  PD9,  NONE, NONE, NONE),
+};
+
+#undef DEFM
+
+typedef struct adcDef_s {
+    ADC_TypeDef *adc;
+    rccPeriphTag_t rcc;
+    uint8_t irq;
+} adcDef_t;
+
+adcDef_t adcDef[ADC_COUNT] = {
+    {ADC1, RCC_APB2(ADC12), ADC1_2_IRQn},
+    {ADC2, RCC_APB2(ADC12), ADC1_2_IRQn},
+    {ADC3, RCC_APB2(ADC34), ADC3_IRQn},
+    {ADC4, RCC_APB2(ADC34), ADC4_IRQn},
+};
+
+
+void adcInitHw(void)
 {
-
     memset(&adcConfig, 0, sizeof(adcConfig));
+}
 
-    GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL ;
-
-#ifdef VBAT_ADC_GPIO
-    if (init->enableVBat) {
-        GPIO_InitStructure.GPIO_Pin = VBAT_ADC_GPIO_PIN;
-        GPIO_Init(VBAT_ADC_GPIO, &GPIO_InitStructure);
-
-        adcConfig[ADC_BATTERY].adcChannel = VBAT_ADC_CHANNEL;
-        adcConfig[ADC_BATTERY].enabled = true;
-        adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_601Cycles5;
-    }
+// return adc mask in upper byte, channel index in lower  byte
+// returns zero (no ADC in upper byte) when not found (different from 103 implementation)
+uint16_t adcHwIOChannel(IO_t io)
+{
+    uint16_t ret;
+    if(!io) return -1;
+    for(adc = 0; adc < ADC_COUNT; adc++)
+        for(int i = 0; i < ADC_IOPIN_COUNT; i++)
+            if(IOGetByTag(adcMap[adc][i]) == io) {
+                ret = 0x100 << adc;                         // bit for first ADC
+#if 0           // first ADC only, TODO better channel mapping
+                if((adc % 2) == 0                           // lower channel
+                   && adc +1 < ADC_COUNT                    // next ADC exists
+                   && IOGetByTag(adcMap[adc + 1][i]) == io) // same IO
+                    ret |= 0x100 << (adc + 1);              // bit for second ADC
 #endif
+                return (ret << 8) | i;
+            }
+    return 0;
+}
 
-#ifdef RSSI_ADC_GPIO
-    if (init->enableRSSI) {
-        GPIO_InitStructure.GPIO_Pin = RSSI_ADC_GPIO_PIN;
-        GPIO_Init(RSSI_ADC_GPIO, &GPIO_InitStructure);
+// check if pin is available on ADC
+bool adcHwIOAvailable(IO_t io)
+{
+    return adcHwIOChannel(io) != 0;
+}
 
-        adcConfig[ADC_RSSI].adcChannel = RSSI_ADC_CHANNEL;
-        adcConfig[ADC_RSSI].enabled = true;
-        adcConfig[ADC_RSSI].sampleTime = ADC_SampleTime_601Cycles5;
+
+void adcHwStart(void)
+{
+    // scan all channels, configure pins as input
+    int channelCount[ADC_COUNT];
+    memset(channelCount, 0, sizeof(channelCount));
+    for(int i = 0; i < (int)ARRAYLEN(adcConfig); i++) {
+        IO_t io = IOGetByTag(adcConfig[i].pin);
+        if(!io || !adcHwIOAvailable(io))
+            continue;
+        IOInit(io, OWNER_SYSTEM, RESOURCE_ADC | RESOURCE_INPUT);
+        IOConfigGPIO(io, IOCFG_ANALOG);
+        // sampletime is hardwired now
+        adcConfig[i].sampleTime = ADC_SampleTime_601Cycles5;
+        channelCount[adc]++;
     }
-#endif
 
-#ifdef CURRENT_METER_ADC_GPIO
-    if (init->enableCurrentMeter) {
-        GPIO_InitStructure.GPIO_Pin = CURRENT_METER_ADC_GPIO_PIN;
-        GPIO_Init(CURRENT_METER_ADC_GPIO, &GPIO_InitStructure);
-
-        adcConfig[ADC_CURRENT].adcChannel = CURRENT_METER_ADC_CHANNEL;
-        adcConfig[ADC_CURRENT].enabled = true;
-        adcConfig[ADC_CURRENT].sampleTime = ADC_SampleTime_601Cycles5;
-    }
-#endif
-
-#ifdef EXTERNAL1_ADC_GPIO
-    if (init->enableExternal1) {
-        GPIO_InitStructure.GPIO_Pin = EXTERNAL1_ADC_GPIO_PIN;
-        GPIO_Init(EXTERNAL1_ADC_GPIO, &GPIO_InitStructure);
-
-        adcConfig[ADC_EXTERNAL1].adcChannel = EXTERNAL1_ADC_CHANNEL;
-        adcConfig[ADC_EXTERNAL1].enabled = true;
-        adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_601Cycles5;
-    }
-#endif
-
-    // count used channels
-    int configuredAdcChannels=0;
-    for(int i = 0; i < ADC_CHANNEL_COUNT; i++)
-        if(adcConfig[i].enabled)
-            configuredAdcChannels++;
-
-    RCC_ADCCLKConfig(RCC_ADC12PLLCLK_Div8);  // 72 MHz divided by 8 = 9MHz
+    // enable ADCs (all are enabled now, TODO)
+    RCC_ADCCLKConfig(RCC_ADC12PLLCLK_Div8);  // 9MHz from 72MHz APB2 clock(HSE)
     RCC_AHBPeriphClockCmd(ADC_AHB_PERIPHERAL | RCC_AHBPeriph_ADC12, ENABLE);
 
-    DMA_DeInit(ADC_DMA_CHANNEL);
-    DMA_InitTypeDef DMA_InitStructure;
-    DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&ADC_INSTANCE->DR;
-    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)adcValues;
-    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-    DMA_InitStructure.DMA_BufferSize = configuredAdcChannels;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_MemoryInc = configuredAdcChannels > 1 ? DMA_MemoryInc_Enable : DMA_MemoryInc_Disable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
-    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_Init(ADC_DMA_CHANNEL, &DMA_InitStructure);
-    DMA_Cmd(ADC_DMA_CHANNEL, ENABLE);
-
-
-    // calibrate
-
-    ADC_VoltageRegulatorCmd(ADC_INSTANCE, ENABLE);
-    delay(10);
-    ADC_SelectCalibrationMode(ADC_INSTANCE, ADC_CalibrationMode_Single);
-    ADC_StartCalibration(ADC_INSTANCE);
-    while(ADC_GetCalibrationStatus(ADC_INSTANCE) != RESET);
-    ADC_VoltageRegulatorCmd(ADC_INSTANCE, DISABLE);
-
-
-    ADC_CommonInitTypeDef ADC_CommonInitStructure;
-    ADC_CommonStructInit(&ADC_CommonInitStructure);
-    ADC_CommonInitStructure.ADC_Mode = ADC_Mode_Independent;
-    ADC_CommonInitStructure.ADC_Clock = ADC_Clock_SynClkModeDiv4;     // TODO - unify with 103
-    ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_1;
-    ADC_CommonInitStructure.ADC_DMAMode = ADC_DMAMode_Circular;
-    ADC_CommonInitStructure.ADC_TwoSamplingDelay = 0;
-    ADC_CommonInit(ADC_INSTANCE, &ADC_CommonInitStructure);
+    RCC_ADCCLKConfig(RCC_ADC34PLLCLK_Div8);  // 72 MHz divided by 8 = 9MHz
+    RCC_AHBPeriphClockCmd(ADC_AHB_PERIPHERAL | RCC_AHBPeriph_ADC34, ENABLE);
 
     ADC_InitTypeDef ADC_InitStructure;
     ADC_StructInit(&ADC_InitStructure);
-    ADC_InitStructure.ADC_ContinuousConvMode    = ADC_ContinuousConvMode_Disable;
-    ADC_InitStructure.ADC_Resolution            = ADC_Resolution_12b;
-    ADC_InitStructure.ADC_ExternalTrigConvEvent = ADC_ExternalTrigConvEvent_0;
-    ADC_InitStructure.ADC_ExternalTrigEventEdge = ADC_ExternalTrigEventEdge_None;
-    ADC_InitStructure.ADC_DataAlign             = ADC_DataAlign_Right;
-    ADC_InitStructure.ADC_OverrunMode           = ADC_OverrunMode_Disable;
-    ADC_InitStructure.ADC_AutoInjMode           = ADC_AutoInjec_Disable;
-    ADC_InitStructure.ADC_NbrOfRegChannel       = configuredAdcChannels;
-    ADC_Init(ADC_INSTANCE, &ADC_InitStructure);
+    memoryIndex = 0; // index in results memory
 
-    uint8_t sequencerIndex = 0;
-    for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
-        if (!adcConfig[i].enabled) {
+    for(int adc = 0; adc < ADC_COUNT; adc++) {
+        if(!channelCount[adc])
             continue;
+
+        ADC_CommonInitTypeDef ADC_CommonInitStructure;
+        ADC_CommonStructInit(&ADC_CommonInitStructure);
+        ADC_CommonInitStructure.ADC_Mode = ADC_Mode_Independent;
+        ADC_CommonInitStructure.ADC_Clock = ADC_Clock_SynClkModeDiv4;     // TODO - unify with 103
+        ADC_CommonInit(adcDef[adc].adc, &ADC_CommonInitStructure);
+
+        ADC_InitTypeDef ADC_InitStructure;
+        ADC_StructInit(&ADC_InitStructure);
+        ADC_InitStructure.ADC_ContinuousConvMode    = ADC_ContinuousConvMode_Disable;
+        ADC_InitStructure.ADC_Resolution            = ADC_Resolution_12b;
+        ADC_InitStructure.ADC_DataAlign             = ADC_DataAlign_Right;
+        ADC_InitStructure.ADC_NbrOfRegChannel       = channelCount[adc];
+        ADC_Init(adcDef[adc].adc, &ADC_InitStructure);
+
+        int sequencerIndex = 1;
+        for(int i = 0; i < (int)ARRAYLEN(adcConfig); i++) {
+            if (!(adcConfig[i].adcChannel & (0x100 << adc))) {
+                continue; // not on this ADC
+            }
+            adcConfig[i].dmaIndex = memoryIndex++;
+            ADC_RegularChannelConfig(adcDef[adc].adc, adcConfig[i].adcChannel & 0xff, sequencerIndex++, adcConfig[i].sampleTime);
         }
-        adcConfig[i].dmaIndex = sequencerIndex;
-        ADC_RegularChannelConfig(ADC_INSTANCE, adcConfig[i].adcChannel, sequencerIndex + 1, adcConfig[i].sampleTime);
-        sequencerIndex++;
+
+        // calibrate
+
+        ADC_VoltageRegulatorCmd(adcDef[adc].adc, ENABLE);
+        delay(10);
+        ADC_SelectCalibrationMode(adcDef[adc].adc, ADC_CalibrationMode_Single);
+        ADC_StartCalibration(adcDef[adc].adc);
+        while(ADC_GetCalibrationStatus(adcDef[adc].adc) != RESET);
+        ADC_VoltageRegulatorCmd(adcDef[adc].adc, DISABLE);
+        ADC_Cmd(adcDef[adc].adc, ENABLE);
+        while(!ADC_GetFlagStatus(adcDef[adc].adc, ADC_FLAG_RDY));
     }
+    // enable 
 
-    ADC_Cmd(ADC_INSTANCE, ENABLE);
-
-    while(!ADC_GetFlagStatus(ADC_INSTANCE, ADC_FLAG_RDY));
-
-    ADC_DMAConfig(ADC_INSTANCE, ADC_DMAMode_Circular);
-    ADC_DMACmd(ADC_INSTANCE, ENABLE);
-
-    ADC_StartConversion(ADC_INSTANCE);
 }
 
 // start conversion scan on all channels. Called from systick handler now
 void adcTriggerPeriodicConversion(void)
 {
-    ADC_StartConversion(ADC_INSTANCE);
+    for(int adc = 0; adc < ADC_COUNT; adc++) {
+        if(!channelCount[adc])
+            continue;
+        ADC_StartConversion(adcDef[adc].adc);
+    }
 }

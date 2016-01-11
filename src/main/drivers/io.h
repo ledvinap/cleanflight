@@ -14,8 +14,10 @@ typedef void* IO_t;            // type specifying IO pin. Currently ioRec_t poin
 // compile-time error is generated if requested pin is not available (not set in TARGET_IO_PORTx)
 // ioTag_t and IO_t is supported, but ioTag_t is preferred
 
-// expand pinid to to ioTag_t
+// expand pinid to ioTag_t, generate compilation error if pin is not supported
 #define IO_TAG(pinid) DEFIO_TAG(pinid)
+// expand pinid to ioTag_t, expand to NONE if pin is not supported
+#define IO_TAG_E(pinid) DEFIO_TAG_E(pinid)
 
 // both ioTag_t and IO_t are guarantied to be zero if pinid is NONE (no pin)
 // this simplifies initialization (globals are zeroed on start) and allows
@@ -42,7 +44,7 @@ typedef uint8_t ioConfig_t;  // packed IO configuration
 # define IOCFG_IPD            IO_CONFIG(GPIO_Mode_IPD,         GPIO_Speed_2MHz)
 # define IOCFG_IPU            IO_CONFIG(GPIO_Mode_IPU,         GPIO_Speed_2MHz)
 # define IOCFG_IN_FLOATING    IO_CONFIG(GPIO_Mode_IN_FLOATING, GPIO_Speed_2MHz)
-
+# define IOCFG_ANALOG         IO_CONFIG(GPIO_Mode_AIN,         GPIO_Speed_2MHz)
 #elif defined(STM32F303xC)
 
 # define IO_CONFIG(mode, speed, otype, pupd) ((mode) | ((speed) << 2) | ((otype) << 4) | ((pupd) << 5))
@@ -54,6 +56,7 @@ typedef uint8_t ioConfig_t;  // packed IO configuration
 # define IOCFG_IPD            IO_CONFIG(GPIO_Mode_IN,  0, 0,             GPIO_PuPd_DOWN)
 # define IOCFG_IPU            IO_CONFIG(GPIO_Mode_IN,  0, 0,             GPIO_PuPd_UP)
 # define IOCFG_IN_FLOATING    IO_CONFIG(GPIO_Mode_IN,  0, 0,             GPIO_PuPd_NOPULL)
+# define IOCFG_ANALOG         IO_CONFIG(GPIO_Mode_AN,  0, 0,             GPIO_PuPd_NOPULL)
 
 #elif defined(UNIT_TEST)
 

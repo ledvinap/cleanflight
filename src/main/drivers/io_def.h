@@ -6,6 +6,9 @@
 // tag for NONE must be false
 #define DEFIO_TAG(pinid) CONCAT(DEFIO_TAG__, pinid)
 #define DEFIO_TAG__NONE 0
+#define DEFIO_TAG_E(pinid) CONCAT(DEFIO_TAG_E__, pinid)
+#define DEFIO_TAG_E__NONE 0
+
 
 // return ioRec_t or NULL for given pinid
 // tags should be preferred, possibly removing it in future

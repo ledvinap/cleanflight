@@ -1,7 +1,6 @@
 #pragma once
 
 // TODO - GPIO_TypeDef include
-#include "gpio.h"
 #include "io.h"
 #include "platform.h"
 

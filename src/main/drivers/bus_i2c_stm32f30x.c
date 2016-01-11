@@ -34,8 +34,8 @@
 
 typedef struct i2cHwDef_s {
     I2C_TypeDef *i2cDev;
-    ioTag_t sclIO, sdaIO;
     uint32_t rccI2CCLKConfig;
+    ioTag_t sclIO, sdaIO;
     rccPeriphTag_t rcc;
     uint8_t afConfig;
 } i2cHwDef_t;
@@ -48,31 +48,31 @@ typedef struct i2cHwDef_s {
 
 struct i2cHwDef_s i2c1Def = {
     .i2cDev = I2C1,
+    .rccI2CCLKConfig = RCC_I2C1CLK_SYSCLK,
     .sclIO = DEFIO_TAG(I2C1_SCL_IO),
     .sdaIO = DEFIO_TAG(I2C1_SDA_IO),
-    .rccI2CCLKConfig = RCC_I2C1CLK_SYSCLK,
     .rcc = RCC_APB1(I2C1),
     .afConfig = I2C1_AF,
 };
 
 #ifndef I2C2_SCL_IO
-# define I2C2_SCL_IO PA9
+# define I2C2_SCL_IO PA9           // this pin is available only on TQFP100 package (TODO check it)
 # define I2C2_SDA_IO PA10
 # define I2C2_AF GPIO_AF_4
 #endif
 
 struct i2cHwDef_s i2c2Def = {
     .i2cDev = I2C2,
-    .sclIO = DEFIO_TAG(I2C2_SCL_IO),   // this pin is available only on TQFP100 package
-    .sdaIO = DEFIO_TAG(I2C2_SDA_IO),
     .rccI2CCLKConfig = RCC_I2C2CLK_SYSCLK,
+    .sclIO = DEFIO_TAG(I2C2_SCL_IO),
+    .sdaIO = DEFIO_TAG(I2C2_SDA_IO),
     .rcc = RCC_APB1(I2C2),
     .afConfig = I2C2_AF,
 };
 
 
 #define I2C_SHORT_TIMEOUT             ((uint32_t)0x1000)
-#define I2C_LONG_TIMEOUT             ((uint32_t)(10 * I2C_SHORT_TIMEOUT))
+#define I2C_LONG_TIMEOUT              ((uint32_t)(10 * I2C_SHORT_TIMEOUT))
 
 static uint32_t i2cTimeout;
 
@@ -103,8 +103,8 @@ void i2cInitPort(const struct i2cHwDef_s* def)
 
     //i2cUnstick(I2Cx);                                         // Clock out stuff to make sure slaves arent stuck
 
-    IOConfigGPIOAF(IOGetByTag(def->sclIO), IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), def->afConfig);
-    IOConfigGPIOAF(IOGetByTag(def->sdaIO), IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL), def->afConfig);
+    IOConfigGPIOAF(IOGetByTag(def->sclIO), IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_OD, GPIO_PuPd_NOPULL), def->afConfig);
+    IOConfigGPIOAF(IOGetByTag(def->sdaIO), IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_OD, GPIO_PuPd_NOPULL), def->afConfig);
 
     I2C_InitTypeDef I2C_InitStructure = {
         .I2C_Mode = I2C_Mode_I2C,

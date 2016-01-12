@@ -37,7 +37,7 @@
 #define MAG
 #define USE_MAG_AK8975
 
-#define MAG_AK8975_ALIGN CW0_DEG_FLIP
+#define MAG_AK8975_ALIGN CW180_DEG_FLIP
 
 #define LED0
 #define LED1
@@ -100,6 +100,7 @@
 #define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
+#define SONAR
 
 #define LED_STRIP
 #if 1
@@ -136,6 +137,12 @@
 #define WS2811_IRQ                      DMA1_Channel7_IRQn
 #endif
 
+#define USE_SERIAL_1WIRE
+
+#define S1W_TX_GPIO         GPIOB
+#define S1W_TX_PIN          GPIO_Pin_6
+#define S1W_RX_GPIO         GPIOB
+#define S1W_RX_PIN          GPIO_Pin_7
 
 #define SPEKTRUM_BIND
 // USART2, PA3

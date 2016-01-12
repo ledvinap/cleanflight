@@ -200,9 +200,9 @@ typedef struct mpuDetectionResult_s {
 
 extern mpuDetectionResult_t mpuDetectionResult;
 
-uint8_t determineMPULPF(uint16_t lpf);
 void configureMPUDataReadyInterruptHandling(void);
 void mpuIntExtiInit(void);
 bool mpuAccRead(int16_t *accData);
 bool mpuGyroRead(int16_t *gyroADC);
 mpuDetectionResult_t *detectMpu(ioTag_t intTag);
+void checkMPUDataReady(bool *mpuDataReadyPtr);

@@ -30,6 +30,7 @@
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
+#include "drivers/sonar_hcsr04.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -168,19 +169,9 @@ void updateSonarAltHoldState(void)
     }
 }
 
-bool isThrustFacingDownwards(rollAndPitchInclination_t *inclination)
+bool isThrustFacingDownwards(attitudeEulerAngles_t *attitude)
 {
-    return ABS(inclination->values.rollDeciDegrees) < DEGREES_80_IN_DECIDEGREES && ABS(inclination->values.pitchDeciDegrees) < DEGREES_80_IN_DECIDEGREES;
-}
-
-/*
-* This (poorly named) function merely returns whichever is higher, roll inclination or pitch inclination.
-* //TODO: Fix this up. We could either actually return the angle between 'down' and the normal of the craft
-* (my best interpretation of scalar 'tiltAngle') or rename the function.
-*/
-int16_t calculateTiltAngle(rollAndPitchInclination_t *inclination)
-{
-    return MAX(ABS(inclination->values.rollDeciDegrees), ABS(inclination->values.pitchDeciDegrees));
+    return ABS(attitude->values.roll) < DEGREES_80_IN_DECIDEGREES && ABS(attitude->values.pitch) < DEGREES_80_IN_DECIDEGREES;
 }
 
 int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, float accZ_old)
@@ -189,7 +180,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     int32_t error;
     int32_t setVel;
 
-    if (!isThrustFacingDownwards(&inclination)) {
+    if (!isThrustFacingDownwards(&attitude)) {
         return result;
     }
 
@@ -228,7 +219,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     float vel_acc;
     int32_t vel_tmp;
     float accZ_tmp;
-    int32_t sonarAlt = -1;
+    int32_t sonarAlt = SONAR_OUT_OF_RANGE;
     static float accZ_old = 0.0f;
     static float vel = 0.0f;
     static float accAlt = 0.0f;
@@ -236,10 +227,6 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
     static int32_t baroAlt_offset = 0;
     float sonarTransition;
-
-#ifdef SONAR
-    int16_t tiltAngle;
-#endif
 
     dTime = currentTime - previousTime;
     if (dTime < BARO_UPDATE_FREQUENCY_40HZ)
@@ -260,19 +247,20 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 #endif
 
 #ifdef SONAR
-    tiltAngle = calculateTiltAngle(&inclination);
     sonarAlt = sonarRead();
-    sonarAlt = sonarCalculateAltitude(sonarAlt, tiltAngle);
+    sonarAlt = sonarCalculateAltitude(sonarAlt, getCosTiltAngle());
 #endif
 
-    if (sonarAlt > 0 && sonarAlt < 200) {
+    if (sonarAlt > 0 && sonarAlt < sonarCfAltCm) {
+        // just use the SONAR
         baroAlt_offset = BaroAlt - sonarAlt;
         BaroAlt = sonarAlt;
     } else {
         BaroAlt -= baroAlt_offset;
-        if (sonarAlt > 0 && sonarAlt < 300) {
-            sonarTransition = (300 - sonarAlt) * 100 / (300 - 200);
-            BaroAlt = sonarAlt * sonarTransition / 100 + BaroAlt * (100 - sonarTransition) / 100;
+        if (sonarAlt > 0  && sonarAlt <= sonarMaxAltWithTiltCm) {
+            // SONAR in range, so use complementary filter
+            sonarTransition = (float)(sonarMaxAltWithTiltCm - sonarAlt) / (sonarMaxAltWithTiltCm - sonarCfAltCm);
+            BaroAlt = sonarAlt * sonarTransition + BaroAlt * (1.0f - sonarTransition);
         }
     }
 
@@ -305,7 +293,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     }
 #endif
 
-    if (sonarAlt > 0 && sonarAlt < 200) {
+    if (sonarAlt > 0 && sonarAlt < sonarCfAltCm) {
         // the sonar has the best range
         EstAlt = BaroAlt;
     } else {

@@ -85,6 +85,12 @@ static I2C_TypeDef *I2Cx = NULL;
 // I2C TimeoutUserCallback
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool i2cOverClock;
+
+void i2cSetOverclock(uint8_t OverClock) {
+    i2cOverClock = (OverClock) ? true : false;
+}
+
 uint32_t i2cTimeoutUserCallback(I2C_TypeDef *I2Cx)
 {
     if (I2Cx == I2C1) {
@@ -116,6 +122,9 @@ void i2cInitPort(const struct i2cHwDef_s* def)
         .I2C_Timing = 0x00E0257A, // 400 Khz, 72Mhz Clock, Analog Filter Delay ON, Rise 100, Fall 10.
         //.I2C_Timing              = 0x8000050B;
     };
+    if (i2cOverClock) {
+        I2C_InitStructure.I2C_Timing = 0x00500E30; // 1000 Khz, 72Mhz Clock, Analog Filter Delay ON, Setup 40, Hold 4.
+    }
     I2C_Init(def->i2cDev, &I2C_InitStructure);
 
     I2C_Cmd(def->i2cDev, ENABLE);

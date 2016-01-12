@@ -153,6 +153,14 @@ $(OBJECT_DIR)/flight/imu.o : \
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/flight/imu.c -o $@
 
+$(OBJECT_DIR)/common/filter.o : \
+	$(USER_DIR)/common/filter.c \
+	$(USER_DIR)/common/filter.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/common/filter.c -o $@
+
 $(OBJECT_DIR)/flight_imu_unittest.o : \
 	$(TEST_DIR)/flight_imu_unittest.cc \
 	$(USER_DIR)/flight/imu.h \
@@ -163,6 +171,7 @@ $(OBJECT_DIR)/flight_imu_unittest.o : \
 
 $(OBJECT_DIR)/flight_imu_unittest : \
 	$(OBJECT_DIR)/flight/imu.o \
+	$(OBJECT_DIR)/common/filter.o \
 	$(OBJECT_DIR)/flight/altitudehold.o \
 	$(OBJECT_DIR)/flight_imu_unittest.o \
 	$(OBJECT_DIR)/common/maths.o \
@@ -352,6 +361,7 @@ $(OBJECT_DIR)/lowpass_unittest.o : \
 $(OBJECT_DIR)/lowpass_unittest : \
 	$(OBJECT_DIR)/flight/lowpass.o \
 	$(OBJECT_DIR)/lowpass_unittest.o \
+    $(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
@@ -536,6 +546,64 @@ $(OBJECT_DIR)/baro_bmp280_unittest : \
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
+$(OBJECT_DIR)/drivers/sonar_hcsr04.o : \
+        $(USER_DIR)/drivers/sonar_hcsr04.c \
+        $(USER_DIR)/drivers/sonar_hcsr04.h \
+        $(GTEST_HEADERS)
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DSONAR -c $(USER_DIR)/drivers/sonar_hcsr04.c -o $@
+
+$(OBJECT_DIR)/sensors/sonar.o : \
+	$(USER_DIR)/sensors/sonar.c \
+	$(USER_DIR)/sensors/sonar.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DSONAR -c $(USER_DIR)/sensors/sonar.c -o $@
+
+$(OBJECT_DIR)/sonar_unittest.o : \
+	$(TEST_DIR)/sonar_unittest.cc \
+	$(USER_DIR)/drivers/sonar_hcsr04.h \
+	$(USER_DIR)/sensors/sonar.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/sonar_unittest.cc -o $@
+
+$(OBJECT_DIR)/sonar_unittest : \
+	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/drivers/sonar_hcsr04.o \
+	$(OBJECT_DIR)/sensors/sonar.o \
+	$(OBJECT_DIR)/sonar_unittest.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
+$(OBJECT_DIR)/flight/pid.o : \
+	$(USER_DIR)/flight/pid.c \
+	$(USER_DIR)/flight/pid.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DBLACKBOX -c $(USER_DIR)/flight/pid.c -o $@
+
+$(OBJECT_DIR)/pid_unittest.o : \
+	$(TEST_DIR)/pid_unittest.cc \
+	$(USER_DIR)/flight/pid.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/pid_unittest.cc -o $@
+
+$(OBJECT_DIR)/pid_unittest : \
+	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/common/filter.o \
+	$(OBJECT_DIR)/flight/pid.o \
+	$(OBJECT_DIR)/pid_unittest.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
 $(OBJECT_DIR)/sensors/boardalignment.o : \
 	$(USER_DIR)/sensors/boardalignment.c \
 	$(USER_DIR)/sensors/boardalignment.h \
@@ -556,6 +624,39 @@ $(OBJECT_DIR)/alignsensor_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/sensors/boardalignment.o \
 	$(OBJECT_DIR)/alignsensor_unittest.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
+$(OBJECT_DIR)/version.o : \
+	$(USER_DIR)/version.c \
+	$(USER_DIR)/version.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -D'__TARGET__="TEST"' -D'__REVISION__="revision"' -c $(USER_DIR)/version.c -o $@
+
+$(OBJECT_DIR)/io/serial_msp.o : \
+	$(USER_DIR)/io/serial_msp.c \
+	$(USER_DIR)/io/serial_msp.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/serial_msp.c -o $@
+
+$(OBJECT_DIR)/serial_msp_unittest.o : \
+	$(TEST_DIR)/serial_msp_unittest.cc \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/serial_msp_unittest.cc -o $@
+
+$(OBJECT_DIR)/serial_msp_unittest : \
+	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/version.o \
+	$(OBJECT_DIR)/io/serial.o \
+	$(OBJECT_DIR)/io/serial_msp.o \
+	$(OBJECT_DIR)/serial_msp_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@

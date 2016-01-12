@@ -170,7 +170,16 @@
 #define TIME_USE_TIMER    // base timming on some timer instead of systick
 #define TIME_TIMER 2
 
-// alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
+#define USE_SERIAL_1WIRE
+
+// STM32F103CBT6-LQFP48 Pin30 (PA9) TX - PC3 connects to onboard CP2102 RX
+#define S1W_TX_GPIO         GPIOA
+#define S1W_TX_PIN          GPIO_Pin_9
+// STM32F103CBT6-LQFP48 Pin31 (PA10) RX - PC1 to onboard CP2102 TX
+#define S1W_RX_GPIO         GPIOA
+#define S1W_RX_PIN          GPIO_Pin_10
+
+// alternative defaults for AlienWii32 F1 target
 #ifdef ALIENWII32
 #undef TARGET_BOARD_IDENTIFIER
 #define TARGET_BOARD_IDENTIFIER "AWF1" // AlienWii32 F1.

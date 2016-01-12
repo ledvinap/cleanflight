@@ -45,6 +45,7 @@
 #include "drivers/bus_spi.h"
 #include "drivers/accgyro_spi_mpu6000.h"
 #include "drivers/accgyro_spi_mpu6500.h"
+#include "drivers/gyro_sync.h"
 
 #include "drivers/barometer.h"
 #include "drivers/barometer_bmp085.h"
@@ -94,6 +95,7 @@ ioTag_t selectMPUIntExtiConfig(void)
         return IO_TAG(PC13); // MPU_INT output on rev5 hardware PC13
     }
 #endif
+    
 #ifdef SPRACINGF3
     return IO_TAG(PC13);
 #endif
@@ -101,11 +103,21 @@ ioTag_t selectMPUIntExtiConfig(void)
 #if defined(CC3D)
     return IO_TAG(PA3);
 #endif
+
+#ifdef MOTOLAB
+    return IO_TAG(PA15);
+#endif
+
+#if defined(COLIBRI_RACE)
+    return IO_TAG(PA5);
+#endif
+
     return IO_TAG(NONE);
+
 }
 
 #ifdef USE_FAKE_GYRO
-static void fakeGyroInit(uint16_t lpf)
+static void fakeGyroInit(uint8_t lpf)
 {
     UNUSED(lpf);
 }
@@ -150,7 +162,6 @@ bool fakeAccDetect(acc_t *acc)
 bool detectGyro(void)
 {
     gyroSensor_e gyroHardware = GYRO_DEFAULT;
-
     gyroAlign = ALIGN_DEFAULT;
 
     switch(gyroHardware) {
@@ -215,19 +226,18 @@ bool detectGyro(void)
 #endif
             ; // fallthrough
 
-        case GYRO_MPU6500:
+        case GYRO_MPU6500: {
 #ifdef USE_GYRO_MPU6500
-#ifdef USE_GYRO_SPI_MPU6500
-            if (mpu6500GyroDetect(&gyro) || mpu6500SpiGyroDetect(&gyro))
-#else
-            if (mpu6500GyroDetect(&gyro))
-#endif
-            {
+            bool sensorDetected = mpu6500GyroDetect(&gyro);
+# ifdef USE_GYRO_SPI_MPU6500
+            if(!sensorDetected)
+                sensorDetected = mpu6500SpiGyroDetect(&gyro)
+# endif
+            if (sensorDetected) {
                 gyroHardware = GYRO_MPU6500;
 #ifdef GYRO_MPU6500_ALIGN
                 gyroAlign = GYRO_MPU6500_ALIGN;
 #endif
-
                 break;
             }
 #endif
@@ -269,15 +279,18 @@ retry:
     switch (accHardwareToUse) {
         case ACC_DEFAULT:
             ; // fallthrough
-        case ACC_ADXL345: // ADXL345
+        case ACC_ADXL345: { // ADXL345
 #ifdef USE_ACC_ADXL345
+            bool sensorDetected = false;
             acc_params.useFifo = false;
             acc_params.dataRate = 800; // unused currently
-#ifdef NAZE
-            if (hardwareRevision < NAZE32_REV5 && adxl345Detect(&acc_params, &acc)) {
-#else
-            if (adxl345Detect(&acc_params, &acc)) {
-#endif
+# ifdef NAZE
+            if(hardwareRevision < NAZE32_REV5)
+                sensorDetected = adxl345Detect(&acc_params, &acc);
+# else
+            sensorDetected = adxl345Detect(&acc_params, &acc);
+# endif
+            if (sensorDetected) {
 #ifdef ACC_ADXL345_ALIGN
                 accAlign = ACC_ADXL345_ALIGN;
 #endif
@@ -285,7 +298,7 @@ retry:
                 break;
             }
 #endif
-            ; // fallthrough
+        } // fallthrough
         case ACC_LSM303DLHC:
 #ifdef USE_ACC_LSM303DLHC
             if (lsm303dlhcAccDetect(&acc)) {
@@ -308,22 +321,24 @@ retry:
             }
 #endif
             ; // fallthrough
-        case ACC_MMA8452: // MMA8452
+        case ACC_MMA8452: { // MMA8452
+            bool sensorDetected = false;
 #ifdef USE_ACC_MMA8452
-#ifdef NAZE
-            // Not supported with this frequency
-            if (hardwareRevision < NAZE32_REV5 && mma8452Detect(&acc)) {
-#else
-            if (mma8452Detect(&acc)) {
-#endif
-#ifdef ACC_MMA8452_ALIGN
+# ifdef NAZE
+            if((hardwareRevision < NAZE32_REV5))
+                sensorDetected = mma8452Detect(&acc);
+# else
+            sensorDetected = mma8452Detect(&acc);
+# endif
+            if (sensorDetected) {
+# ifdef ACC_MMA8452_ALIGN
                 accAlign = ACC_MMA8452_ALIGN;
-#endif
+# endif
                 accHardware = ACC_MMA8452;
                 break;
             }
 #endif
-            ; // fallthrough
+        } // fallthrough
         case ACC_BMA280: // BMA280
 #ifdef USE_ACC_BMA280
             if (bma280Detect(&acc)) {
@@ -346,14 +361,15 @@ retry:
             }
 #endif
             ; // fallthrough
-        case ACC_MPU6500:
+        case ACC_MPU6500: {
+            bool sensorDetected;
 #ifdef USE_ACC_MPU6500
+            sensorDetected = mpu6500AccDetect(&acc) 
 #ifdef USE_ACC_SPI_MPU6500
-            if (mpu6500AccDetect(&acc) || mpu6500SpiAccDetect(&acc))
-#else
-            if (mpu6500AccDetect(&acc))
+                if(!sensorDetected)
+                    sensorDetected = mpu6500SpiAccDetect(&acc);
 #endif
-            {
+            if (sensorDetected) {
 #ifdef ACC_MPU6500_ALIGN
                 accAlign = ACC_MPU6500_ALIGN;
 #endif
@@ -361,7 +377,7 @@ retry:
                 break;
             }
 #endif
-            ; // fallthrough
+        } // fallthrough
         case ACC_FAKE:
 #ifdef USE_FAKE_ACC
             if (fakeAccDetect(&acc)) {
@@ -560,8 +576,10 @@ void reconfigureAlignment(sensorAlignmentConfig_t *sensorAlignmentConfig)
     }
 }
 
-bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, uint8_t magHardwareToUse, uint8_t baroHardwareToUse, int16_t magDeclinationFromConfig)
-{
+bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint8_t gyroLpf, uint8_t accHardwareToUse, uint8_t magHardwareToUse, uint8_t baroHardwareToUse,
+        int16_t magDeclinationFromConfig,
+        uint32_t looptime, uint8_t gyroSync, uint8_t gyroSyncDenominator) {
+
     int16_t deg, min;
 
     memset(&acc, 0, sizeof(acc));
@@ -586,6 +604,7 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
     if (sensors(SENSOR_ACC))
         acc.init();
     // this is safe because either mpu6050 or mpu3050 or lg3d20 sets it, and in case of fail, we never get here.
+    gyroUpdateSampleRate(looptime, gyroLpf, gyroSync, gyroSyncDenominator);   // Set gyro sampling rate divider before initialization
     gyro.init(gyroLpf);
 
     detectMag(magHardwareToUse);

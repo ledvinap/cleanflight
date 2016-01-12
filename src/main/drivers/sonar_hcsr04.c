@@ -28,17 +28,8 @@
 #include "drivers/nvic.h"
 
 #include "sonar_hcsr04.h"
-
-#ifdef SONAR
-
-#define SONAR_INTERVAL 60    // time between normal measurements
-
-#ifndef USE_EXTI
-# error "HCSR-04 driver needs EXTI driver"
-#endif
-
 /* HC-SR04 consists of ultrasonic transmitter, receiver, and control circuits.
- * When trigged it sends out a series of 40KHz ultrasonic pulses and receives
+ * When triggered it sends out a series of 40KHz ultrasonic pulses and receives
  * echo from an object. The distance between the unit and the object is calculated
  * by measuring the traveling time of sound and output it as the width of a TTL pulse.
  *
@@ -46,8 +37,17 @@
  *
  */
 
+#if defined(SONAR)
+
+#define SONAR_INTERVAL 60    // time between normal measurements
+
+#ifndef USE_EXTI
+# error "HCSR-04 driver needs EXTI driver"
+#endif
+
+
+STATIC_UNIT_TESTED volatile int32_t measurement = -1;
 static uint32_t lastMeasurementAt;
-static volatile int32_t measurement = -1;
 static sonarHardware_t const *sonarHardware;
 
 extiCallbackRec_t hcsr04_extiCallbackRec;
@@ -70,9 +70,13 @@ void hcsr04_extiHandler(extiCallbackRec_t* cb)
     }
 }
 
-void hcsr04_Init(const sonarHardware_t *initialSonarHardware)
+void hcsr04_init(const sonarHardware_t *initialSonarHardware, sonarRange_t *sonarRange)
 {
     sonarHardware = initialSonarHardware;
+    sonarRange->maxRangeCm = HCSR04_MAX_RANGE_CM;
+    sonarRange->detectionConeDeciDegrees = HCSR04_DETECTION_CONE_DECIDEGREES;
+    sonarRange->detectionConeExtendedDeciDegrees = HCSR04_DETECTION_CONE_EXTENDED_DECIDEGREES;
+
     // both pins must be defined, but may be the same
     if(!sonarHardware->triggerIO || !sonarHardware->echoIO)
         return;
@@ -131,8 +135,7 @@ void hcsr04_Poll(void)
 }
 
 /**
- * Get the distance that was measured by the last pulse, in centimeters. When the ground is too far away to be
- * reliably read by the sonar, -1 is returned instead.
+ * Get the distance that was measured by the last pulse, in centimeters.
  */
 int32_t hcsr04_GetDistance(void)
 {
@@ -142,10 +145,6 @@ int32_t hcsr04_GetDistance(void)
     //
     // 340 m/s = 0.034 cm/microsecond = 29.41176471 *2 = 58.82352941 rounded to 59
     int32_t distance = measurement / 59;
-
-    // this sonar range is up to 4meter , but 3meter is the safe working range (+tilted and roll)
-    if (distance > 300)
-        distance = -1;
 
     return distance;
 }

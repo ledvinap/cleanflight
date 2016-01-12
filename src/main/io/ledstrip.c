@@ -382,6 +382,10 @@ void updateLedCount(void)
     ledCount = 0;
     ledsInRingCount = 0;
 
+    if( ledConfigs == 0 ){
+        return;
+    }
+
     for (ledIndex = 0; ledIndex < MAX_LED_STRIP_LENGTH; ledIndex++) {
 
         ledConfig = &ledConfigs[ledIndex];
@@ -1017,7 +1021,7 @@ bool parseColor(uint8_t index, const char *colorConfig)
 
 void applyDefaultColors(hsvColor_t *colors, uint8_t colorCount)
 {
-    memset(colors, 0, colorCount * sizeof(colors));
+    memset(colors, 0, colorCount * sizeof(hsvColor_t));
     for (uint8_t colorIndex = 0; colorIndex < colorCount && colorIndex < (sizeof(defaultColors) / sizeof(defaultColors[0])); colorIndex++) {
         *colors++ = *defaultColors[colorIndex];
     }

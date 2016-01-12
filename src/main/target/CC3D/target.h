@@ -42,7 +42,7 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 12
 
-#define DEBUG_MPU_DATA_READY_INTERRUPT
+//#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
 
 #define GYRO
@@ -113,11 +113,24 @@
 #define LED_STRIP_TIMER TIM3
 
 #define BLACKBOX
+#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+
 #define TELEMETRY
 #define SERIAL_RX
 #define SONAR
 #define USE_SERVOS
 #define USE_CLI
+
+#define USE_SERIAL_1WIRE
+
+// FlexPort (pin 21/22, TX/RX respectively):
+// Note, FlexPort has 10k pullups on both TX and RX
+// JST Pin3 TX - connect to external UART/USB RX
+#define S1W_TX_GPIO         GPIOB
+#define S1W_TX_PIN          GPIO_Pin_10
+// JST Pin4 RX - connect to external UART/USB TX
+#define S1W_RX_GPIO         GPIOB
+#define S1W_RX_PIN          GPIO_Pin_11
 
 #define SPEKTRUM_BIND
 // USART3, PB11 (Flexport)

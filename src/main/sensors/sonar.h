@@ -23,7 +23,11 @@ extern int16_t sonarMaxRangeCm;
 extern int16_t sonarCfAltCm;
 extern int16_t sonarMaxAltWithTiltCm;
 
-void sonarInit(void);
+typedef struct sonarHardware_s sonarHardware_t;
+typedef struct batteryConfig_s batteryConfig_t;
+void sonarInit(const sonarHardware_t *sonarHardware);
+const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
+
 void sonarUpdate(void);
 int32_t sonarRead(void);
 int32_t sonarCalculateAltitude(int32_t sonarDistance, float cosTiltAngle);

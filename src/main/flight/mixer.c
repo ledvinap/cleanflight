@@ -372,25 +372,6 @@ int servoDirection(int servoIndex, int inputSource)
 
 #ifndef USE_QUAD_MIXER_ONLY
 
-void loadCustomServoMixer(void)
-{
-    uint8_t i;
-
-    // reset settings
-    servoRuleCount = 0;
-    memset(currentServoMixer, 0, sizeof(currentServoMixer));
-
-    // load custom mixer into currentServoMixer
-    for (i = 0; i < MAX_SERVO_RULES; i++) {
-        // check if done
-        if (customServoMixers[i].rate == 0)
-            break;
-
-        currentServoMixer[i] = customServoMixers[i];
-        servoRuleCount++;
-    }
-}
-
 void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMotorMixers, servoMixer_t *initialCustomServoMixers)
 {
     currentMixerMode = mixerMode;

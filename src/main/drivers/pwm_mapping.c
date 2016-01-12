@@ -703,7 +703,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             }
 
             pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].index = pwmOutputConfiguration.motorCount;
-            pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].timerHardware = timerHardwarePtr;
+            pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].timerHardware = timerChDef_TimChRec(timChDef);
 
             pwmOutputConfiguration.motorCount++;
             pwmOutputConfiguration.outputCount++;
@@ -711,9 +711,9 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         } else if (type == MAP_TO_SERVO_OUTPUT) {
 #ifdef USE_SERVOS
             pwmServoConfig(timChDef, pwmOutputConfiguration.servoCount, init->servoPwmRate, init->servoCenterPulse);
-           pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].flags = PWM_PF_SERVO | PWM_PF_OUTPUT_PROTOCOL_PWM;
+            pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].flags = PWM_PF_SERVO | PWM_PF_OUTPUT_PROTOCOL_PWM;
             pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].index = pwmOutputConfiguration.servoCount;
-            pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].timerHardware = timerHardwarePtr;
+            pwmOutputConfiguration.portConfigurations[pwmOutputConfiguration.outputCount].timerHardware = timerChDef_TimChRec(timChDef);
             pwmOutputConfiguration.servoCount++;
             pwmOutputConfiguration.outputCount++;
 #endif

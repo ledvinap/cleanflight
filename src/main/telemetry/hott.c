@@ -426,11 +426,6 @@ static void hottCheckSerialData(uint32_t currentMicros)
     }
 }
 
-static void workAroundForHottTelemetryOnUsart(serialPort_t *instance, portMode_t mode) {
-	closeSerialPort(hottPort);
-	hottPort = openSerialPort(instance->identifier, FUNCTION_TELEMETRY_HOTT, NULL, HOTT_BAUDRATE, mode, SERIAL_NOT_INVERTED);
-}
-
 static void hottSendTelemetryData(void) {
     if (!hottIsSending) {
         hottIsSending = true;

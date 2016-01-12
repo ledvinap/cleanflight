@@ -241,7 +241,7 @@ bool detectGyro(void)
                 break;
             }
 #endif
-            ; // fallthrough
+        } // fallthrough
 
         case GYRO_FAKE:
 #ifdef USE_FAKE_GYRO

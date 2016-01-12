@@ -39,6 +39,8 @@
 
 #if defined(SONAR)
 
+#include "build_config.h"
+
 #define SONAR_INTERVAL 60    // time between normal measurements
 
 #ifndef USE_EXTI

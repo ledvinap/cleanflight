@@ -84,7 +84,7 @@ void rescheduleTask(cfTaskId_e taskId, uint32_t newPeriodMicros)
         taskId = currentTaskId;
 
     if (taskId < TASK_COUNT) {
-        cfTasks[taskId].desiredPeriod = MAX(100, newPeriodMicros);  // Limit delay to 100us (10 kHz) to prevent scheduler clogging
+        cfTasks[taskId].desiredPeriod = MAX(100U, newPeriodMicros);  // Limit delay to 100us (10 kHz) to prevent scheduler clogging
     }
 }
 

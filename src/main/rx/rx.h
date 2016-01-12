@@ -139,7 +139,8 @@ typedef uint16_t (*rcReadRawDataPtr)(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t
 
 extern rxRuntimeConfig_t rxRuntimeConfig;
 
-void rxInit(rxConfig_t *rxConfig);
+typedef struct modeActivationCondition_s modeActivationCondition_t;
+void rxInit(rxConfig_t *rxConfig, modeActivationCondition_t *modeActivationConditions);
 void useRxConfig(rxConfig_t *rxConfigToUse);
 
 void updateRx(uint32_t currentTime);

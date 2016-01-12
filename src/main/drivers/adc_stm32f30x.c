@@ -25,7 +25,7 @@
 
 #include "system.h"
 
-#include "gpio.h"
+#include "drivers/rcc.h"
 
 #include "sensor.h"
 #include "accgyro.h"
@@ -57,12 +57,13 @@ typedef struct adcDef_s {
 } adcDef_t;
 
 adcDef_t adcDef[ADC_COUNT] = {
-    {ADC1, RCC_APB2(ADC12), ADC1_2_IRQn},
-    {ADC2, RCC_APB2(ADC12), ADC1_2_IRQn},
-    {ADC3, RCC_APB2(ADC34), ADC3_IRQn},
-    {ADC4, RCC_APB2(ADC34), ADC4_IRQn},
+    {ADC1, RCC_AHB(ADC12), ADC1_2_IRQn},
+    {ADC2, RCC_AHB(ADC12), ADC1_2_IRQn},
+    {ADC3, RCC_AHB(ADC34), ADC3_IRQn},
+    {ADC4, RCC_AHB(ADC34), ADC4_IRQn},
 };
 
+int8_t channelCount[ADC_COUNT];
 
 void adcInitHw(void)
 {
@@ -75,7 +76,7 @@ uint16_t adcHwIOChannel(IO_t io)
 {
     uint16_t ret;
     if(!io) return -1;
-    for(adc = 0; adc < ADC_COUNT; adc++)
+    for(unsigned adc = 0; adc < ADC_COUNT; adc++)
         for(int i = 0; i < ADC_IOPIN_COUNT; i++)
             if(IOGetByTag(adcMap[adc][i]) == io) {
                 ret = 0x100 << adc;                         // bit for first ADC
@@ -85,7 +86,7 @@ uint16_t adcHwIOChannel(IO_t io)
                    && IOGetByTag(adcMap[adc + 1][i]) == io) // same IO
                     ret |= 0x100 << (adc + 1);              // bit for second ADC
 #endif
-                return (ret << 8) | i;
+                return ret | i;
             }
     return 0;
 }
@@ -110,19 +111,20 @@ void adcHwStart(void)
         IOConfigGPIO(io, IOCFG_ANALOG);
         // sampletime is hardwired now
         adcConfig[i].sampleTime = ADC_SampleTime_601Cycles5;
-        channelCount[adc]++;
+        #warning "HANDLE ADC"
+        //channelCount[adc]++;
     }
 
     // enable ADCs (all are enabled now, TODO)
     RCC_ADCCLKConfig(RCC_ADC12PLLCLK_Div8);  // 9MHz from 72MHz APB2 clock(HSE)
-    RCC_AHBPeriphClockCmd(ADC_AHB_PERIPHERAL | RCC_AHBPeriph_ADC12, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_ADC12, ENABLE);
 
-    RCC_ADCCLKConfig(RCC_ADC34PLLCLK_Div8);  // 72 MHz divided by 8 = 9MHz
-    RCC_AHBPeriphClockCmd(ADC_AHB_PERIPHERAL | RCC_AHBPeriph_ADC34, ENABLE);
+    RCC_ADCCLKConfig(RCC_ADC34PLLCLK_Div8);
+    RCC_AHBPeriphClockCmd( RCC_AHBPeriph_ADC34, ENABLE);
 
     ADC_InitTypeDef ADC_InitStructure;
     ADC_StructInit(&ADC_InitStructure);
-    memoryIndex = 0; // index in results memory
+    unsigned memoryIndex = 0; // index in results memory
 
     for(int adc = 0; adc < ADC_COUNT; adc++) {
         if(!channelCount[adc])
@@ -144,7 +146,7 @@ void adcHwStart(void)
 
         int sequencerIndex = 1;
         for(int i = 0; i < (int)ARRAYLEN(adcConfig); i++) {
-            if (!(adcConfig[i].adcChannel & (0x100 << adc))) {
+            if (!(adcHwIOChannel(IOGetByTag(adcConfig[i].pin)) & (0x100 << adc))) {
                 continue; // not on this ADC
             }
             adcConfig[i].dmaIndex = memoryIndex++;

@@ -45,6 +45,7 @@
 #include "flight/navigation.h"
 
 #include "config/runtime_config.h"
+#include "config/config_unittest.h"
 
 extern uint16_t cycleTime;
 extern uint8_t motorCount;

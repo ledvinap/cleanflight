@@ -33,6 +33,7 @@ typedef struct adc_config_s {
     ioTag_t pin;                // input pin
     uint8_t dmaIndex;           // index into DMA buffer in case of sparse channels
     uint8_t sampleTime;
+    uint16_t adcChannel;        // adc mask in upper byte, channel in lower (TODO)
 } adc_config_t;
 
 typedef struct drv_adc_config_s {

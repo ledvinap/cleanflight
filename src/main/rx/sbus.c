@@ -77,7 +77,7 @@ static uint32_t sbusChannelData[SBUS_MAX_CHANNEL];
 
 // TODO SERIAL_STOPBITS_2 | SERIAL_PARITY_EVEN | SERIAL_INVERTED
 
-static const serialPortMode_t sBusPortConfig = {
+static serialPortMode_t sBusPortConfig = {
     .mode = MODE_RX | MODE_SBUS | MODE_INVERTED | (MODE_DEFAULT_FAST & ~MODE_U_DMARX),  // don't enable RX_DMA, we need rxCallback
     .baudRate = 100000,
     .rxCallback = sbusDataReceive
@@ -97,9 +97,9 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
         return false;
     }
     if(rxConfig->sbus_inversion)
-        sBusPortConfig |= SERIAL_INVERTED;
+        sBusPortConfig.mode |= MODE_INVERTED;
     else
-        sBusPortConfig &= ~SERIAL_INVERTED;
+        sBusPortConfig.mode &= ~MODE_INVERTED;
     serialPort_t *sBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, &sBusPortConfig);
 
     return sBusPort != NULL;

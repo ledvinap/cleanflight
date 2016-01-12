@@ -302,7 +302,15 @@ void init(void)
     // delay initialization as long as possible to make conflict resolution easier
 
     memset(&pwm_params, 0, sizeof(pwm_params));
-    // when using airplane/wing mixer, servo/motor outputs are remapped
+
+    const sonarHardware_t *sonarHardware = NULL;
+#ifdef SONAR
+    if (feature(FEATURE_SONAR)) {
+        sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
+    }
+#endif
+
+// when using airplane/wing mixer, servo/motor outputs are remapped
     if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE)
         pwm_params.airplane = true;
     else
@@ -360,7 +368,7 @@ void init(void)
 
     if (!sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf,
         masterConfig.acc_hardware, masterConfig.mag_hardware, masterConfig.baro_hardware, currentProfile->mag_declination,
-        masterConfig.looptime, masterConfig.gyroSync, masterConfig.gyroSyncDenominator)) {
+        masterConfig.loopTime, masterConfig.gyroSync, masterConfig.gyroSyncDenominator)) {
 
         // if gyro was not detected due to whatever reason, we give up now.
         failureMode(FAILURE_MISSING_ACC);
@@ -417,7 +425,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit(&masterConfig.batteryConfig);  // TODO - sync with master
+        sonarInit(sonarHardware); 
     }
 #endif
 

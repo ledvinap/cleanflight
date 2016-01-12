@@ -49,6 +49,7 @@
 #include "sensors/battery.h"
 #include "flight/pid.h"
 #include "flight/altitudehold.h"
+#include "flight/imu.h"
 #include "io/gps.h"
 
 #include "telemetry/telemetry.h"
@@ -356,7 +357,7 @@ static int generatePacket(tlm_Id id) {
         pushPacketS(ALT_FIRST_ID, BaroAlt);    // in 0.01m
         break;
     case tlm_Heading:
-        pushPacketS(GPS_COURS_FIRST_ID, heading*100);  // internal 1deg, sent in 0.01deg
+        pushPacketS(GPS_COURS_FIRST_ID, attitude.values.yaw * 10);  // internal 1deg, sent in 0.01deg
         break;
     case tlm_Temp1:
         pushPacketS(T1_FIRST_ID, telemTemperature1);  // send in degrees

@@ -91,7 +91,7 @@ typedef enum {
 typedef struct pwmPortConfiguration_s {
     uint8_t index;
     pwmPortFlags_e flags;
-    const timerHardware_t *timerHardware;
+    timerChRec_t *timerHardware;
 } pwmPortConfiguration_t;
 
 typedef struct pwmOutputConfiguration_s {

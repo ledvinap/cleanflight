@@ -37,8 +37,8 @@
 
 // Sonar measurements are in cm, a value of SONAR_OUT_OF_RANGE indicates sonar is not in range.
 // Inclination is adjusted by imu
-    float baro_cf_vel;                      // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity)
-    float baro_cf_alt;                      // apply CF to use ACC for height estimation
+float baro_cf_vel;                      // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity)
+float baro_cf_alt;                      // apply CF to use ACC for height estimation
 
 #ifdef SONAR
 int16_t sonarMaxRangeCm;
@@ -49,7 +49,7 @@ float sonarMaxTiltCos;
 
 static int32_t calculatedAltitude;
 
-void sonarInit(batteryConfig_t *batteryConfig)
+const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig)
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
 #if 1
@@ -61,18 +61,18 @@ void sonarInit(batteryConfig_t *batteryConfig)
         .triggerIO = IO_TAG(PB0),   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echoIO = IO_TAG(PB1),      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
-    // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
+   // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
     if (feature(FEATURE_RX_PARALLEL_PWM ) || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC) ) {
-        hcsr04_Init(&sonarPWM56);
+        return &sonarPWM56;
     } else {
-        hcsr04_Init(&sonarRC78);
+        return &sonarRC78;
     }
 # else
     static const sonarHardware_t const sonarHardware = {
         .triggerIO = IO_TAG(PB7),
         .echoIO = IO_TAG(PB6),
     };
-    hcsr04_Init(&sonarHardware);
+    return &sonarHardware;
 # endif
 #elif defined(OLIMEXINO)
     UNUSED(batteryConfig);
@@ -80,18 +80,34 @@ void sonarInit(batteryConfig_t *batteryConfig)
         .triggerIO = IO_TAG(PB0),    // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echoIO = IO_TAG(PB1),       // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
-    hcsr04_init(&sonarHardware);
+    return sonarHardware;
 #elif defined(SPRACINGF3)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .triggerIO = IO_TAG(PB0),    // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echoIO = IO_TAG(PB1),       // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
-    hcsr04_init(&sonarHardware);
+    return &sonarHardware;
+#elif defined(SPARKY)
+    UNUSED(batteryConfig);
+    static const sonarHardware_t const sonarHardware = {
+        .triggerIO = IO_TAG(PA2),    // PWM6 (PA2) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIO = IO_TAG(PB1),       // PWM7 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+    };
+    return &sonarHardware;
+#elif defined(UNIT_TEST)
+    UNUSED(batteryConfig);
+    return 0;
 #else
 # error Sonar not defined for target
 #endif
+}
 
+void sonarInit(const sonarHardware_t *sonarHardware)
+{
+    sonarRange_t sonarRange;
+
+    hcsr04_init(sonarHardware, &sonarRange);
     sensorsSet(SENSOR_SONAR);
     sonarMaxRangeCm = sonarRange.maxRangeCm;
     sonarCfAltCm = sonarMaxRangeCm / 2;

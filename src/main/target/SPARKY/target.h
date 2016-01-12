@@ -47,7 +47,7 @@
 #define BEEPER_INVERTED
 #define BEEPER_IO        PA6
 
-//#define USE_EXTI
+#define USE_EXTI
 
 #define USE_VCP
 #define USE_USART1 // Conn 1 - TX (PB6) RX PB7 (AF7)
@@ -137,7 +137,7 @@
 #define WS2811_IRQ                      DMA1_Channel7_IRQn
 #endif
 
-#define USE_SERIAL_1WIRE
+//#define USE_SERIAL_1WIRE
 
 #define S1W_TX_GPIO         GPIOB
 #define S1W_TX_PIN          GPIO_Pin_6

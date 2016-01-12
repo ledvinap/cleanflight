@@ -82,6 +82,11 @@
 #define TELEMETRY_LTM_INITIAL_PORT_MODE MODE_TX
 #define LTM_CYCLETIME   100
 
+serialPortMode_t ltmPortConfig = {
+    .mode = MODE_RXTX,
+};
+
+
 extern uint16_t rssi;           // FIXME dependency on mw.c
 static serialPort_t *ltmPort;
 static serialPortConfig_t *portConfig;
@@ -289,7 +294,9 @@ void configureLtmTelemetryPort(void)
     if (baudRateIndex == BAUD_AUTO) {
         baudRateIndex = BAUD_19200;
     }
-    ltmPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_LTM, NULL, baudRates[baudRateIndex], TELEMETRY_LTM_INITIAL_PORT_MODE, SERIAL_NOT_INVERTED);
+    ltmPortConfig.baudRate = baudRates[baudRateIndex];
+
+    ltmPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_LTM, &ltmPortConfig);
     if (!ltmPort)
         return;
     ltmEnabled = true;

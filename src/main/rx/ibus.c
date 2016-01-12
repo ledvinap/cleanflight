@@ -29,6 +29,8 @@
 
 #include "build_config.h"
 
+#include "common/utils.h"
+
 #include "drivers/system.h"
 
 #include "drivers/serial.h"
@@ -63,8 +65,12 @@ bool ibusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
     if (!portConfig) {
         return false;
     }
-
-    serialPort_t *ibusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, ibusDataReceive, IBUS_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    serialPortMode_t ibusPortConfig = {
+        .mode = MODE_RX | (MODE_DEFAULT_FAST & ~MODE_U_DMARX),  // don't enable RX_DMA, we need rxCallback
+        .baudRate = IBUS_BAUDRATE,
+        .rxCallback = ibusDataReceive
+    };
+    serialPort_t *ibusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, &ibusPortConfig);
 
     return ibusPort != NULL;
 }

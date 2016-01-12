@@ -102,7 +102,7 @@ void systemInit(void)
     enableGPIOPowerUsageAndNoiseReductions();
 
 #warning TODO
-#ifdef STM32F10X
+#if defined STM32F10X && TODO
     // Set USART1 TX (PA9) to output and high state to prevent a rs232 break condition on reset.
     // See issue https://github.com/cleanflight/cleanflight/issues/1433
     gpio_config_t gpio;
@@ -126,12 +126,15 @@ void systemInit(void)
     gpioInit(USART3_GPIO, &gpio);
 #endif
 
+#endif
+
+#ifdef STM32F10X
     // Turn off JTAG port 'cause we're using the GPIO for leds
 #define AFIO_MAPR_SWJ_CFG_NO_JTAG_SW            (0x2 << 24)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;
 #endif
 
-#ifdef STM32F303
+#if defined STM32F303 && TODO
     // Set TX for USART1, USART2 and USART3 to input with pull-up to prevent floating TX outputs.
     gpio_config_t gpio;
 

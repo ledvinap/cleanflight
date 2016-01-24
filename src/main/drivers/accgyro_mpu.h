@@ -205,4 +205,4 @@ void mpuIntExtiInit(void);
 bool mpuAccRead(int16_t *accData);
 bool mpuGyroRead(int16_t *gyroADC);
 mpuDetectionResult_t *detectMpu(ioTag_t intTag);
-void checkMPUDataReady(bool *mpuDataReadyPtr);
+bool mpuIsDataReady(void);

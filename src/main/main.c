@@ -211,6 +211,18 @@ void init(void)
 
     pwmRxInit(masterConfig.inputFilteringMode);
 
+    // pwmInit() needs to be called as soon as possible for ESC compatibility reasons
+    pwmIOConfiguration_t *pwmIOConfiguration = pwmInit(&pwm_params);
+
+    mixerUsePWMIOConfiguration(pwmIOConfiguration);
+
+    debug[2] = pwmIOConfiguration->pwmInputCount;
+    debug[3] = pwmIOConfiguration->ppmInputCount;
+
+    if (!feature(FEATURE_ONESHOT125))
+        motorControlEnable = true;
+
+    systemState |= SYSTEM_STATE_MOTORS_READY;
 
 #ifdef BEEPER
     beeperConfig_t beeperConfig = {

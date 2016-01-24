@@ -1726,3 +1726,38 @@ void mspProcess(void)
         }
     }
 }
+
+static mspPort_t *mspBlackboxPort = NULL;
+
+void mspSetBlackboxPort(serialPort_t *serialPort)
+{
+    // find existing telemetry port
+    for (mspPort_t *mspPort = mspPorts; mspPort < mspPorts + MAX_MSP_PORT_COUNT; mspPort++) {
+        if (mspPort->port == serialPort) {
+            mspBlackboxPort = mspPort;
+            return;
+        }
+    }
+}
+
+void sendMspBlackbox(uint8_t *data, unsigned len)
+{
+    if(!mspBlackboxPort) return;
+    setCurrentPort(mspBlackboxPort);
+    currentPort->cmdMSP = MSP_BLACKBOX_FRAME;
+    headSerialReply(len);
+    while(len--)
+        serialize8(*data++);
+    tailSerialReply();
+}
+
+void sendMspBlackboxInfo(int16_t cmd)
+{
+    if(!mspBlackboxPort) return;
+    setCurrentPort(mspBlackboxPort);
+    currentPort->cmdMSP = MSP_BLACKBOX_INFO;
+    headSerialReply(2);
+    serialize16(cmd);
+    tailSerialReply();
+}
+

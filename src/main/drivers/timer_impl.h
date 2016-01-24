@@ -75,3 +75,6 @@ extern timerRec_t * const timerRecPtrs[];
 extern const timerChDef_t timerChannelMap[];
 // channel used for timer queue (target specific. May be undefined if systick is used instead)
 extern const timerChDef_t timerQueueChDef;
+
+// decouple timerChannelMap length from rest of code
+int timerChannelMap_Count(void);

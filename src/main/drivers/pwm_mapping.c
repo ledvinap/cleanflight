@@ -37,6 +37,8 @@
 #include "pwm_rx.h"
 #include "pwm_mapping.h"
 
+#warning "ioConfigurations length"
+
 /*
     Configuration maps
 
@@ -492,7 +494,7 @@ static const uint16_t * const hardwareMaps[] = {
 
 static pwmIOConfiguration_t pwmIOConfiguration;
 
-pwmIOConfiguration_t *pwmGetOutputConfiguration(void){
+pwmIOConfiguration_t *pwmGetIOConfiguration(void) {
     return &pwmIOConfiguration;
 }
 
@@ -696,13 +698,13 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
         } else if (type == MAP_TO_MOTOR_OUTPUT) {
 
             if (init->useOneshot) {
-                pwmOneshotMotorConfig(timChDef, pwmOutputConfiguration.motorCount);
+                pwmOneshotMotorConfig(timChDef, pwmIOConfiguration.motorCount);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_OUTPUT_PROTOCOL_ONESHOT|PWM_PF_OUTPUT_PROTOCOL_PWM;
             } else if (isMotorBrushed(init->motorPwmRate)) {
-                pwmBrushedMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
+                pwmBrushedMotorConfig(timChDef, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_MOTOR_MODE_BRUSHED | PWM_PF_OUTPUT_PROTOCOL_PWM;
             } else {
-                pwmBrushlessMotorConfig(timChDef, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
+                pwmBrushlessMotorConfig(timChDef, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_OUTPUT_PROTOCOL_PWM ;
             }
 

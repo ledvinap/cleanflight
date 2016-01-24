@@ -72,7 +72,7 @@ void hcsr04_extiHandler(extiCallbackRec_t* cb)
     }
 }
 
-void hcsr04_init(const sonarHardware_t *initialSonarHardware, sonarRange_t *sonarRange)
+void hcsr04_Init(const sonarHardware_t *initialSonarHardware, sonarRange_t *sonarRange)
 {
     sonarHardware = initialSonarHardware;
     sonarRange->maxRangeCm = HCSR04_MAX_RANGE_CM;
@@ -80,20 +80,20 @@ void hcsr04_init(const sonarHardware_t *initialSonarHardware, sonarRange_t *sona
     sonarRange->detectionConeExtendedDeciDegrees = HCSR04_DETECTION_CONE_EXTENDED_DECIDEGREES;
 
     // both pins must be defined, but may be the same
-    if(!sonarHardware->triggerIO || !sonarHardware->echoIO)
+    if(!sonarHardware->triggerIOTag || !sonarHardware->echoIOTag)
         return;
 
-    if(sonarHardware->triggerIO == sonarHardware->echoIO) {
+    if(sonarHardware->triggerIOTag == sonarHardware->echoIOTag) {
         // single-wire configuration
-        triggerIO = echoIO = IOGetByTag(sonarHardware->triggerIO);
+        triggerIO = echoIO = IOGetByTag(sonarHardware->triggerIOTag);
         IOInit(triggerIO, OWNER_SONAR, RESOURCE_IO | RESOURCE_EXTI);
         // start in input mode
         IOConfigGPIO(echoIO, IOCFG_IN_FLOATING);
     } else {
-        triggerIO = IOGetByTag(sonarHardware->triggerIO);
+        triggerIO = IOGetByTag(sonarHardware->triggerIOTag);
         IOInit(triggerIO, OWNER_SONAR, RESOURCE_OUTPUT);
         IOConfigGPIO(triggerIO, IOCFG_OUT_PP);
-        echoIO = IOGetByTag(sonarHardware->echoIO);
+        echoIO = IOGetByTag(sonarHardware->echoIOTag);
         IOInit(echoIO, OWNER_SONAR, RESOURCE_INPUT | RESOURCE_EXTI);
         IOConfigGPIO(echoIO, IOCFG_IN_FLOATING);
     }

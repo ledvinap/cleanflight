@@ -102,8 +102,9 @@ typedef struct pwmIOConfiguration_s {
     uint8_t ioCount;
     uint8_t pwmInputCount;
     uint8_t ppmInputCount;
-    pwmPortConfiguration_t ioConfigurations[USABLE_TIMER_CHANNEL_COUNT];
+    pwmPortConfiguration_t ioConfigurations[8 * 4];
 } pwmIOConfiguration_t;
+
 
 // This indexes into the read-only hardware definition structure, timerHardware_t
 enum {
@@ -125,5 +126,5 @@ enum {
     PWM16
 };
 
-pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
+pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init);
 pwmIOConfiguration_t *pwmGetOutputConfiguration(void);

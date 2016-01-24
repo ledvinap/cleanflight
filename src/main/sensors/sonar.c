@@ -54,12 +54,12 @@ const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryCon
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
 #if 1
     static const sonarHardware_t sonarPWM56 = {
-        .triggerIO = IO_TAG(PB8),   // PWM5 (PB8) - 5v tolerant
-        .echoIO = IO_TAG(PB9)       // PWM6 (PB9) - 5v tolerant
+        .triggerIOTag = IO_TAG(PB8),   // PWM5 (PB8) - 5v tolerant
+        .echoIOTag = IO_TAG(PB9)       // PWM6 (PB9) - 5v tolerant
     };
     static const sonarHardware_t sonarRC78 = {
-        .triggerIO = IO_TAG(PB0),   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = IO_TAG(PB1),      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIOTag = IO_TAG(PB0),   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIOTag = IO_TAG(PB1),      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     // If we are using softserial, parallel PWM or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
     if (feature(FEATURE_SOFTSERIAL)
@@ -71,30 +71,30 @@ const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryCon
     }
 # else
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = IO_TAG(PB7),
-        .echoIO = IO_TAG(PB6),
+        .triggerIOTag = IO_TAG(PB7),
+        .echoIOTag = IO_TAG(PB6),
     };
     return &sonarHardware;
 # endif
 #elif defined(OLIMEXINO)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = IO_TAG(PB0),    // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = IO_TAG(PB1),       // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIOTag = IO_TAG(PB0),    // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIOTag = IO_TAG(PB1),       // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     return sonarHardware;
 #elif defined(SPRACINGF3)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = IO_TAG(PB0),    // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = IO_TAG(PB1),       // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIOTag = IO_TAG(PB0),    // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIOTag = IO_TAG(PB1),       // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     return &sonarHardware;
 #elif defined(SPARKY)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
-        .triggerIO = IO_TAG(PA2),    // PWM6 (PA2) - only 3.3v ( add a 1K Ohms resistor )
-        .echoIO = IO_TAG(PB1),       // PWM7 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+        .triggerIOTag = IO_TAG(PA2),    // PWM6 (PA2) - only 3.3v ( add a 1K Ohms resistor )
+        .echoIOTag = IO_TAG(PB1),       // PWM7 (PB1) - only 3.3v ( add a 1K Ohms resistor )
     };
     return &sonarHardware;
 #elif defined(UNIT_TEST)
@@ -109,7 +109,7 @@ void sonarInit(const sonarHardware_t *sonarHardware)
 {
     sonarRange_t sonarRange;
 
-    hcsr04_init(sonarHardware, &sonarRange);
+    hcsr04_Init(sonarHardware, &sonarRange);
     sensorsSet(SENSOR_SONAR);
     sonarMaxRangeCm = sonarRange.maxRangeCm;
     sonarCfAltCm = sonarMaxRangeCm / 2;

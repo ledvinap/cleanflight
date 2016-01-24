@@ -206,8 +206,62 @@ void init(void)
 #ifdef USE_SERVOS
     mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer, masterConfig.customServoMixer);
 #else
-    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer, NULL);
+    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer);
 #endif
+
+    memset(&pwm_params, 0, sizeof(pwm_params));
+
+#ifdef SONAR
+    const sonarHardware_t *sonarHardware = NULL;
+
+    if (feature(FEATURE_SONAR)) {
+        sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
+        sonarGPIOConfig_t sonarGPIOConfig = {
+            .triggerIOTag = sonarHardware->triggerIOTag,
+            .echoIOTag = sonarHardware->echoIOTag,
+        };
+        pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
+    }
+#endif
+
+    // when using airplane/wing mixer, servo/motor outputs are remapped
+    if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE)
+        pwm_params.airplane = true;
+    else
+        pwm_params.airplane = false;
+#if defined(USE_USART2) && defined(STM32F10X)
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#endif
+#ifdef STM32F303xC
+    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_USART3);
+#endif
+    pwm_params.useVbat = feature(FEATURE_VBAT);
+    pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
+    pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
+    pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
+    pwm_params.useCurrentMeterADC = feature(FEATURE_CURRENT_METER)
+        && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC;
+    pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
+    pwm_params.usePPM = feature(FEATURE_RX_PPM);
+    pwm_params.useSerialRx = feature(FEATURE_RX_SERIAL);
+#ifdef SONAR
+    pwm_params.useSonar = feature(FEATURE_SONAR);
+#endif
+
+#ifdef USE_SERVOS
+    pwm_params.useServos = isMixerUsingServos();
+    pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
+    pwm_params.servoCenterPulse = masterConfig.escAndServoConfig.servoCenterPulse;
+    pwm_params.servoPwmRate = masterConfig.servo_pwm_rate;
+#endif
+
+    pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
+    pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
+    pwm_params.idlePulse = masterConfig.escAndServoConfig.mincommand;
+    if (feature(FEATURE_3D))
+        pwm_params.idlePulse = masterConfig.flight3DConfig.neutral3d;
+    if (pwm_params.motorPwmRate > 500)
+        pwm_params.idlePulse = 0; // brushed motors
 
     pwmRxInit(masterConfig.inputFilteringMode);
 
@@ -311,64 +365,6 @@ void init(void)
     adcInit(&adc_params);
 #endif
 
-    // delay initialization as long as possible to make conflict resolution easier
-
-    memset(&pwm_params, 0, sizeof(pwm_params));
-
-    const sonarHardware_t *sonarHardware = NULL;
-#ifdef SONAR
-    if (feature(FEATURE_SONAR)) {
-        sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
-    }
-#endif
-
-// when using airplane/wing mixer, servo/motor outputs are remapped
-    if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE)
-        pwm_params.airplane = true;
-    else
-        pwm_params.airplane = false;
-#if defined(USE_USART2) && defined(STM32F10X)
-    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
-#endif
-#ifdef STM32F303xC
-    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_USART3);
-#endif
-    pwm_params.useVbat = feature(FEATURE_VBAT);
-    pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
-    pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
-    pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
-    pwm_params.useCurrentMeterADC = feature(FEATURE_CURRENT_METER)
-        && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC;
-    pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
-    pwm_params.usePPM = feature(FEATURE_RX_PPM);
-    pwm_params.useSerialRx = feature(FEATURE_RX_SERIAL);
-#ifdef SONAR
-    pwm_params.useSonar = feature(FEATURE_SONAR);
-#endif
-
-#ifdef USE_SERVOS
-    pwm_params.useServos = isMixerUsingServos();
-    pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
-    pwm_params.servoCenterPulse = masterConfig.escAndServoConfig.servoCenterPulse;
-    pwm_params.servoPwmRate = masterConfig.servo_pwm_rate;
-#endif
-
-    pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
-    pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
-    pwm_params.idlePulse = masterConfig.escAndServoConfig.mincommand;
-    if (feature(FEATURE_3D))
-        pwm_params.idlePulse = masterConfig.flight3DConfig.neutral3d;
-    if (pwm_params.motorPwmRate > 500)
-        pwm_params.idlePulse = 0; // brushed motors
-
-    pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
-
-    mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
-
-    if (!feature(FEATURE_ONESHOT125))
-        motorControlEnable = true;
-
-    systemState |= SYSTEM_STATE_MOTORS_READY;
 
     initBoardAlignment(&masterConfig.boardAlignment);
 
@@ -437,7 +433,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit(sonarHardware); 
+        sonarInit(sonarHardware);
     }
 #endif
 

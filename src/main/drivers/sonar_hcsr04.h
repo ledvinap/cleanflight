@@ -20,8 +20,8 @@
 #include "drivers/io.h"
 
 typedef struct sonarHardware_s {
-    ioTag_t triggerIO;
-    ioTag_t echoIO;
+    ioTag_t triggerIOTag;
+    ioTag_t echoIOTag;
 } sonarHardware_t;
 
 typedef struct sonarRange_s {

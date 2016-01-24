@@ -225,4 +225,4 @@ void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers, servoMixe
 #else
 void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers);
 #endif
-void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
+void mixerUsePWMIOConfiguration(pwmIOConfiguration_t *pwmIOConfiguration);

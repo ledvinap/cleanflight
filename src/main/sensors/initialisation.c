@@ -231,7 +231,7 @@ bool detectGyro(void)
             bool sensorDetected = mpu6500GyroDetect(&gyro);
 # ifdef USE_GYRO_SPI_MPU6500
             if(!sensorDetected)
-                sensorDetected = mpu6500SpiGyroDetect(&gyro)
+                sensorDetected = mpu6500SpiGyroDetect(&gyro);
 # endif
             if (sensorDetected) {
                 gyroHardware = GYRO_MPU6500;
@@ -364,7 +364,7 @@ retry:
         case ACC_MPU6500: {
             bool sensorDetected;
 #ifdef USE_ACC_MPU6500
-            sensorDetected = mpu6500AccDetect(&acc) 
+            sensorDetected = mpu6500AccDetect(&acc);
 #ifdef USE_ACC_SPI_MPU6500
                 if(!sensorDetected)
                     sensorDetected = mpu6500SpiAccDetect(&acc);

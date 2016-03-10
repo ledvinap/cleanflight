@@ -797,7 +797,14 @@ $(OBJECT_DIR)/$(TARGET)/%.ld : target/%.ld.in
 
 
 ## all         : default task; compile C code, build firmware
-all: binary
+.PHONY: all
+all: hex bin
+
+.PHONY: bin
+bin: $(TARGET_BIN)
+
+.PHONY: hex
+hex: $(TARGET_HEX)
 
 ## clean       : clean up all temporary / machine-generated files
 clean:
@@ -849,8 +856,17 @@ help: Makefile
 test:
 	cd src/test && $(MAKE) test || true
 
+# virtual targets to use instaad to TARGET variable
+
+.PHONY: all_targets $(VALID_TARGETS)
+all_targets : $(VALID_TARGETS)
+$(VALID_TARGETS) :
+	$(MAKE) TARGET=$@ all
+
 # rebuild everything when makefile changes
 $(TARGET_OBJS) : Makefile
 
 # include auto-generated dependencies
+ifneq ($(MAKECMDGOALS),clean)
 -include $(TARGET_DEPS)
+endif

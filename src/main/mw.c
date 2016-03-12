@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "scheduler.h"
 #include "debug.h"
 
@@ -44,6 +44,7 @@
 
 #include "filter/biquad.h"
 #include "filter/fir.h"
+#include "io/rc_controls.h"
 
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
@@ -57,7 +58,6 @@
 #include "io/beeper.h"
 #include "io/display.h"
 #include "io/escservo.h"
-#include "io/rc_controls.h"
 #include "io/rc_curves.h"
 #include "io/gimbal.h"
 #include "io/gps.h"
@@ -66,6 +66,9 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+#include "io/asyncfatfs/asyncfatfs.h"
+#include "io/transponder_ir.h"
+
 
 #include "rx/rx.h"
 #include "rx/msp.h"
@@ -431,10 +434,24 @@ void processRx(void)
     }
 
     throttleStatus_e throttleStatus = calculateThrottleStatus(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
+    rollPitchStatus_e rollPitchStatus =  calculateRollPitchCenterStatus(&masterConfig.rxConfig);
 
+    /* In airmode Iterm should be prevented to grow when Low thottle and Roll + Pitch Centered.
+     This is needed to prevent Iterm winding on the ground, but keep full stabilisation on 0 throttle while in air
+     Low Throttle + roll and Pitch centered is assuming the copter is on the ground. Done to prevent complex air/ground detections */
     if (throttleStatus == THROTTLE_LOW) {
-        pidResetErrorAngle();
-        pidResetErrorGyro();
+        if (IS_RC_MODE_ACTIVE(BOXAIRMODE) && !failsafeIsActive() && ARMING_FLAG(ARMED)) {
+            if (rollPitchStatus == CENTERED) {
+                ENABLE_STATE(ANTI_WINDUP);
+            } else {
+                DISABLE_STATE(ANTI_WINDUP);
+            }
+        } else {
+            pidResetErrorAngle();
+            pidResetErrorGyro();
+        }
+    } else {
+        DISABLE_STATE(ANTI_WINDUP);
     }
 
     // When armed and motors aren't spinning, do beeps and then disarm
@@ -763,6 +780,10 @@ void taskMainPidLoop(void)
         writeMotors();
     }
 
+#ifdef USE_SDCARD
+        afatfs_poll();
+#endif
+
 #ifdef BLACKBOX
     if (!cliMode && feature(FEATURE_BLACKBOX)) {
         handleBlackbox();
@@ -797,10 +818,12 @@ void taskHandleSerial(void)
     handleSerial();
 }
 
+#ifdef BEEPER
 void taskUpdateBeeper(void)
 {
     beeperUpdate();          //call periodic beeper handler
 }
+#endif
 
 void taskUpdateBattery(void)
 {
@@ -819,7 +842,10 @@ void taskUpdateBattery(void)
 
         if (ibatTimeSinceLastServiced >= IBATINTERVAL) {
             ibatLastServiced = currentTime;
-            updateCurrentMeter(ibatTimeSinceLastServiced, &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
+
+            throttleStatus_e throttleStatus = calculateThrottleStatus(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
+
+            updateCurrentMeter(ibatTimeSinceLastServiced, throttleStatus);
         }
     }
 }
@@ -939,6 +965,15 @@ void taskLedStrip(void)
 {
     if (feature(FEATURE_LED_STRIP)) {
         updateLedStrip();
+    }
+}
+#endif
+
+#ifdef TRANSPONDER
+void taskTransponder(void)
+{
+    if (feature(FEATURE_TRANSPONDER)) {
+        updateTransponder();
     }
 }
 #endif

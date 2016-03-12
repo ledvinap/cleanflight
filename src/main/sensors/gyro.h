@@ -32,17 +32,17 @@ typedef enum {
 extern gyro_t gyro;
 extern sensor_align_e gyroAlign;
 
-extern int16_t gyroADC[XYZ_AXIS_COUNT];
-extern int16_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
-extern int16_t gyroADCraw[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
-extern int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT];
+extern int32_t gyroADC[XYZ_AXIS_COUNT];
+extern int32_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+extern int32_t gyroADCraw[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+extern int32_t gyroZero[XYZ_AXIS_COUNT];
 extern uint16_t gyroTicks;
 
 typedef struct gyroConfig_s {
     uint8_t gyroMovementCalibrationThreshold; // people keep forgetting that moving model while init results in wrong gyro offsets. and then they never reset gyro. so this is now on by default.
 } gyroConfig_t;
 
-void useGyroConfig(gyroConfig_t *gyroConfigToUse, int8_t * filterTableToUse);
+void useGyroConfig(gyroConfig_t *gyroConfigToUse, float gyro_lpf_hz);
 void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void gyroUpdate(void);
 void gyroHandleData(int16_t ADC[XYZ_AXIS_COUNT]);

@@ -19,10 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "platform.h"
-
-#include "build_config.h"
-
+#include <platform.h>
 #include "system.h"
 
 #include "drivers/rcc.h"

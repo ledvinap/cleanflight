@@ -20,9 +20,10 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
+#include "common/utils.h"
 
 #include "vcp/usb_cdc.h"
 

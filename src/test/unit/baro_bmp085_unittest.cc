@@ -16,7 +16,9 @@
  */
 #include <stdint.h>
 
+
 extern "C" {
+    #include <platform.h>
 
 #include "drivers/io.h"
 

@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 
 #include "system.h"
@@ -40,10 +40,11 @@
 #include "serial.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
+#include "serial_uart_stm32f10x.h"
 
 // TODO - define defaults for 103 USART mapping
-
-#ifdef USE_USART1
+#warning USE_USART refactored
+#ifdef USE_UART1
 static uartPort_t uartPort1;
 static uint8_t uartPort1RxBuffer[UART1_RX_BUFFER_SIZE];
 static uint8_t uartPort1TxBuffer[UART1_TX_BUFFER_SIZE];
@@ -73,7 +74,7 @@ static const uartHwDef_t uartPort1Def = {
 };
 #endif
 
-#ifdef USE_USART2
+#ifdef USE_UART2
 static uartPort_t uartPort2;
 static uint8_t uartPort2RxBuffer[UART2_RX_BUFFER_SIZE];
 static uint8_t uartPort2TxBuffer[UART2_TX_BUFFER_SIZE];
@@ -99,7 +100,7 @@ static const uartHwDef_t uartPort2Def = {
 };
 #endif
 
-#ifdef USE_USART3
+#ifdef USE_UART3
 static uartPort_t uartPort3;
 static uint8_t uartPort3RxBuffer[UART3_RX_BUFFER_SIZE];
 static uint8_t uartPort3TxBuffer[UART3_TX_BUFFER_SIZE];

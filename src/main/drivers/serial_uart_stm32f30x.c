@@ -29,7 +29,7 @@
 
 #include "build_config.h"
 
-#include "platform.h"
+#include <platform.h>
 
 #include "system.h"
 #include "gpio.h"
@@ -41,6 +41,8 @@
 #include "serial.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
+#include "serial_uart_stm32f30x.h"
+
 
 // Using RX DMA disables the use of receive callbacks
 //#define USE_USART1_RX_DMA
@@ -283,4 +285,24 @@ void USART3_IRQHandler(void)
     uartIrqHandler(&uartPort3);
 }
 
+#endif
+
+
+#ifdef USE_UART4
+
+// UART4 Rx/Tx IRQ Handler
+void UART4_IRQHandler(void)
+{
+    uartPort_t *s = &uartPort4;
+    usartIrqHandler(&uartPort4);
+}
+#endif
+
+#ifdef USE_UART5
+// UART5 Rx/Tx IRQ Handler
+void UART5_IRQHandler(void)
+{
+    uartPort_t *s = &uartPort5;
+    usartIrqHandler(&uartPort5);
+}
 #endif

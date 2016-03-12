@@ -17,11 +17,13 @@
 
 #pragma once
 
-#include "drivers/pwm_mapping.h"
-#include "io/escservo.h"
-
+#ifdef USE_QUAD_MIXER_ONLY
+#define MAX_SUPPORTED_MOTORS 4
+#define MAX_SUPPORTED_SERVOS 1
+#else
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
+#endif
 #define YAW_JUMP_PREVENTION_LIMIT_LOW 80
 #define YAW_JUMP_PREVENTION_LIMIT_HIGH 500
 
@@ -73,11 +75,12 @@ typedef struct mixer_s {
 
 typedef struct mixerConfig_s {
     uint8_t pid_at_min_throttle;            // when enabled pids are used at minimum throttle
+    uint8_t airmode_saturation_limit;       // Use max possible correction when within the limit
     int8_t yaw_motor_direction;
     uint16_t yaw_jump_prevention_limit;      // make limit configurable (original fixed value was 100)
 #ifdef USE_SERVOS
     uint8_t tri_unarmed_servo;              // send tail servo correction pulses even when unarmed
-    int16_t servo_lowpass_freq;             // lowpass servo filter frequency selection; 1/1000ths of loop freq
+    float servo_lowpass_freq;             // lowpass servo filter frequency selection; 1/1000ths of loop freq
     int8_t servo_lowpass_enable;            // enable/disable lowpass filter
 #endif
 } mixerConfig_t;
@@ -197,6 +200,8 @@ void filterServos(void);
 extern int16_t motor[MAX_SUPPORTED_MOTORS];
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 
+extern bool motorLimitReached;
+
 void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
@@ -226,3 +231,4 @@ void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers, servoMixe
 void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers);
 #endif
 void mixerUsePWMIOConfiguration(pwmIOConfiguration_t *pwmIOConfiguration);
+void mixerInitialiseServoFiltering(uint32_t targetLooptime);

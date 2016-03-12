@@ -18,8 +18,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/axis.h"
 #include "common/maths.h"
@@ -27,6 +28,7 @@
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
+#include "drivers/gyro_sync.h"
 #include "sensors/sensors.h"
 #include "io/beeper.h"
 #include "io/statusindicator.h"
@@ -36,24 +38,37 @@
 #include "sensors/gyro.h"
 
 uint16_t calibratingG = 0;
-int16_t gyroADC[XYZ_AXIS_COUNT];
-int16_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
-int16_t gyroADCraw[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+int32_t gyroADC[XYZ_AXIS_COUNT];
+int32_t gyroADClast[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
+int32_t gyroADCraw[ACCGYRO_FILTER_SIZE][XYZ_AXIS_COUNT];
 int8_t gyroADClastIdx;
 uint16_t gyroTicks = 0;
-int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
+int32_t gyroZero[XYZ_AXIS_COUNT] = { 0, 0, 0 };
 
 static gyroConfig_t *gyroConfig;
-static int8_t * gyroFIRTable = 0L;
-static int16_t gyroFIRState[3][FILTER_TAPS];
+static biquad_t gyroFilterState[3];
+static bool gyroFilterStateIsSet;
+static float gyroLpfCutFreq;
+int axis;
 
 gyro_t gyro;                      // gyro access functions
 sensor_align_e gyroAlign = 0;
 
-void useGyroConfig(gyroConfig_t *gyroConfigToUse, int8_t * filterTableToUse)
+void useGyroConfig(gyroConfig_t *gyroConfigToUse, float gyro_lpf_hz)
 {
     gyroConfig = gyroConfigToUse;
-    gyroFIRTable = filterTableToUse;
+    gyroLpfCutFreq = gyro_lpf_hz;
+}
+
+void initGyroFilterCoefficients(void) {
+    if (gyroLpfCutFreq) {
+        // Initialisation needs to happen once sampling rate is known
+        for (axis = 0; axis < 3; axis++) {
+            BiQuadNewLpf(gyroLpfCutFreq, &gyroFilterState[axis], targetLooptime);
+        }
+
+        gyroFilterStateIsSet = true;
+    }
 }
 
 void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired)
@@ -127,11 +142,20 @@ static void applyGyroZero(int16_t *ADC)
 
 int gyroAccFetch(void)
 {
-    // TODO!
-    return mpu6050GyroAccFetch();
+    int16_t gyroADCRaw[XYZ_AXIS_COUNT];
+    // range: +/- 8192; +/- 2000 deg/sec
+    if (!gyro.read(gyroADCRaw)) {
+        return;
+    }
+    // Prepare a copy of int32_t gyroADC for mangling to prevent overflow
+    for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        gyroADC[axis] = gyroADCRaw[axis];
+    }
+    gyroTicks++;
 }
 
 void gyroHandleData(int16_t *ADC) {
+    #warning int32_t gyro size
     if(gyroADClastIdx < ACCGYRO_FILTER_SIZE) {
         alignSensors(ADC, gyroADClast[gyroADClastIdx], gyroAlign);
         applyGyroZero(gyroADClast[gyroADClastIdx]);
@@ -155,8 +179,19 @@ void gyroUpdate(void)
     if (!gyro.read(gyroADC))
         return;
     alignSensors(gyroADC, gyroADC, gyroAlign);
-    applyGyroZero(gyroADC);
-#endif
+
+    if (gyroLpfCutFreq) {
+        if (!gyroFilterStateIsSet) {
+            initGyroFilterCoefficients();
+        }
+
+        if (gyroFilterStateIsSet) {
+            for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                gyroADC[axis] = lrintf(applyBiQuadFilter((float) gyroADC[axis], &gyroFilterState[axis]));
+            }
+        }
+    }
+
     if (!isGyroCalibrationComplete()) {
         performGyroCalibration(gyroConfig->gyroMovementCalibrationThreshold);
     }

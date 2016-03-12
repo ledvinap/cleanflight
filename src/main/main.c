@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "scheduler.h"
 
 #include "common/axis.h"
@@ -34,6 +34,7 @@
 #include "drivers/nvic.h"
 #include "drivers/sensor.h"
 #include "drivers/system.h"
+#include "drivers/dma.h"
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
 #include "drivers/sound_beeper.h"
@@ -55,6 +56,9 @@
 #include "drivers/flash_m25p16.h"
 #include "drivers/exti.h"
 #include "drivers/sonar_hcsr04.h"
+#include "drivers/sdcard.h"
+#include "drivers/usb_io.h"
+#include "drivers/transponder_ir.h"
 #include "drivers/gyro_sync.h"
 
 #include "rx/rx.h"
@@ -71,7 +75,8 @@
 #include "io/ledstrip.h"
 #include "io/display.h"
 #include "io/beeper.h"
-
+#include "io/asyncfatfs/asyncfatfs.h"
+#include "io/transponder_ir.h"
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
@@ -122,18 +127,92 @@ void SetSysClock(bool overclock);
 #endif
 
 typedef enum {
-    SYSTEM_STATE_INITIALISING   = 0,
-    SYSTEM_STATE_CONFIG_LOADED  = (1 << 0),
-    SYSTEM_STATE_SENSORS_READY  = (1 << 1),
-    SYSTEM_STATE_MOTORS_READY   = (1 << 2),
-    SYSTEM_STATE_READY          = (1 << 7)
+    SYSTEM_STATE_INITIALISING        = 0,
+    SYSTEM_STATE_CONFIG_LOADED       = (1 << 0),
+    SYSTEM_STATE_SENSORS_READY       = (1 << 1),
+    SYSTEM_STATE_MOTORS_READY        = (1 << 2),
+    SYSTEM_STATE_TRANSPONDER_ENABLED = (1 << 3),
+    SYSTEM_STATE_READY               = (1 << 7)
 } systemState_e;
 
 static uint8_t systemState = SYSTEM_STATE_INITIALISING;
 
+void flashLedsAndBeep(void)
+{
+    LED1_ON;
+    LED0_OFF;
+    for (uint8_t i = 0; i < 10; i++) {
+        LED1_TOGGLE;
+        LED0_TOGGLE;
+        delay(25);
+        BEEP_ON;
+        delay(25);
+        BEEP_OFF;
+    }
+    LED0_OFF;
+    LED1_OFF;
+}
+
+#ifdef BUTTONS
+void buttonsInit(void)
+{
+
+    gpio_config_t buttonAGpioConfig = {
+        BUTTON_A_PIN,
+        Mode_IPU,
+        Speed_2MHz
+    };
+    gpioInit(BUTTON_A_PORT, &buttonAGpioConfig);
+
+    gpio_config_t buttonBGpioConfig = {
+        BUTTON_B_PIN,
+        Mode_IPU,
+        Speed_2MHz
+    };
+    gpioInit(BUTTON_B_PORT, &buttonBGpioConfig);
+
+    delayMicroseconds(10);  // allow GPIO configuration to settle
+}
+
+void buttonsHandleColdBootButtonPresses(void)
+{
+    uint8_t secondsRemaining = 10;
+    bool bothButtonsHeld;
+    do {
+        bothButtonsHeld = !digitalIn(BUTTON_A_PORT, BUTTON_A_PIN) && !digitalIn(BUTTON_B_PORT, BUTTON_B_PIN);
+        if (bothButtonsHeld) {
+            if (--secondsRemaining == 0) {
+                resetEEPROM();
+                systemReset();
+            }
+
+            if (secondsRemaining > 5) {
+                delay(1000);
+            } else {
+                // flash quicker after a few seconds
+                delay(500);
+                LED0_TOGGLE;
+                delay(500);
+            }
+            LED0_TOGGLE;
+        }
+    } while (bothButtonsHeld);
+
+    // buttons released between 5 and 10 seconds
+    if (secondsRemaining < 5) {
+
+        usbGenerateDisconnectPulse();
+
+        flashLedsAndBeep();
+
+        systemResetToBootloader();
+    }
+}
+
+#endif
+
 void init(void)
 {
-    uint8_t i;
     drv_pwm_config_t pwm_params;
 
     printfSupportInit();
@@ -158,7 +237,7 @@ void init(void)
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(masterConfig.emf_avoidance);
 #endif
-    i2cSetOverclock(masterConfig.i2c_overclock);
+    i2cSetOverclock(masterConfig.i2c_highspeed);
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();
@@ -184,6 +263,36 @@ void init(void)
 
     ledInit();
 
+#ifdef BEEPER
+    beeperConfig_t beeperConfig = {
+        .ioTag = IO_TAG(BEEPER_IO),
+#ifdef BEEPER_INVERTED
+        .isInverted = true,
+        .isOD = false,
+#else
+        .isInverted = false,
+        .isOD = true,
+#endif
+    };
+#ifdef NAZE
+    if (hardwareRevision >= NAZE32_REV5) {
+        // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
+        beeperConfig.isInverted = true;
+        beeperConfig.isOD = false;
+    }
+#endif
+
+    beeperInit(&beeperConfig);
+#endif
+
+#ifdef BUTTONS
+    buttonsInit();
+
+    if (!isMPUSoftReset()) {
+        buttonsHandleColdBootButtonPresses();
+    }
+#endif
+
 #ifdef SPEKTRUM_BIND
     if (feature(FEATURE_RX_SERIAL)) {
         switch (masterConfig.rxConfig.serialrx_provider) {
@@ -199,6 +308,9 @@ void init(void)
 #endif
 
     delay(100);
+
+
+    dmaInit();
 
 
     serialInit(&masterConfig.serialConfig, feature(FEATURE_SOFTSERIAL));
@@ -229,11 +341,17 @@ void init(void)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
-#if defined(USE_USART2) && defined(STM32F10X)
-    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#if defined(USE_UART2) && defined(STM32F10X)
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_UART2);
 #endif
-#ifdef STM32F303xC
-    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_USART3);
+#if defined(USE_UART3)
+    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_UART3);
+#endif
+#if defined(USE_UART4)
+    pwm_params.useUART4 = doesConfigurationUsePort(SERIAL_PORT_UART4);
+#endif
+#if defined(USE_UART5)
+    pwm_params.useUART5 = doesConfigurationUsePort(SERIAL_PORT_UART5);
 #endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
@@ -278,28 +396,6 @@ void init(void)
 
     systemState |= SYSTEM_STATE_MOTORS_READY;
 
-#ifdef BEEPER
-    beeperConfig_t beeperConfig = {
-        .ioTag = IO_TAG(BEEPER_IO),
-#ifdef BEEPER_INVERTED
-        .isInverted = true,
-        .isOD = false,
-#else
-        .isInverted = false,
-        .isOD = true,
-#endif
-    };
-#ifdef NAZE
-    if (hardwareRevision >= NAZE32_REV5) {
-        // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
-        beeperConfig.isInverted = true;
-        beeperConfig.isOD = false;
-    }
-#endif
-
-    beeperInit(&beeperConfig);
-#endif
-
 #ifdef INVERTER
     initInverter();
 #endif
@@ -318,7 +414,7 @@ void init(void)
     if (hardwareRevision == NAZE32_SP) {
         serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
     } else  {
-        serialRemovePort(SERIAL_PORT_USART3);
+        serialRemovePort(SERIAL_PORT_UART3);
     }
 #endif
 
@@ -328,18 +424,24 @@ void init(void)
     }
 #endif
 
+#if defined(SPRACINGF3MINI) && defined(SONAR) && defined(USE_SOFTSERIAL1)
+    if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
+        serialRemovePort(SERIAL_PORT_SOFTSERIAL1);
+    }
+#endif
+
 
 #ifdef USE_I2C
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);
     } else {
-        if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+        if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
             i2cInit(I2C_DEVICE);
         }
     }
 #elif defined(CC3D)
-    if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+    if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
         i2cInit(I2C_DEVICE);
     }
 #else
@@ -384,18 +486,11 @@ void init(void)
 
     systemState |= SYSTEM_STATE_SENSORS_READY;
 
-    LED1_ON;
-    LED0_OFF;
-    for (i = 0; i < 10; i++) {
-        LED1_TOGGLE;
-        LED0_TOGGLE;
-        delay(25);
-        BEEP_ON;
-        delay(25);
-        BEEP_OFF;
-    }
-    LED0_OFF;
-    LED1_OFF;
+    flashLedsAndBeep();
+
+#ifdef USE_SERVOS
+    mixerInitialiseServoFiltering(targetLooptime);
+#endif
 
 #ifdef MAG
     if (sensors(SENSOR_MAG))
@@ -451,6 +546,19 @@ void init(void)
     }
 #endif
 
+#ifdef USB_CABLE_DETECTION
+    usbCableDetectInit();
+#endif
+
+#ifdef TRANSPONDER
+    if (feature(FEATURE_TRANSPONDER)) {
+        transponderInit(masterConfig.transponderData);
+        transponderEnable();
+        transponderStartRepeating();
+        systemState |= SYSTEM_STATE_TRANSPONDER_ENABLED;
+    }
+#endif
+
 #ifdef USE_FLASHFS
 #ifdef NAZE
     if (hardwareRevision == NAZE32_REV5) {
@@ -461,6 +569,27 @@ void init(void)
 #endif
 
     flashfsInit();
+#endif
+
+#ifdef USE_SDCARD
+    bool sdcardUseDMA = false;
+
+    sdcardInsertionDetectInit();
+
+#ifdef SDCARD_DMA_CHANNEL_TX
+
+#if defined(LED_STRIP) && defined(WS2811_DMA_CHANNEL)
+    // Ensure the SPI Tx DMA doesn't overlap with the led strip
+    sdcardUseDMA = !feature(FEATURE_LED_STRIP) || SDCARD_DMA_CHANNEL_TX != WS2811_DMA_CHANNEL;
+#else
+    sdcardUseDMA = true;
+#endif
+
+#endif
+
+    sdcard_init(sdcardUseDMA);
+
+    afatfs_init();
 #endif
 
 #ifdef BLACKBOX
@@ -592,7 +721,9 @@ int main(void) {
     setTaskEnabled(TASK_GYROPID, true);
     setTaskEnabled(TASK_ACCEL, sensors(SENSOR_ACC));
     setTaskEnabled(TASK_SERIAL, true);
+#ifdef BEEPER
     setTaskEnabled(TASK_BEEPER, true);
+#endif
     setTaskEnabled(TASK_BATTERY, feature(FEATURE_VBAT) || feature(FEATURE_CURRENT_METER));
     setTaskEnabled(TASK_RX, true);
 #ifdef GPS
@@ -619,6 +750,9 @@ int main(void) {
 #ifdef LED_STRIP
     setTaskEnabled(TASK_LEDSTRIP, feature(FEATURE_LED_STRIP));
 #endif
+#ifdef TRANSPONDER
+    setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
+#endif
 
     while (1) {
         scheduler();
@@ -629,9 +763,17 @@ int main(void) {
 void HardFault_Handler(void)
 {
     // fall out of the sky
-    uint8_t requiredState = SYSTEM_STATE_CONFIG_LOADED | SYSTEM_STATE_MOTORS_READY;
-    if ((systemState & requiredState) == requiredState) {
+    uint8_t requiredStateForMotors = SYSTEM_STATE_CONFIG_LOADED | SYSTEM_STATE_MOTORS_READY;
+    if ((systemState & requiredStateForMotors) == requiredStateForMotors) {
         stopMotors();
     }
+#ifdef TRANSPONDER
+    // prevent IR LEDs from burning out.
+    uint8_t requiredStateForTransponder = SYSTEM_STATE_CONFIG_LOADED | SYSTEM_STATE_TRANSPONDER_ENABLED;
+    if ((systemState & requiredStateForTransponder) == requiredStateForTransponder) {
+        transponderIrDisable();
+    }
+#endif
+
     while (1);
 }

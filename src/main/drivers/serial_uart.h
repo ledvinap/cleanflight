@@ -29,6 +29,10 @@
 #define UART2_TX_BUFFER_SIZE    256
 #define UART3_RX_BUFFER_SIZE    256
 #define UART3_TX_BUFFER_SIZE    256
+#define UART4_RX_BUFFER_SIZE    256
+#define UART4_TX_BUFFER_SIZE    256
+#define UART5_RX_BUFFER_SIZE    256
+#define UART5_TX_BUFFER_SIZE    256
 
 struct uartHwDef_s;
 
@@ -52,6 +56,8 @@ typedef struct {
 } uartPort_t;
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, const serialPortMode_t *config);
+
+void usartInitAllIOSignals(void);
 
 // serialPort API
 bool isUartTransmitBufferEmpty(serialPort_t *instance);

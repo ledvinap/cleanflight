@@ -21,10 +21,9 @@
 //#define DEBUG_BATTERY
 
 extern "C" {
-    #include "sensors/battery.h"
-
     #include "io/rc_controls.h"
-    #include "flight/lowpass.h"
+
+    #include "sensors/battery.h"
     #include "io/beeper.h"
 }
 
@@ -270,10 +269,12 @@ TEST(BatteryTest, RollOverPattern2)
 // STUBS
 
 extern "C" {
-
+#include "common/filter.h"
 uint8_t armingFlags = 0;
 int16_t rcCommand[4] = {0,0,0,0};
 
+float applyBiQuadFilter(float sample, biquad_t *state) {UNUSED(state);return sample;}
+void BiQuadNewLpf(float filterCutFreq, biquad_t *newState, uint32_t refreshRate) {UNUSED(filterCutFreq);UNUSED(newState);UNUSED(refreshRate);}
 
 bool feature(uint32_t mask)
 {
@@ -300,23 +301,9 @@ void delay(uint32_t ms)
     return;
 }
 
-int32_t lowpassFixed(lowpass_t *filter, int32_t in, int16_t freq)
-{
-    UNUSED(filter);
-    UNUSED(freq);
-    return in;
-}
-
 void beeper(beeperMode_e mode)
 {
     UNUSED(mode);
 }
-
-typedef struct timerQueueRec_s timerQueueRec_t;
-typedef void timerQueueCallbackFn(timerQueueRec_t *);
-
-void adcTriggerPeriodicConversion(void) {}
-void timerQueue_Start(timerQueueRec_t *, int16_t) {}
-void timerQueue_Config(timerQueueRec_t *, timerQueueCallbackFn *) {}
 
 }

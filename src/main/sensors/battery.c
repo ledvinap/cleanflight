@@ -18,9 +18,10 @@
 #include "stdbool.h"
 #include "stdint.h"
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/maths.h"
+#include "common/filter.h"
 
 #include "drivers/adc.h"
 #include "drivers/system.h"
@@ -29,16 +30,14 @@
 #include "config/runtime_config.h"
 #include "config/config.h"
 
-#include "sensors/battery.h"
-
-#include "rx/rx.h"
-
 #include "io/rc_controls.h"
-#include "flight/lowpass.h"
 #include "io/beeper.h"
 
+#include "sensors/battery.h"
+
+
 #define VBATT_PRESENT_THRESHOLD_MV    10
-#define VBATT_LPF_FREQ  10
+#define VBATT_LPF_FREQ  1.0f
 
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
@@ -55,7 +54,8 @@ int32_t mAhDrawn = 0;               // milliampere hours drawn from the battery 
 batteryConfig_t *batteryConfig;
 
 static batteryState_e batteryState;
-static lowpass_t lowpassFilter;
+static biquad_t vbatFilterState;
+
 
 timerQueueRec_t batteryTimer;
 
@@ -75,12 +75,10 @@ uint16_t batteryAdcToVoltage(uint16_t src)
 static void updateBatteryVoltage(void)
 {
     uint16_t vbatSample;
-    uint16_t vbatFiltered;
-
     // store the battery voltage with some other recent battery voltage readings
     vbatSample = vbatLatestADC = adcGetChannel(ADC_BATTERY);
-    vbatFiltered = (uint16_t)lowpassFixed(&lowpassFilter, vbatSample, VBATT_LPF_FREQ);
-    vbat = batteryAdcToVoltage(vbatFiltered);
+    vbatSample = applyBiQuadFilter(vbatSample, &vbatFilterState);
+    vbat = batteryAdcToVoltage(vbatSample);
 }
 
 #define VBATTERY_STABLE_DELAY 40
@@ -174,6 +172,8 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
     batteryWarningVoltage = 0;
     batteryCriticalVoltage = 0;
 
+    BiQuadNewLpf(VBATT_LPF_FREQ, &vbatFilterState, 50000);
+
     // register and start timer to trigger ADC
     timerQueue_Config(&batteryTimer, batteryTimerCallback);
     timerQueue_Start(&batteryTimer, 0);
@@ -190,7 +190,7 @@ int32_t currentSensorToCentiamps(uint16_t src)
     return (millivolts * 1000) / (int32_t)batteryConfig->currentMeterScale; // current in 0.01A steps
 }
 
-void updateCurrentMeter(int32_t lastUpdateAt, rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
+void updateCurrentMeter(int32_t lastUpdateAt, throttleStatus_e throttleStatus)
 {
     static int32_t amperageRaw = 0;
     static int64_t mAhdrawnRaw = 0;
@@ -206,7 +206,6 @@ void updateCurrentMeter(int32_t lastUpdateAt, rxConfig_t *rxConfig, uint16_t dea
         case CURRENT_SENSOR_VIRTUAL:
             amperage = (int32_t)batteryConfig->currentMeterOffset;
             if (ARMING_FLAG(ARMED)) {
-                throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig, deadband3d_throttle);
                 if (throttleStatus == THROTTLE_LOW && feature(FEATURE_MOTOR_STOP))
                     throttleOffset = 0;
                 throttleFactor = throttleOffset + (throttleOffset * throttleOffset / 50);
@@ -218,7 +217,7 @@ void updateCurrentMeter(int32_t lastUpdateAt, rxConfig_t *rxConfig, uint16_t dea
             break;
     }
 
-    mAhdrawnRaw += (amperage * lastUpdateAt) / 1000;
+    mAhdrawnRaw += (MAX(0, amperage) * lastUpdateAt) / 1000;
     mAhDrawn = mAhdrawnRaw / (3600 * 100);
 }
 

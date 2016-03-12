@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/utils.h"
 #include "common/maths.h"

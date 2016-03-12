@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #ifdef INVERTER  // TODO - check INVERTER_IO is not NONE
 

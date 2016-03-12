@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
 
@@ -41,6 +41,65 @@
 #include "serial_impl.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
+#ifdef STM32F10X
+#include "serial_uart_stm32f10x.h"
+#endif
+#ifdef STM32F303xC
+#include "serial_uart_stm32f30x.h"
+#endif
+
+void usartInitAllIOSignals(void)
+{
+#ifdef STM32F10X
+    // Set UART1 TX to output and high state to prevent a rs232 break condition on reset.
+    // See issue https://github.com/cleanflight/cleanflight/issues/1433
+    gpio_config_t gpio;
+
+    gpio.mode = Mode_Out_PP;
+    gpio.speed = Speed_2MHz;
+    gpio.pin = UART1_TX_PIN;
+    digitalHi(UART1_GPIO, gpio.pin);
+    gpioInit(UART1_GPIO, &gpio);
+
+    // Set TX of UART2 and UART3 to input with pull-up to prevent floating TX outputs.
+    gpio.mode = Mode_IPU;
+
+#ifdef USE_UART2
+    gpio.pin = UART2_TX_PIN;
+    gpioInit(UART2_GPIO, &gpio);
+#endif
+
+#ifdef USE_UART3
+    gpio.pin = UART3_TX_PIN;
+    gpioInit(UART3_GPIO, &gpio);
+#endif
+
+#endif
+
+#ifdef STM32F303
+    // Set TX for UART1, UART2 and UART3 to input with pull-up to prevent floating TX outputs.
+    gpio_config_t gpio;
+
+    gpio.mode = Mode_IPU;
+    gpio.speed = Speed_2MHz;
+
+#ifdef USE_UART1
+    gpio.pin = UART1_TX_PIN;
+    gpioInit(UART1_GPIO, &gpio);
+#endif
+
+//#ifdef USE_UART2
+//    gpio.pin = UART2_TX_PIN;
+//    gpioInit(UART2_GPIO, &gpio);
+//#endif
+
+#ifdef USE_UART3
+    gpio.pin = UART3_TX_PIN;
+    gpioInit(UART3_GPIO, &gpio);
+#endif
+
+#endif
+}
 
 static void uartReconfigureState(uartPort_t *self);
 extern const struct serialPortVTable uartVTable;

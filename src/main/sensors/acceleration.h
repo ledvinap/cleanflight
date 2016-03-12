@@ -41,7 +41,7 @@ extern sensor_align_e accAlign;
 extern acc_t acc;
 extern uint16_t acc_1G;
 
-extern int16_t accADC[XYZ_AXIS_COUNT];
+extern int32_t accADC[XYZ_AXIS_COUNT];
 
 typedef struct rollAndPitchTrims_s_def {
     int16_t roll;

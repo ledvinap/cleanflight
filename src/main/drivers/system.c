@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
 
@@ -31,6 +31,8 @@
 #include "adc.h"
 #include "timer.h"      // timer configuration needed, TODO!
 #include "system.h"
+#include "serial.h"
+#include "serial_uart.h"
 
 // cached value of RCC->CSR
 uint32_t cachedRccCsrValue;
@@ -101,32 +103,7 @@ void systemInit(void)
 
     enableGPIOPowerUsageAndNoiseReductions();
 
-#warning TODO
-#if defined STM32F10X && TODO
-    // Set USART1 TX (PA9) to output and high state to prevent a rs232 break condition on reset.
-    // See issue https://github.com/cleanflight/cleanflight/issues/1433
-    gpio_config_t gpio;
-
-    gpio.mode = Mode_Out_PP;
-    gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_9;
-    digitalHi(GPIOA, gpio.pin);
-    gpioInit(GPIOA, &gpio);
-
-    // Set TX of USART2 and USART3 to input with pull-up to prevent floating TX outputs.
-    gpio.mode = Mode_IPU;
-
-#ifdef USE_USART2
-    gpio.pin = Pin_2;
-    gpioInit(GPIOA, &gpio);
-#endif
-
-#ifdef USE_USART3
-    gpio.pin = USART3_TX_PIN;
-    gpioInit(USART3_GPIO, &gpio);
-#endif
-
-#endif
+    usartInitAllIOSignals();
 
 #ifdef STM32F10X
     // Turn off JTAG port 'cause we're using the GPIO for leds
@@ -134,31 +111,6 @@ void systemInit(void)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;
 #endif
 
-#if defined STM32F303 && TODO
-    // Set TX for USART1, USART2 and USART3 to input with pull-up to prevent floating TX outputs.
-    gpio_config_t gpio;
-
-    gpio.mode = Mode_IPU;
-    gpio.speed = Speed_2MHz;
-
-#ifdef USE_USART1
-    gpio.pin = UART1_TX_PIN;
-    gpioInit(UART1_GPIO, &gpio);
-#endif
-
-//#ifdef USE_USART2
-//    gpio.pin = UART2_TX_PIN;
-//    gpioInit(UART2_GPIO, &gpio);
-//#endif
-
-#ifdef USE_USART3
-    gpio.pin = UART3_TX_PIN;
-    gpioInit(UART3_GPIO, &gpio);
-#endif
-
-#endif
-
-#ifndef TIME_USE_TIMER
     // Init cycle counter
 
     // Init cycle counter

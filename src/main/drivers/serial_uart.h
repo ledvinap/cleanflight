@@ -61,6 +61,8 @@ typedef struct {
 
     uint32_t rxDMAPos;
     bool txDMAEmpty;
+// DEBUG
+    uint32_t txCountCache;
 
     uint32_t txDMAPeripheralBaseAddr;
     uint32_t rxDMAPeripheralBaseAddr;

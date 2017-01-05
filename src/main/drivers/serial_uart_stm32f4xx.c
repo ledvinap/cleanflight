@@ -272,13 +272,20 @@ void dmaIRQHandler(dmaChannelDescriptor_t* descriptor)
     uartPort_t *s = &(((uartDevice_t*)(descriptor->userParam))->port);
     uint32_t flags = DMA_GET_FLAG_STATUS(descriptor, DMA_IT_TCIF | DMA_IT_HTIF | DMA_IT_TEIF | DMA_IT_DMEIF | DMA_IT_FEIF);
     DMA_CLEAR_FLAG(descriptor, DMA_IT_TCIF | DMA_IT_HTIF | DMA_IT_TEIF | DMA_IT_DMEIF | DMA_IT_FEIF);
+    if(flags & DMA_IT_FEIF) {
+        debug[2]++;
+        // check how many bytes were actually transmited
+        debug[3] += s->txCountCache - s->txDMAStream->NDTR;
+        if(s->txDMAStream->CR & DMA_SxCR_EN) {
+            // got fifo error without disabling channel
+            debug[0]++;
+        } else {
+            handleUsartTxDma(s);
+        }
+        return;
+    }
     if (flags & DMA_IT_TCIF) {
         debug[1]++;
-        if(flags & DMA_IT_FEIF) {
-            debug[2]++; 
-            debug[3] += s->txDMAStream->NDTR;
-            return;
-        }
         handleUsartTxDma(s);
     }
     if (flags & DMA_IT_TEIF) {

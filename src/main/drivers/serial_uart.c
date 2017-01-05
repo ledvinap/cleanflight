@@ -283,8 +283,6 @@ void uartTryStartTxDMA(uartPort_t *s)
         if (s->txDMAStream->CR & DMA_SxCR_EN) // DMA is already in progress
             return;
 
-        //debug[0] += s->txDMAStream->NDTR;
-
         if (s->txDMAStream->NDTR)
             goto reenable;
 
@@ -294,24 +292,26 @@ void uartTryStartTxDMA(uartPort_t *s)
         }
 
         DMA_MemoryTargetConfig(s->txDMAStream, (uint32_t)&s->port.txBuffer[s->port.txBufferTail], DMA_Memory_0);
+        int bufRdy;
         if (s->port.txBufferHead >= s->port.txBufferTail) {
-            DMA_SetCurrDataCounter(s->txDMAStream, s->port.txBufferHead - s->port.txBufferTail);
+            bufRdy = s->port.txBufferHead - s->port.txBufferTail;
             s->port.txBufferTail = s->port.txBufferHead;
         } else {
-            DMA_SetCurrDataCounter(s->txDMAStream, s->port.txBufferSize - s->port.txBufferTail);
+            bufRdy = s->port.txBufferSize - s->port.txBufferTail;
             s->port.txBufferTail = 0;
         }
+        DMA_SetCurrDataCounter(s->txDMAStream, bufRdy);
+        s->txCountCache = bufRdy;
         s->txDMAEmpty = false;
 
     reenable:
-        if (s->txDMAStream->NDTR == 0)
-            debug[0]++;
-
         // disable USART DMA request - DMA controller needs time to preload data from memory
         USART_DMACmd(s->USARTx, USART_DMAReq_Tx, DISABLE);
 
         DMA_Cmd(s->txDMAStream, ENABLE);
-        //asm volatile("\tnop\n");  // just to be sure, remove after testing
+        asm volatile("\tnop\n");  // give DMA chance to get bus
+        asm volatile("\tnop\n");
+        asm volatile("\tnop\n");
         // reenable USART DMA request
         USART_DMACmd(s->USARTx, USART_DMAReq_Tx, ENABLE);
 

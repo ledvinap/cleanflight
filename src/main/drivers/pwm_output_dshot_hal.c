@@ -120,12 +120,11 @@ void pwmWriteProShot(uint8_t index, uint16_t value)
     // append checksum
     packet = (packet << 4) | csum;
 	
-	// generate pulses for Proshot
-	for (int i = 0; i < 4; i++)
-	{
-		motor->dmaBuffer[i] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
-		packet <<= 4;	// Shift 4 bits
-	}
+    // generate pulses for Proshot
+    for (int i = 0; i < 4; i++) {
+        motor->dmaBuffer[i] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
+        packet <<= 4;	// Shift 4 bits
+    }
 
     if (motor->timerHardware->output & TIMER_OUTPUT_N_CHANNEL) {
         if (HAL_TIMEx_PWMN_Start_DMA(&motor->TimHandle, motor->timerHardware->channel, motor->dmaBuffer, MOTOR_DMA_BUFFER_SIZE) != HAL_OK) {
@@ -179,13 +178,13 @@ void pwmDigitalMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t
         return;
     }
 	
-	if(pwmProtocolType == PWM_TYPE_PROSHOT1000){
-			motor->TimHandle.Init.Period = MOTOR_NIBBLE_LENGTH_PROSHOT;
-		}
+    if(pwmProtocolType == PWM_TYPE_PROSHOT1000) {
+        motor->TimHandle.Init.Period = MOTOR_NIBBLE_LENGTH_PROSHOT;
+    }
 		
-		else{
-			motor->TimHandle.Init.Period = MOTOR_BITLENGTH;
-		}
+    else {
+        motor->TimHandle.Init.Period = MOTOR_BITLENGTH;
+    }
 
     motor->timerDmaSource = timerDmaSource(timerHardware->channel);
     dmaMotorTimers[timerIndex].timerDmaSources |= motor->timerDmaSource;

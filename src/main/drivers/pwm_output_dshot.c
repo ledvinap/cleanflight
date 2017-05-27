@@ -55,17 +55,12 @@ uint8_t getTimerIndex(TIM_TypeDef *timer)
     return dmaMotorTimerCount-1;
 }
 
-void pwmWriteDigital(uint8_t index, uint16_t value)
+void pwmWriteDshot(uint8_t index, uint16_t value)
 {
 	if (!pwmMotorsEnabled) {
         return;
     }
 
-	(*protocol)(index, value); 
-}
-
-void pwmWriteDshot(uint8_t index, uint16_t value)
-{
     motorDmaOutput_t * const motor = &dmaMotors[index];
 
     if (!motor->timerHardware || !motor->timerHardware->dmaRef) {
@@ -97,6 +92,10 @@ void pwmWriteDshot(uint8_t index, uint16_t value)
 
 void pwmWriteProShot(uint8_t index, uint16_t value)
 {
+	if (!pwmMotorsEnabled) {
+        return;
+    }
+
     motorDmaOutput_t * const motor = &dmaMotors[index];
 
     if (!motor->timerHardware || !motor->timerHardware->dmaRef) {
@@ -190,18 +189,8 @@ void pwmDigitalMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t
 		else{
 			TIM_TimeBaseStructure.TIM_Period = MOTOR_BITLENGTH;
 		}
-		
-		
     }
-	
-	if(pwmProtocolType == PWM_TYPE_PROSHOT1000){
-		protocol = &pwmWriteProShot;
-	}
-	
-	else{
-		protocol = &pwmWriteDshot;
-	}
-	
+		
     TIM_OCStructInit(&TIM_OCInitStructure);
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     if (output & TIMER_OUTPUT_N_CHANNEL) {

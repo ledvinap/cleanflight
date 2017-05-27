@@ -123,7 +123,7 @@ void pwmWriteProShot(uint8_t index, uint16_t value)
     }
 	
     DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
-    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);	
+    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
 }
 
 void pwmCompleteDigitalMotorUpdate(uint8_t motorCount)

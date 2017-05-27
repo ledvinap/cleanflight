@@ -247,6 +247,8 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
 #ifdef USE_DSHOT
 	case PWM_TYPE_PROSHOT1000:
 	    pwmWritePtr = pwmWriteProShot;
+		pwmCompleteWritePtr = pwmCompleteDigitalMotorUpdate;
+        isDigital = true;
 		break;
     case PWM_TYPE_DSHOT1200:
     case PWM_TYPE_DSHOT600:

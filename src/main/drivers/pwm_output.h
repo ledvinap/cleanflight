@@ -39,6 +39,7 @@ typedef enum {
     PWM_TYPE_DSHOT300,
     PWM_TYPE_DSHOT600,
     PWM_TYPE_DSHOT1200,
+    PWM_TYPE_PROSHOT1000,
 #endif
     PWM_TYPE_MAX
 } motorPwmProtocolTypes_e;
@@ -56,6 +57,11 @@ typedef enum {
 #define MOTOR_BIT_0           7
 #define MOTOR_BIT_1           14
 #define MOTOR_BITLENGTH       19
+
+#define MOTOR_PROSHOT1000_MHZ		24 
+#define PROSHOT_BASE_SYMBOL         24 		// 1uS
+#define PROSHOT_BIT_WIDTH			3
+#define MOTOR_NIBBLE_LENGTH_PROSHOT	96 		// 4uS
 #endif
 
 #if defined(STM32F40_41xxx) // must be multiples of timer clock
@@ -141,6 +147,9 @@ void pwmServoConfig(const struct timerHardware_s *timerHardware, uint8_t servoIn
 uint32_t getDshotHz(motorPwmProtocolTypes_e pwmProtocolType);
 void pwmWriteDshotCommand(uint8_t index, uint8_t command);
 void pwmWriteDigital(uint8_t index, uint16_t value);
+void (*protocol)(uint8_t index, uint16_t value);		// function pointer used to write digital
+void pwmWriteProShot(uint8_t index, uint16_t value);	// Dshot write function
+void pwmWriteDshot(uint8_t index, uint16_t value);		// Proshot write function
 void pwmDigitalMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, motorPwmProtocolTypes_e pwmProtocolType, uint8_t output);
 void pwmCompleteDigitalMotorUpdate(uint8_t motorCount);
 #endif

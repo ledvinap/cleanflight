@@ -57,11 +57,15 @@ uint8_t getTimerIndex(TIM_TypeDef *timer)
 
 void pwmWriteDigital(uint8_t index, uint16_t value)
 {
-
-    if (!pwmMotorsEnabled) {
+	if (!pwmMotorsEnabled) {
         return;
     }
 
+	(*protocol)(index, value); 
+}
+
+void pwmWriteDshot(uint8_t index, uint16_t value)
+{
     motorDmaOutput_t * const motor = &dmaMotors[index];
 
     if (!motor->timerHardware || !motor->timerHardware->dmaRef) {
@@ -85,10 +89,43 @@ void pwmWriteDigital(uint8_t index, uint16_t value)
     for (int i = 0; i < 16; i++) {
         motor->dmaBuffer[i] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
         packet <<= 1;
+    } 
+	
+	DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
+    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);	
+}
+
+void pwmWriteProShot(uint8_t index, uint16_t value)
+{
+    motorDmaOutput_t * const motor = &dmaMotors[index];
+
+    if (!motor->timerHardware || !motor->timerHardware->dmaRef) {
+        return;
     }
 
-    DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
-    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
+    uint16_t packet = (value << 1) | (motor->requestTelemetry ? 1 : 0);
+    motor->requestTelemetry = false;    // reset telemetry request to make sure it's triggered only once in a row
+
+    // compute checksum
+    int csum = 0;
+    int csum_data = packet;
+    for (int i = 0; i < 3; i++) {
+        csum ^=  csum_data;   // xor data by nibbles
+        csum_data >>= 4;
+    }
+    csum &= 0xf;
+    // append checksum
+    packet = (packet << 4) | csum;
+	
+	// generate pulses for Proshot
+	for (int i = 0; i < 4; i++)
+	{
+		motor->dmaBuffer[i] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
+		packet <<= 4;	// Shift 4 bits
+	}
+	
+	DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
+    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);	
 }
 
 void pwmCompleteDigitalMotorUpdate(uint8_t motorCount)
@@ -140,13 +177,31 @@ void pwmDigitalMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t
         TIM_Cmd(timer, DISABLE);
 
         TIM_TimeBaseStructure.TIM_Prescaler = (uint16_t)((timerClock(timer) / getDshotHz(pwmProtocolType)) - 1);
-        TIM_TimeBaseStructure.TIM_Period = MOTOR_BITLENGTH;
+        
         TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
         TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
         TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
         TIM_TimeBaseInit(timer, &TIM_TimeBaseStructure);
+		
+		if(pwmProtocolType == PWM_TYPE_PROSHOT1000){
+			TIM_TimeBaseStructure.TIM_Period = MOTOR_NIBBLE_LENGTH_PROSHOT;
+		}
+		
+		else{
+			TIM_TimeBaseStructure.TIM_Period = MOTOR_BITLENGTH;
+		}
+		
+		
     }
-
+	
+	if(pwmProtocolType == PWM_TYPE_PROSHOT1000){
+		protocol = &pwmWriteProShot;
+	}
+	
+	else{
+		protocol = &pwmWriteDshot;
+	}
+	
     TIM_OCStructInit(&TIM_OCInitStructure);
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     if (output & TIMER_OUTPUT_N_CHANNEL) {

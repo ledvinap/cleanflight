@@ -245,6 +245,7 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
         idlePulse = 0;
         break;
 #ifdef USE_DSHOT
+	case PWM_TYPE_PROSHOT1000:
     case PWM_TYPE_DSHOT1200:
     case PWM_TYPE_DSHOT600:
     case PWM_TYPE_DSHOT300:
@@ -320,6 +321,8 @@ pwmOutputPort_t *pwmGetMotors(void)
 uint32_t getDshotHz(motorPwmProtocolTypes_e pwmProtocolType)
 {
     switch (pwmProtocolType) {
+	    case(PWM_TYPE_PROSHOT1000):
+            return MOTOR_PROSHOT1000_MHZ * 1000000;
         case(PWM_TYPE_DSHOT1200):
             return MOTOR_DSHOT1200_MHZ * 1000000;
         case(PWM_TYPE_DSHOT600):

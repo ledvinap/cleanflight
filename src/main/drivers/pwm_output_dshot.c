@@ -87,7 +87,7 @@ void pwmWriteDshot(uint8_t index, uint16_t value)
     } 
 	
 	DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
-    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);	
+    DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
 }
 
 void pwmWriteProShot(uint8_t index, uint16_t value)
@@ -180,16 +180,16 @@ void pwmDigitalMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t
         TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
         TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
         TIM_TimeBaseInit(timer, &TIM_TimeBaseStructure);
-		
+
         if(pwmProtocolType == PWM_TYPE_PROSHOT1000) {
             TIM_TimeBaseStructure.TIM_Period = MOTOR_NIBBLE_LENGTH_PROSHOT;
         }
-		
+
         else {
             TIM_TimeBaseStructure.TIM_Period = MOTOR_BITLENGTH;
         }
     }
-		
+
     TIM_OCStructInit(&TIM_OCInitStructure);
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     if (output & TIMER_OUTPUT_N_CHANNEL) {

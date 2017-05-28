@@ -84,9 +84,9 @@ void pwmWriteDshot(uint8_t index, uint16_t value)
     for (int i = 0; i < 16; i++) {
         motor->dmaBuffer[i] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
         packet <<= 1;
-    } 
-	
-	DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
+    }
+
+    DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
     DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
 }
 
@@ -115,13 +115,13 @@ void pwmWriteProShot(uint8_t index, uint16_t value)
     csum &= 0xf;
     // append checksum
     packet = (packet << 4) | csum;
-	
+
     // generate pulses for Proshot
     for (int i = 0; i < 4; i++) {
         motor->dmaBuffer[i] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
         packet <<= 4;	// Shift 4 bits
     }
-	
+
     DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, MOTOR_DMA_BUFFER_SIZE);
     DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
 }

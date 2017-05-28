@@ -119,7 +119,7 @@ void pwmWriteProShot(uint8_t index, uint16_t value)
     csum &= 0xf;
     // append checksum
     packet = (packet << 4) | csum;
-	
+
     // generate pulses for Proshot
     for (int i = 0; i < 4; i++) {
         motor->dmaBuffer[i] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
